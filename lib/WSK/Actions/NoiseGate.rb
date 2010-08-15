@@ -71,7 +71,7 @@ module WSK
                   (iInputBuffer[lIdxBuffer] > lSilenceThresholds[iIdxChannel][1]))
                 # This sample is not silent
                 lSilent = false
-                # Don't break, as we need to increas lIdxBuffer still
+                # Don't break, as we need to increase lIdxBuffer still
               end
               lIdxBuffer += 1
             end
@@ -151,7 +151,7 @@ module WSK
           lNonSilentParts.each_with_index do |ioNonSilentPartInfo, iIdx|
             iIdxBeginSample, iIdxEndSample = ioNonSilentPartInfo
             if (iIdx < lNonSilentParts.size-1)
-              if (iIdxEndSample+1 < lNonSilentParts[iIdx+1][0])
+              if (lNonSilentParts[iIdx+1][0] - iIdxEndSample > lSilenceDuration + 1)
                 # Not contiguous
                 lRealNonSilentParts << [lIdxBegin, iIdxEndSample]
                 lIdxBegin = lNonSilentParts[iIdx+1][0]

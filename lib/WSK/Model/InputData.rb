@@ -164,8 +164,9 @@ module WSK
       # ** *iNbrSamples* (_Integer_): The number of samples in this buffer
       # ** *iNbrChannels* (_Integer_): The number of channels in this buffer
       def eachRawBuffer(iIdxBeginSample = 0, iIdxLastSample = @NbrSamples-1)
-        lNbrBuffers = (iIdxLastSample-iIdxBeginSample+1)/@NbrSamplesPerBuffer
-        if ((iIdxLastSample-iIdxBeginSample+1) % @NbrSamplesPerBuffer != 0)
+        lNbrSamplesToRead = (iIdxLastSample-iIdxBeginSample+1)
+        lNbrBuffers = lNbrSamplesToRead/@NbrSamplesPerBuffer
+        if (lNbrSamplesToRead % @NbrSamplesPerBuffer != 0)
           lNbrBuffers += 1
         end
         lNbrBuffers.times do |iIdxBuffer|
@@ -175,7 +176,7 @@ module WSK
           lNbrSamplesInBuffer = @RawBuffer.size/@SampleSize
           # If the last sample is met inside this buffer, truncate the buffer
           lBuffer = nil
-          if (iIdxLastSample >= lIdxFirstSample+lNbrSamplesInBuffer)
+          if (iIdxLastSample >= lIdxFirstSample+lNbrSamplesInBuffer-1)
             lBuffer = @RawBuffer
           else
             lBuffer = @RawBuffer[0..(iIdxLastSample-lIdxFirstSample+1)*@SampleSize-1]
@@ -211,7 +212,6 @@ module WSK
             lIdxFirstSampleToRead = iIdxSample
           end
           readRawBuffer(lIdxFirstSampleToRead)
-          @IdxBufferSample = lIdxFirstSampleToRead
           # Decode it
           @Buffer = @Header.getDecodedSamples(@RawBuffer, @RawBuffer.size/@SampleSize)
           logDebug "Read buffer @ #{iIdxSample} => #{@Buffer[0..31].join(' ')}"
@@ -232,11 +232,14 @@ module WSK
       # Parameters:
       # * *iIdxSample* (_Integer_): Index of the sample to retrieve
       def readRawBuffer(iIdxSample)
+        # TODO: Implement a cache on the RawBuffer, as some plugins (FFT comparisons in NoiseGate) access contiguous data frequently using RawBuffers only.
         if ((@RawBuffer == nil) or
             (iIdxSample != @IdxBufferSample))
           # Read it from the file
+          @IdxBufferSample = iIdxSample
           @File.seek(@FirstSamplePos + iIdxSample*@SampleSize)
           @RawBuffer = @File.read(@RealBufferSize)
+          logDebug "Read raw buffer from file pos #{@FirstSamplePos + iIdxSample*@SampleSize} (Sample #{iIdxSample})"
         end
       end
 
