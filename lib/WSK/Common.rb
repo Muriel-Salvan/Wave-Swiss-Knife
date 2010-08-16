@@ -111,7 +111,7 @@ module WSK
               lNbrSamplesWritten = iOutputInterface.finalize
               # Pad with \x00 if lNbrSamplesWritten is below iNbrOutputDataSamples
               if (lNbrSamplesWritten < iNbrOutputDataSamples)
-                logInfo "#{lNbrSamplesWritten} samples written out of #{iNbrOutputDataSamples}: padding with silence."
+                logWarn "#{lNbrSamplesWritten} samples written out of #{iNbrOutputDataSamples}: padding with silence."
                 oFile.write(iHeader.getEncodedString([0]*(iNbrOutputDataSamples-lNbrSamplesWritten)*iHeader.NbrChannels))
               elsif (lNbrSamplesWritten > iNbrOutputDataSamples)
                 logWarn "#{lNbrSamplesWritten} samples written, but #{iNbrOutputDataSamples} only were expected. #{lNbrSamplesWritten - iNbrOutputDataSamples} samples more."
