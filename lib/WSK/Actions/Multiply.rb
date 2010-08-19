@@ -27,36 +27,66 @@ module WSK
       # Return:
       # * _Exception_: An error, or nil if success
       def execute(iInputData, oOutputData)
-        lMatch = @Coeff.match(/^(\d*)\/(\d*)$/)
+        rError = nil
+
+        lMaxValue = 2**(iInputData.Header.NbrBitsPerSample-1)-1
+        lMinValue = -2**(iInputData.Header.NbrBitsPerSample-1)
+        lNum, lDenom, lRealCoeff = nil, nil, nil
+        lMatch = @Coeff.match(/^(.*)db$/)
         if (lMatch == nil)
-          logErr "Incorrect coefficient: #{@Coeff} is not in the form X/Y"
+          lMatch = @Coeff.match(/^(\d*)\/(\d*)$/)
+          if (lMatch == nil)
+            logErr "Incorrect coefficient: #{@Coeff} is not in the form X/Y or in the form Xdb"
+            rError = RuntimeError.new("Incorrect coefficient: #{@Coeff} is not in the form X/Y or in the form Xdb")
+          else
+            lNum, lDenom = lMatch[1..2].map { |iStrValue| iStrValue.to_i }
+          end
         else
-          lNum, lDenom = lMatch[1..2].map { |iStrValue| iStrValue.to_i }
-          lMaxValue = 2**(iInputData.Header.NbrBitsPerSample-1)-1
-          lMinValue = -2**(iInputData.Header.NbrBitsPerSample-1)
+          lRealCoeff = 2**(lMatch[1].to_f/6)
+        end
+
+        if (rError == nil)
           iInputData.eachBuffer do |iInputBuffer, iNbrSamples, iNbrChannels|
             lOutputBuffer = []
             lIdxChannel = 0
-            iInputBuffer.each do |iValue|
-              lNewValue = (iValue*lNum)/lDenom
-              if (lNewValue > lMaxValue)
-                logWarn "Exceeding maximal value: #{lNewValue}, set to #{lMaxValue}"
-                lNewValue = lMaxValue
-              elsif (lNewValue < lMinValue)
-                logWarn "Exceeding minimal value: #{lNewValue}, set to #{lMinValue}"
-                lNewValue = lMinValue
+            if (lRealCoeff == nil)
+              iInputBuffer.each do |iValue|
+                lNewValue = (iValue*lNum)/lDenom
+                if (lNewValue > lMaxValue)
+                  logWarn "Exceeding maximal value: #{lNewValue}, set to #{lMaxValue}"
+                  lNewValue = lMaxValue
+                elsif (lNewValue < lMinValue)
+                  logWarn "Exceeding minimal value: #{lNewValue}, set to #{lMinValue}"
+                  lNewValue = lMinValue
+                end
+                lOutputBuffer << lNewValue
+                lIdxChannel += 1
+                if (lIdxChannel == iNbrChannels)
+                  lIdxChannel = 0
+                end
               end
-              lOutputBuffer << lNewValue
-              lIdxChannel += 1
-              if (lIdxChannel == iNbrChannels)
-                lIdxChannel = 0
+            else
+              iInputBuffer.each do |iValue|
+                lNewValue = (iValue*lRealCoeff).round
+                if (lNewValue > lMaxValue)
+                  logWarn "Exceeding maximal value: #{lNewValue}, set to #{lMaxValue}"
+                  lNewValue = lMaxValue
+                elsif (lNewValue < lMinValue)
+                  logWarn "Exceeding minimal value: #{lNewValue}, set to #{lMinValue}"
+                  lNewValue = lMinValue
+                end
+                lOutputBuffer << lNewValue
+                lIdxChannel += 1
+                if (lIdxChannel == iNbrChannels)
+                  lIdxChannel = 0
+                end
               end
             end
             oOutputData.pushBuffer(lOutputBuffer)
           end
         end
 
-        return nil
+        return rError
       end
 
     end
