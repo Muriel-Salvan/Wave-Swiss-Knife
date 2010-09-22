@@ -240,8 +240,8 @@ static VALUE analyzeutils_getRuby128bitsArray(
   // The C-array of the final result
   VALUE lFinalArray[lNbrItems];
   // Operations that will be used
-  VALUE lPlusID = rb_intern("+");
-  VALUE lMultiplyID = rb_intern("*");
+  ID lPlusID = rb_intern("+");
+  ID lMultiplyID = rb_intern("*");
 
   // Buffer that stores string representation of long long int for Ruby RBigNum
   char lStrValue[128];

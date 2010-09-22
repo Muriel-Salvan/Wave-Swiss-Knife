@@ -113,12 +113,30 @@ module WSK
       # Parameters:
       # * *iIdxBeginSample* (_Integer_): Index of the first sample to begin with [optional = 0]
       # * *iIdxLastSample* (_Integer_): Index of the last sample to end with [optional = @NbrSamples-1]
+      # * *iOptions* (<em>map<Symbol,Object></em>): Additional options. See CachedBufferReader for documentation. [optional = {}]
       # * *CodeBlock*: The code called for each iteration:
       # ** *iInputRawBuffer* (_String_): The raw buffer
       # ** *iNbrSamples* (_Integer_): The number of samples in this buffer
       # ** *iNbrChannels* (_Integer_): The number of channels in this buffer
-      def eachRawBuffer(iIdxBeginSample = 0, iIdxLastSample = @NbrSamples-1)
-        @RawReader.eachBuffer(iIdxBeginSample, iIdxLastSample) do |iBuffer, iNbrSamples|
+      def eachRawBuffer(iIdxBeginSample = 0, iIdxLastSample = @NbrSamples-1, iOptions = {})
+        @RawReader.eachBuffer(iIdxBeginSample, iIdxLastSample, iOptions) do |iBuffer, iNbrSamples|
+          yield(iBuffer, iNbrSamples, @Header.NbrChannels)
+        end
+      end
+
+      # Iterate through the buffers in the reverse order in raw mode (strings read directly without unpacking).
+      # This is far more efficient than iterating over samples or unpacked buffers.
+      #
+      # Parameters:
+      # * *iIdxBeginSample* (_Integer_): Index of the first sample to begin with [optional = 0]
+      # * *iIdxLastSample* (_Integer_): Index of the last sample to end with [optional = @NbrSamples-1]
+      # * *iOptions* (<em>map<Symbol,Object></em>): Additional options. See CachedBufferReader for documentation. [optional = {}]
+      # * *CodeBlock*: The code called for each iteration:
+      # ** *iInputRawBuffer* (_String_): The raw buffer
+      # ** *iNbrSamples* (_Integer_): The number of samples in this buffer
+      # ** *iNbrChannels* (_Integer_): The number of channels in this buffer
+      def eachReverseRawBuffer(iIdxBeginSample = 0, iIdxLastSample = @NbrSamples-1, iOptions = {})
+        @RawReader.eachReverseBuffer(iIdxBeginSample, iIdxLastSample, iOptions) do |iBuffer, iNbrSamples|
           yield(iBuffer, iNbrSamples, @Header.NbrChannels)
         end
       end

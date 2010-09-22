@@ -8,6 +8,7 @@ module WSK
     class SilenceRemover
 
       include WSK::Common
+      include WSK::FFT
 
       # Get the number of samples that will be written.
       # This is called before execute, as it is needed to write the output file.
@@ -18,89 +19,18 @@ module WSK
       # Return:
       # * _Integer_: The number of samples to be written
       def getNbrSamples(iInputData)
-        # The bounds of the gating, per channel
-        # list< [ Min, Max ] >
-        lSilenceThresholds = nil
-        if (@SilenceThreshold.split('|').size == 1)
-          if (@SilenceThreshold.split(',').size == 1)
-            lSilenceThresholds = [ [ -@SilenceThreshold.to_i, @SilenceThreshold.to_i ] ] * iInputData.Header.NbrChannels
-          else
-            lSilenceThresholds = [@SilenceThreshold.split(',').map { |iStrValue| iStrValue.to_i }] * iInputData.Header.NbrChannels
-          end
-        else
-          lSilenceThresholds = []
-          @SilenceThreshold.split('|').each do |iSilenceThresholdInfo|
-            if (iSilenceThresholdInfo.split(',').size == 1)
-              lSilenceThresholds << [ -iSilenceThresholdInfo.to_i, iSilenceThresholdInfo.to_i ]
-            else
-              lSilenceThresholds << iSilenceThresholdInfo.split(',').map { |iStrValue| iStrValue.to_i }
-            end
-          end
-        end
-        @IdxFirstSample = nil
-        lIdxSample = 0
-        iInputData.eachBuffer do |iInputBuffer, iNbrSamples, iNbrChannels|
-          lIdxBufferSample = 0
-          lIdxChannel = 0
-          iInputBuffer.each do |iInputChannelValue|
-            if ((iInputChannelValue < lSilenceThresholds[lIdxChannel][0]) or
-                (iInputChannelValue > lSilenceThresholds[lIdxChannel][1]))
-              # It exceeds
-              @IdxFirstSample = lIdxSample + lIdxBufferSample/iNbrChannels
-              logInfo "Found first non silent sample at position #{@IdxFirstSample} on #{iInputData.NbrSamples} (#{iInputChannelValue} < #{lSilenceThresholds[lIdxChannel][0]} or > #{lSilenceThresholds[lIdxChannel][1]})"
-              break
-            end
-            lIdxBufferSample += 1
-            lIdxChannel += 1
-            if (lIdxChannel == iNbrChannels)
-              lIdxChannel = 0
-            end
-          end
-          if (@IdxFirstSample != nil)
-            break
-          end
-          lIdxSample += iNbrSamples
-        end
+        lSilenceThresholds = readThresholds(@SilenceThreshold, iInputData.Header.NbrChannels)
+        @IdxFirstSample, lNextAboveThresholds = getNextNonSilentSample(iInputData, 0, lSilenceThresholds, nil, nil, false)
         if (@IdxFirstSample == nil)
-          logInfo 'The whole input file is silent.'
-          # Set it to the last sample
-          @IdxFirstSample = iInputData.NbrSamples-1
-          @IdxLastSample = iInputData.NbrSamples-1
+          logInfo 'The whole file is silent'
+          @IdxFirstSample = 0
+          @IdxLastSample = 0
         else
-          # Look for the last non-silent sample
-          @IdxLastSample = nil
-          lIdxSample = iInputData.NbrSamples*iInputData.Header.NbrChannels-1
-          iInputData.eachReverseBuffer do |iInputBuffer, iNbrSamples, iNbrChannels|
-            lIdxChannel = iNbrChannels - 1
-            iInputBuffer.reverse_each do |iInputChannelValue|
-              if ((iInputChannelValue < lSilenceThresholds[lIdxChannel][0]) or
-                  (iInputChannelValue > lSilenceThresholds[lIdxChannel][1]))
-                # It exceeds
-                @IdxLastSample = lIdxSample/iInputData.Header.NbrChannels
-                logInfo "Found last non silent sample at position #{@IdxLastSample} on #{iInputData.NbrSamples} (#{iInputChannelValue} < #{lSilenceThresholds[lIdxChannel][0]} or > #{lSilenceThresholds[lIdxChannel][1]})"
-                break
-              end
-              lIdxSample -= 1
-              lIdxChannel -= 1
-              if (lIdxChannel == -1)
-                lIdxChannel = iNbrChannels - 1
-              end
-            end
-            if (@IdxLastSample != nil)
-              break
-            end
-          end
-          # Check with FFT that the last non silent sample does not contain any music
-          if (File.exists?(@NoiseFFTFileName))
-            # Load the reference FFT profile
-            lNoiseFFTProfile = nil
-            File.open(@NoiseFFTFileName, 'rb') do |iFile|
-              lNoiseFFTProfile = Marshal.load(iFile.read)
-            end
-            # Get the real silent sample
-            @IdxLastSample = getNextFFTSample(@IdxLastSample+1, lNoiseFFTProfile, iInputData) - 1
-          else
-            logErr "Missing file #{@NoiseFFTFileName}"
+          lNoiseFFTMaxDistance, lNoiseFFTProfile = readFFTProfile(@NoiseFFTFileName)
+          @IdxLastSample, lNextAboveThresholds = getNextNonSilentSample(iInputData, iInputData.NbrSamples, lSilenceThresholds, lNoiseFFTProfile, lNoiseFFTMaxDistance, true)
+          if (@IdxLastSample == nil)
+            logErr "A beginning sample has been found (#{@IdxFirstSample}), but no ending sample could. This is a bug."
+            raise RuntimeError.new("A beginning sample has been found (#{@IdxFirstSample}), but no ending sample could. This is a bug.")
           end
           # Compute the limits of fadein and fadeout
           lNbrAttack = readDuration(@Attack, iInputData.Header.SampleRate)

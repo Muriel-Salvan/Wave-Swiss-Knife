@@ -1,21 +1,9 @@
 require 'WSK/RIFFReader'
 require 'WSK/Model/InputData'
 require 'WSK/Model/Header'
+require 'WSK/FFT'
 
 module WSK
-
-  # Frequencies used to compute FFT profiles.
-  # !!! When changing these values, all fft.result files generated are invalidated
-  FREQINDEX_FIRST = -59
-  FREQINDEX_LAST = 79
-
-  # Scale used to measure FFT values
-  FFTDIST_MAX = 10000000000000
-
-  # Frequency of the FFT samples to take (Hz)
-  FFTSAMPLE_FREQ = 15
-  # Number of FFT buffers needed to detect a constant Moving Average.
-  FFTNBRSAMPLES_HISTORY = 5
 
   # Common methods
   module Common
@@ -144,6 +132,63 @@ module WSK
       return rNbrSamples
     end
 
+    # Read a given threshold indication on the command line.
+    #
+    # Parameters:
+    # * *iStrThresholds* (_String_): The thresholds to read
+    # * *iNbrChannels* (_Integer_): Number of channels for the file being decoded
+    # Return:
+    # * <em>list<[Integer,Integer]></em>: The list of min and max values, per channel
+    def readThresholds(iStrThresholds, iNbrChannels)
+      rThresholds = nil
+
+      if (iStrThresholds.split('|').size == 1)
+        if (iStrThresholds.split(',').size == 1)
+          rThresholds = [ [ -iStrThresholds.to_i, iStrThresholds.to_i ] ] * iNbrChannels
+        else
+          rThresholds = [iStrThresholds.split(',').map { |iStrValue| iStrValue.to_i }] * iNbrChannels
+        end
+      else
+        rThresholds = []
+        iStrThresholds.split('|').each do |iThresholdInfo|
+          if (iThresholdInfo.split(',').size == 1)
+            rThresholds << [ -iThresholdInfo.to_i, iThresholdInfo.to_i ]
+          else
+            rThresholds << iThresholdInfo.split(',').map { |iStrValue| iStrValue.to_i }
+          end
+        end
+      end
+
+      return rThresholds
+    end
+
+    # Read an FFT profile file
+    #
+    # Parameters:
+    # * *iFileName* (_String_): Name of the FFT profile file, or 'none' if none.
+    # Return:
+    # * _Integer_: Maximal FFT distance beyond which we consider being too far from the FFT profile
+    # * <em>[Integer,Integer,list<list<Integer>>]</em>: The FFT profile
+    def readFFTProfile(iFileName)
+      rFFTMaxDistance = nil
+      rFFTProfile = nil
+
+      if (iFileName != 'none')
+        if (File.exists?(iFileName))
+          # Load the reference FFT profile
+          File.open(iFileName, 'rb') do |iFile|
+            rFFTMaxDistance, rFFTProfile = Marshal.load(iFile.read)
+          end
+          # We add an arbitrary percentage to the average distance.
+          rFFTMaxDistance = (rFFTMaxDistance*1.01).to_i
+        else
+          logErr "Missing file #{iFileName}. Ignoring FFT."
+        end
+      end
+
+      return rFFTMaxDistance, rFFTProfile
+    end
+
     private
 
     # Write the header to a file.
@@ -208,172 +253,6 @@ module WSK
       end
 
       return rError, rHeader
-    end
-
-    # Compare 2 FFT profiles and measure their distance.
-    # Here is an FFT profile structure:
-    # [ Integer,          Integer,    list<list<Integer>> ]
-    # [ NbrBitsPerSample, NbrSamples, FFTValues ]
-    # FFTValues are declined per channel, per frequency index
-    #
-    # Parameters:
-    # * *iProfile1* (<em>[Integer,Integer,Integer,list<list<Integer>>]</em>): Profile 1
-    # * *iProfile2* (<em>[Integer,Integer,Integer,list<list<Integer>>]</em>): Profile 2
-    # Return:
-    # * _Integer_: Distance (Profile 2 - Profile 1). The scale is given by FFTDIST_MAX.
-    def distFFTProfiles(iProfile1, iProfile2)
-      # Return the max of the distances
-      rMaxDist = 0
-
-      iNbrBitsPerSample1, iNbrSamples1, iFFT1 = iProfile1
-      iNbrBitsPerSample2, iNbrSamples2, iFFT2 = iProfile2
-
-      # Each value is limited by the maximum value of 2*(NbrSamples*MaxAbsValue)^2
-      lMaxFFTValue1 = 2*((iNbrSamples1*(2**(iNbrBitsPerSample1-1)))**2)
-      lMaxFFTValue2 = 2*((iNbrSamples2*(2**(iNbrBitsPerSample2-1)))**2)
-      iFFT1.each_with_index do |iFFT1ChannelValues, iIdxFreq|
-        iFFT2ChannelValues = iFFT2[iIdxFreq]
-        iFFT1ChannelValues.each_with_index do |iFFT1Value, iIdxChannel|
-          iFFT2Value = iFFT2ChannelValues[iIdxChannel]
-          # Compute iFFT2Value - iFFT1Value, on a scale of FFTDIST_MAX
-          lDist = (iFFT2Value*FFTDIST_MAX)/lMaxFFTValue2 - (iFFT1Value*FFTDIST_MAX)/lMaxFFTValue1
-#          logDebug "[Freq #{iIdxFreq}] [Ch #{iIdxChannel}] - Distance = #{lDist}"
-          if (lDist > rMaxDist)
-            rMaxDist = lDist
-          end
-        end
-      end
-
-      return rMaxDist
-    end
-
-    # Get the next sample that has an FFT buffer similar to a given FFT profile
-    #
-    # Parameters:
-    # * *iIdxFirstSample* (_Integer_): First sample we are trying from
-    # * *iFFTProfile* (<em>[Integer,Integer,list<list<Integer>>]</em>): The FFT profile
-    # * *iInputData* (_InputData_): The input data to read
-    # * *iIdxLastPossibleSample* (_Integer_): Index of the sample marking the limit of the search [optional = iInputData.NbrSamples-1]
-    # Return:
-    # * _Integer_: Index of the sample (can be 1 after the end)
-    def getNextFFTSample(iIdxFirstSample, iFFTProfile, iInputData, iIdxLastPossibleSample = iInputData.NbrSamples-1)
-      rCurrentSample = iIdxFirstSample
-
-      require 'WSK/FFTUtils/FFTUtils'
-      lFFTUtils = FFTUtils::FFTUtils.new
-
-      # Historical values of FFT diffs to know when it is stable
-      # This is the implementation of the Moving Average algorithm.
-      # We are just interested in the difference of 2 different Moving Averages. Therefore comparing the oldest history value with the new one is enough.
-      # Cycling buffer of size FFTNBRSAMPLES_HISTORY
-      # list< Integer >
-      lHistory = []
-      lIdxOldestHistory = 0
-      # Initialize FFT utils objects
-      lW = lFFTUtils.createWi(FREQINDEX_FIRST, FREQINDEX_LAST, iInputData.Header.SampleRate)
-      lNbrFreq = FREQINDEX_LAST - FREQINDEX_FIRST + 1
-      while (rCurrentSample < iIdxLastPossibleSample+1)
-        # Compute the number of samples needed to have a valid FFT.
-        lNbrSamplesFFT = iInputData.Header.SampleRate/FFTSAMPLE_FREQ
-        lLastFFTBufferSample = rCurrentSample+lNbrSamplesFFT-1
-        if (lLastFFTBufferSample >= iIdxLastPossibleSample+1)
-          lLastFFTBufferSample = iIdxLastPossibleSample
-          lNbrSamplesFFT = lLastFFTBufferSample-rCurrentSample+1
-        end
-        # Load an FFT buffer of this
-        lFFTBuffer = ''
-        iInputData.eachRawBuffer(rCurrentSample, lLastFFTBufferSample) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
-          lFFTBuffer.concat(iInputRawBuffer)
-        end
-        # Compute its FFT profile
-        lSumCos = lFFTUtils.initSumArray(lNbrFreq, iInputData.Header.NbrChannels)
-        lSumSin = lFFTUtils.initSumArray(lNbrFreq, iInputData.Header.NbrChannels)
-        lFFTUtils.completeSumCosSin(lFFTBuffer, 0, iInputData.Header.NbrBitsPerSample, lNbrSamplesFFT, iInputData.Header.NbrChannels, lNbrFreq, lW, lSumCos, lSumSin)
-        lFFTValues = lFFTUtils.computeFFT(iInputData.Header.NbrChannels, lNbrFreq, lSumCos, lSumSin)
-        lDist = distFFTProfiles(iFFTProfile, [iInputData.Header.NbrBitsPerSample, lNbrSamplesFFT, lFFTValues]).abs
-        logDebug "FFT distance computed with FFT sample [#{rCurrentSample} - #{lLastFFTBufferSample}]: #{lDist}"
-        # Detect if the Moving Average is going up
-        if ((lHistory.size == FFTNBRSAMPLES_HISTORY) and
-            (lHistory[lIdxOldestHistory] < lDist))
-          # We got it
-          break
-        else
-          # Check next FFT sample
-          rCurrentSample = lLastFFTBufferSample + 1
-          # Update the history with the new diff
-          lHistory[lIdxOldestHistory] = lDist
-          lIdxOldestHistory += 1
-          if (lIdxOldestHistory == FFTNBRSAMPLES_HISTORY)
-            lIdxOldestHistory = 0
-          end
-        end
-      end
-
-      return rCurrentSample
-    end
-
-    # Get the previous sample that has an FFT buffer similar to a given FFT profile
-    #
-    # Parameters:
-    # * *iIdxLastSample* (_Integer_): Last sample we are trying from
-    # * *iFFTProfile* (<em>[Integer,Integer,list<list<Integer>>]</em>): The FFT profile
-    # * *iInputData* (_InputData_): The input data to read
-    # * *iIdxFirstPossibleSample* (_Integer_): Index of the sample marking the limit of the search [optional = 0]
-    # Return:
-    # * _Integer_: Index of the sample (can be 1 after the end)
-    def getPreviousFFTSample(iIdxLastSample, iFFTProfile, iInputData, iIdxFirstPossibleSample = 0)
-      rCurrentSample = iIdxLastSample
-
-      require 'WSK/FFTUtils/FFTUtils'
-      lFFTUtils = FFTUtils::FFTUtils.new
-      # Historical values of FFT diffs to know when it is stable
-      # This is the implementation of the Moving Average algorithm.
-      # We are just interested in the difference of 2 different Moving Averages. Therefore comparing the oldest history value with the new one is enough.
-      # Cycling buffer of size FFTNBRSAMPLES_HISTORY
-      # list< Integer >
-      lHistory = []
-      lIdxOldestHistory = 0
-      # Initialize FFT utils objects
-      lW = lFFTUtils.createWi(FREQINDEX_FIRST, FREQINDEX_LAST, iInputData.Header.SampleRate)
-      lNbrFreq = FREQINDEX_LAST - FREQINDEX_FIRST + 1
-      while (rCurrentSample > iIdxFirstPossibleSample-1)
-        # Compute the number of samples needed to have a valid FFT. We want 15 Hz.
-        lNbrSamplesFFT = iInputData.Header.SampleRate/FFTSAMPLE_FREQ
-        lFirstFFTBufferSample = rCurrentSample-lNbrSamplesFFT+1
-        if (lFirstFFTBufferSample <= iIdxFirstPossibleSample-1)
-          lFirstFFTBufferSample = iIdxFirstPossibleSample
-          lNbrSamplesFFT = rCurrentSample-lFirstFFTBufferSample+1
-        end
-        # Load an FFT buffer of this
-        lFFTBuffer = ''
-        iInputData.eachRawBuffer(lFirstFFTBufferSample, rCurrentSample) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
-          lFFTBuffer.concat(iInputRawBuffer)
-        end
-        # Compute its FFT profile
-        lSumCos = lFFTUtils.initSumArray(lNbrFreq, iInputData.Header.NbrChannels)
-        lSumSin = lFFTUtils.initSumArray(lNbrFreq, iInputData.Header.NbrChannels)
-        lFFTUtils.completeSumCosSin(lFFTBuffer, 0, iInputData.Header.NbrBitsPerSample, lNbrSamplesFFT, iInputData.Header.NbrChannels, lNbrFreq, lW, lSumCos, lSumSin)
-        lFFTValues = lFFTUtils.computeFFT(iInputData.Header.NbrChannels, lNbrFreq, lSumCos, lSumSin)
-        lDist = distFFTProfiles(iFFTProfile, [iInputData.Header.NbrBitsPerSample, lNbrSamplesFFT, lFFTValues]).abs
-        logDebug "FFT distance computed with FFT sample [#{lFirstFFTBufferSample} - #{rCurrentSample}]: #{lDist}"
-        # Detect if the Moving Average is going up
-        if ((lHistory.size == FFTNBRSAMPLES_HISTORY) and
-            (lHistory[lIdxOldestHistory] < lDist))
-          # We got it
-          break
-        else
-          # Check next FFT sample
-          rCurrentSample = lFirstFFTBufferSample - 1
-          # Update the history with the new diff
-          lHistory[lIdxOldestHistory] = lDist
-          lIdxOldestHistory += 1
-          if (lIdxOldestHistory == FFTNBRSAMPLES_HISTORY)
-            lIdxOldestHistory = 0
-          end
-        end
-      end
-
-      return rCurrentSample
     end
 
   end

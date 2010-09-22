@@ -8,6 +8,7 @@ module WSK
     class NoiseGate
 
       include WSK::Common
+      include WSK::FFT
 
       # Get the number of samples that will be written.
       # This is called before execute, as it is needed to write the output file.
@@ -29,141 +30,24 @@ module WSK
       # Return:
       # * _Exception_: An error, or nil if success
       def execute(iInputData, oOutputData)
-        # The bounds of the gating, per channel
-        # list< [ Min, Max ] >
-        lSilenceThresholds = nil
-        if (@SilenceThreshold.split('|').size == 1)
-          if (@SilenceThreshold.split(',').size == 1)
-            lSilenceThresholds = [ [ -@SilenceThreshold.to_i, @SilenceThreshold.to_i ] ] * iInputData.Header.NbrChannels
-          else
-            lSilenceThresholds = [@SilenceThreshold.split(',').map { |iStrValue| iStrValue.to_i }] * iInputData.Header.NbrChannels
-          end
-        else
-          lSilenceThresholds = []
-          @SilenceThreshold.split('|').each do |iSilenceThresholdInfo|
-            if (iSilenceThresholdInfo.split(',').size == 1)
-              lSilenceThresholds << [ -iSilenceThresholdInfo.to_i, iSilenceThresholdInfo.to_i ]
-            else
-              lSilenceThresholds << iSilenceThresholdInfo.split(',').map { |iStrValue| iStrValue.to_i }
-            end
-          end
-        end
+        lSilenceThresholds = readThresholds(@SilenceThreshold, iInputData.Header.NbrChannels)
         lAttackDuration = readDuration(@Attack, iInputData.Header.SampleRate)
         lReleaseDuration = readDuration(@Release, iInputData.Header.SampleRate)
         lSilenceDuration = readDuration(@SilenceMin, iInputData.Header.SampleRate)
+        lNoiseFFTMaxDistance, lNoiseFFTProfile = readFFTProfile(@NoiseFFTFileName)
         # Create a map of the non silent parts
         # list< [ Integer,                 Integer ] >
         # list< [ IdxBeginNonSilentSample, IdxEndNonSilentSample ] >
         lNonSilentParts = []
-        # Current non silent begin sample (nil means we are parsing a silent part)
-        # Integer
-        lCurrentPart = nil
-        # First silent sample of the current silent part
-        # Integer
-        lFirstSilentSample = nil
         lIdxSample = 0
-        iInputData.eachBuffer do |iInputBuffer, iNbrSamples, iNbrChannels|
-          lIdxBuffer = 0
-          iNbrSamples.times do |iIdxBufferSample|
-            lSilent = true
-            iNbrChannels.times do |iIdxChannel|
-              if ((iInputBuffer[lIdxBuffer] < lSilenceThresholds[iIdxChannel][0]) or
-                  (iInputBuffer[lIdxBuffer] > lSilenceThresholds[iIdxChannel][1]))
-                # This sample is not silent
-                lSilent = false
-                # Don't break, as we need to increase lIdxBuffer still
-              end
-              lIdxBuffer += 1
-            end
-            if (lSilent)
-              # Silent
-              if (lCurrentPart != nil)
-                # We MAY be leaving a non-silent area if it lasts for at least lSilenceDuration samples silent
-                if (lFirstSilentSample == nil)
-                  # This is the first silent sample we have. Begin monitoring this silent part.
-                  lFirstSilentSample = lIdxSample
-                end
-                # If current silent is greater than the silence duration, we close the previously non-silent part
-                if ((lIdxSample - lFirstSilentSample + 1) >= lSilenceDuration)
-                  lNonSilentParts << [ lCurrentPart, lFirstSilentSample - 1 ]
-                  # We are definitely in a silent zone
-                  lCurrentPart = nil
-                  # Stop monitoring the silence
-                  lFirstSilentSample = nil
-                end
-              end
-            else
-              # Not silent
-              if (lCurrentPart == nil)
-                # We enter a non silent area
-                lCurrentPart = lIdxSample
-              else
-                # In the case we were monitoring a little silent sample, don't consider it anymore.
-                lFirstSilentSample = nil
-              end
-            end
-            lIdxSample += 1
-          end
-        end
-        if (lCurrentPart != nil)
-          # Close the last non-silent part
-          if (lFirstSilentSample == nil)
-            # The file ends with audio data
-            lNonSilentParts << [ lCurrentPart, iInputData.NbrSamples-1 ]
+        while (lIdxSample != nil)
+          lIdxNextSilence, lSilenceLength, lIdxNextBeyondThresholds = getNextSilentSample(iInputData, lIdxSample, lSilenceThresholds, lSilenceDuration, lNoiseFFTProfile, lNoiseFFTMaxDistance, false)
+          if (lIdxNextSilence == nil)
+            lNonSilentParts << [lIdxSample, iInputData.NbrSamples-1]
           else
-            # The file ends with a silence we were still monitoring (smaller than lSilenceMin)
-            lNonSilentParts << [ lCurrentPart, lFirstSilentSample - 1 ]
+            lNonSilentParts << [lIdxSample, lIdxNextSilence-1]
           end
-        end
-        # Modify values according to FFT comparisons
-        if (File.exists?(@NoiseFFTFileName))
-          # Load the reference FFT profile
-          lNoiseFFTProfile = nil
-          File.open(@NoiseFFTFileName, 'rb') do |iFile|
-            lNoiseFFTProfile = Marshal.load(iFile.read)
-          end
-          # Correct sample indexes
-          lNonSilentParts.each_with_index do |ioNonSilentPartInfo, iIdx|
-            iIdxBeginSample, iIdxEndSample = ioNonSilentPartInfo
-            if (iIdx > 0)
-              # Correct the beginning sample
-              lPreviousEndSample = lNonSilentParts[iIdx-1][1]
-              ioNonSilentPartInfo[0] = getPreviousFFTSample(iIdxBeginSample-1, lNoiseFFTProfile, iInputData, lPreviousEndSample+1) + 1
-              if (ioNonSilentPartInfo[0] < iIdxBeginSample)
-                logDebug "Moved back non-silent beginning sample from #{iIdxBeginSample} to #{ioNonSilentPartInfo[0]}"
-              end
-            end
-            # Correct the ending sample
-            lNextBeginSample = nil
-            if (iIdx < lNonSilentParts.size - 1)
-              lNextBeginSample = lNonSilentParts[iIdx+1][0]
-            else
-              lNextBeginSample = iInputData.NbrSamples
-            end
-            ioNonSilentPartInfo[1] = getNextFFTSample(iIdxEndSample+1, lNoiseFFTProfile, iInputData, lNextBeginSample-1) - 1
-            if (ioNonSilentPartInfo[1] > iIdxEndSample)
-              logDebug "Moved non-silent ending sample from #{iIdxEndSample} to #{ioNonSilentPartInfo[1]}"
-            end
-          end
-          # Merge eventually contiguous parts
-          lRealNonSilentParts = []
-          lIdxBegin = lNonSilentParts[0][0]
-          lNonSilentParts.each_with_index do |ioNonSilentPartInfo, iIdx|
-            iIdxBeginSample, iIdxEndSample = ioNonSilentPartInfo
-            if (iIdx < lNonSilentParts.size-1)
-              if (lNonSilentParts[iIdx+1][0] - iIdxEndSample > lSilenceDuration + 1)
-                # Not contiguous
-                lRealNonSilentParts << [lIdxBegin, iIdxEndSample]
-                lIdxBegin = lNonSilentParts[iIdx+1][0]
-              end
-            else
-              # Last part
-              lRealNonSilentParts << [lIdxBegin, iIdxEndSample]
-            end
-          end
-          lNonSilentParts = lRealNonSilentParts
-        else
-          logErr "Missing file #{@NoiseFFTFileName}"
+          lIdxSample = lIdxNextBeyondThresholds
         end
         lStrNonSilentParts = lNonSilentParts.map { |iNonSilentInfo| "[#{iNonSilentInfo[0]/iInputData.Header.SampleRate}s - #{iNonSilentInfo[1]/iInputData.Header.SampleRate}s]" }
         logInfo "#{lNonSilentParts.size} non silent parts: #{lStrNonSilentParts[0..9].join(', ')}"
@@ -183,18 +67,22 @@ module WSK
             logDebug "Write #{lIdxBeginFadeIn - lNextSampleToWrite} samples of silence"
             oOutputData.pushRawBuffer("\000" * (((lIdxBeginFadeIn - lNextSampleToWrite)*iInputData.Header.NbrChannels*iInputData.Header.NbrBitsPerSample)/8))
           end
-          lBuffer = []
-          lIdxFadeSample = 0
           lFadeInSize = iIdxBegin-lIdxBeginFadeIn
-          iInputData.each(lIdxBeginFadeIn) do |iChannelValues|
-            if (lIdxFadeSample == lFadeInSize)
-              break
+          if (lFadeInSize > 0)
+            lBuffer = []
+            lIdxFadeSample = 0
+            iInputData.each(lIdxBeginFadeIn) do |iChannelValues|
+              if (lIdxFadeSample == lFadeInSize)
+                break
+              end
+              lBuffer.concat(iChannelValues.map { |iValue| (iValue*lIdxFadeSample)/lFadeInSize })
+              lIdxFadeSample += 1
             end
-            lBuffer.concat(iChannelValues.map { |iValue| (iValue*lIdxFadeSample)/lFadeInSize })
-            lIdxFadeSample += 1
+            logDebug "Write #{lBuffer.size/iInputData.Header.NbrChannels} samples of fadein."
+            oOutputData.pushBuffer(lBuffer)
+          else
+            logDebug 'Ignore empty fadein.'
           end
-          logDebug "Write #{lBuffer.size/iInputData.Header.NbrChannels} samples of fadein."
-          oOutputData.pushBuffer(lBuffer)
           # Write the file
           logDebug "Write #{iIdxEnd-iIdxBegin+1} samples of audio."
           iInputData.eachRawBuffer(iIdxBegin, iIdxEnd) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
@@ -205,18 +93,22 @@ module WSK
           if (lIdxEndFadeOut >= iInputData.NbrSamples)
             lIdxEndFadeOut = iInputData.NbrSamples - 1
           end
-          lBuffer = []
-          lIdxFadeSample = 0
           lFadeOutSize = lIdxEndFadeOut-iIdxEnd
-          iInputData.each(iIdxEnd+1) do |iChannelValues|
-            if (lIdxFadeSample == lFadeOutSize)
-              break
+          if (lFadeOutSize > 0)
+            lBuffer = []
+            lIdxFadeSample = 0
+            iInputData.each(iIdxEnd+1) do |iChannelValues|
+              if (lIdxFadeSample == lFadeOutSize)
+                break
+              end
+              lBuffer.concat(iChannelValues.map { |iValue| (iValue*(lFadeOutSize-lIdxFadeSample))/lFadeOutSize })
+              lIdxFadeSample += 1
             end
-            lBuffer.concat(iChannelValues.map { |iValue| (iValue*(lFadeOutSize-lIdxFadeSample))/lFadeOutSize })
-            lIdxFadeSample += 1
+            logDebug "Write #{lBuffer.size/iInputData.Header.NbrChannels} samples of fadeout."
+            oOutputData.pushBuffer(lBuffer)
+          else
+            logDebug 'Ignore empty fadeout.'
           end
-          logDebug "Write #{lBuffer.size/iInputData.Header.NbrChannels} samples of fadeout."
-          oOutputData.pushBuffer(lBuffer)
           lNextSampleToWrite = lIdxEndFadeOut + 1
         end
         # If there is remaining silence, write it

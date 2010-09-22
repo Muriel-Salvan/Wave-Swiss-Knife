@@ -28,17 +28,30 @@ module WSK
       # Parameters:
       # * *iIdxStartSample* (_Integer_): Index of the first sample to begin with [optional = 0]
       # * *iIdxEndSample* (_Integer_): Index of the last sample to end with [optional = @NbrSamples-1]
+      # * *iOptions* (<em>map<Symbol,Object></em>): Additional options [optional = {}]:
+      # ** *:NbrSamplesPrefetch* (_Integer_): Specify a number of samples to effectively read if the data needs to be accessed. This number will always be minored by the number of samples to read and majored by the number of samples per buffer. [optional = 0]
       # * *CodeBlock*: The code called for each iteration:
       # ** *iBuffer* (_String_): The buffer
       # ** *iNbrSamples* (_Integer_): The number of samples in this buffer
-      def eachBuffer(iIdxStartSample = 0, iIdxEndSample = @NbrSamples-1)
+      def eachBuffer(iIdxStartSample = 0, iIdxEndSample = @NbrSamples-1, iOptions = {})
+        lNbrSamplesPrefetch = iOptions[:NbrSamplesPrefetch]
+        if (lNbrSamplesPrefetch == nil)
+          lNbrSamplesPrefetch = 0
+        end
         lIdxFirstSample = iIdxStartSample
-        while (lIdxFirstSample != nil)
+        while (lIdxFirstSample <= iIdxEndSample)
           lIdxLastSample = lIdxFirstSample+@NbrSamplesPerBuffer
           if (lIdxLastSample > iIdxEndSample)
             lIdxLastSample = iIdxEndSample
           end
-          prepareBuffer(lIdxFirstSample, lIdxLastSample)
+          # Compute the last sample to prefetch
+          lIdxLastSamplePrefetch = lIdxFirstSample + lNbrSamplesPrefetch
+          if (lIdxLastSamplePrefetch < lIdxLastSample)
+            lIdxLastSamplePrefetch = lIdxLastSample
+          elsif (lIdxLastSamplePrefetch > lIdxFirstSample+@NbrSamplesPerBuffer)
+            lIdxLastSamplePrefetch = lIdxFirstSample+@NbrSamplesPerBuffer
+          end
+          prepareBuffer(lIdxFirstSample, lIdxLastSample, lIdxFirstSample, lIdxLastSamplePrefetch)
           # Check if we need to return a sub-copy of the buffer
           lBuffer = []
           if ((lIdxFirstSample == @IdxStartBufferSample) and
@@ -50,9 +63,6 @@ module WSK
           # Call client code
           yield(lBuffer, lIdxLastSample - lIdxFirstSample + 1)
           lIdxFirstSample = lIdxLastSample+1
-          if (lIdxFirstSample > iIdxEndSample)
-            lIdxFirstSample = nil
-          end
         end
       end
 
@@ -61,17 +71,30 @@ module WSK
       # Parameters:
       # * *iIdxStartSample* (_Integer_): Index of the first sample to begin with [optional = 0]
       # * *iIdxEndSample* (_Integer_): Index of the last sample to end with [optional = @NbrSamples-1]
+      # * *iOptions* (<em>map<Symbol,Object></em>): Additional options [optional = {}]:
+      # ** *:NbrSamplesPrefetch* (_Integer_): Specify a number of samples to effectively read if the data needs to be accessed. This number will always be minored by the number of samples to read and majored by the number of samples per buffer. [optional = 0]
       # * *CodeBlock*: The code called for each iteration:
       # ** *iBuffer* (_String_): The buffer
       # ** *iNbrSamples* (_Integer_): The number of samples in this buffer
-      def eachReverseBuffer(iIdxStartSample = 0, iIdxEndSample = @NbrSamples-1)
+      def eachReverseBuffer(iIdxStartSample = 0, iIdxEndSample = @NbrSamples-1, iOptions = {})
+        lNbrSamplesPrefetch = iOptions[:NbrSamplesPrefetch]
+        if (lNbrSamplesPrefetch == nil)
+          lNbrSamplesPrefetch = 0
+        end
         lIdxLastSample = iIdxEndSample
-        while (lIdxLastSample != nil)
+        while (lIdxLastSample >= iIdxStartSample)
           lIdxFirstSample = lIdxLastSample-@NbrSamplesPerBuffer
           if (lIdxFirstSample < iIdxStartSample)
             lIdxFirstSample = iIdxStartSample
           end
-          prepareBuffer(lIdxFirstSample, lIdxLastSample)
+          # Compute the first sample to prefetch
+          lIdxFirstSamplePrefetch = lIdxLastSample - lNbrSamplesPrefetch
+          if (lIdxFirstSamplePrefetch > lIdxFirstSample)
+            lIdxFirstSamplePrefetch = lIdxFirstSample
+          elsif (lIdxFirstSamplePrefetch < lIdxLastSample-@NbrSamplesPerBuffer)
+            lIdxFirstSamplePrefetch = lIdxLastSample-@NbrSamplesPerBuffer
+          end
+          prepareBuffer(lIdxFirstSample, lIdxLastSample, lIdxFirstSamplePrefetch, lIdxLastSample)
           # Check if we need to return a sub-copy of the buffer
           lBuffer = []
           if ((lIdxFirstSample == @IdxStartBufferSample) and
@@ -83,9 +106,6 @@ module WSK
           # Call client code
           yield(lBuffer, lIdxLastSample - lIdxFirstSample + 1)
           lIdxLastSample = lIdxFirstSample-1
-          if (lIdxLastSample < iIdxStartSample)
-            lIdxLastSample = nil
-          end
         end
       end
 
@@ -96,14 +116,16 @@ module WSK
       # Parameters:
       # * *iIdxStartSample* (_Integer_): Index of the first sample to begin with [optional = 0]
       # * *iIdxEndSample* (_Integer_): Index of the last sample to end with [optional = @NbrSamples-1]
-      def prepareBuffer(iIdxStartSample, iIdxEndSample)
+      # * *iIdxStartSamplePrefetch* (_Integer_): Specify the first sample to effectively read if the data needs to be accessed. [optional = iIdxStartSample]
+      # * *iIdxEndSamplePrefetch* (_Integer_): Specify the last sample to effectively read if the data needs to be accessed. [optional = iIdxEndSample]
+      def prepareBuffer(iIdxStartSample, iIdxEndSample, iIdxStartSamplePrefetch = iIdxStartSample, iIdxEndSamplePrefetch = iIdxEndSample)
         if ((@Buffer == nil) or
             (iIdxStartSample < @IdxStartBufferSample) or
             (iIdxEndSample > @IdxEndBufferSample))
           # Read all from the data
-          @Buffer = readBuffer(iIdxStartSample, iIdxEndSample)
-          @IdxStartBufferSample = iIdxStartSample
-          @IdxEndBufferSample = iIdxEndSample
+          @Buffer = readBuffer(iIdxStartSamplePrefetch, iIdxEndSamplePrefetch)
+          @IdxStartBufferSample = iIdxStartSamplePrefetch
+          @IdxEndBufferSample = iIdxEndSamplePrefetch
         end
       end
 
