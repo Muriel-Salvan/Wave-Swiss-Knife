@@ -50,7 +50,6 @@ static VALUE fftutils_createWi(
   VALUE iValIdxFirstFreq,
   VALUE iValIdxLastFreq,
   VALUE iValSampleRate) {
-  VALUE rValContainer;
   int lIdxFirstFreq = FIX2INT(iValIdxFirstFreq);
   int lIdxLastFreq = FIX2INT(iValIdxLastFreq);
   int lSampleRate = FIX2INT(iValSampleRate);
@@ -69,9 +68,7 @@ static VALUE fftutils_createWi(
   }
 
   // Encapsulate it
-  rValContainer = Data_Wrap_Struct(rb_cObject, NULL, free, lW);
-
-  return rValContainer;
+  return Data_Wrap_Struct(rb_cObject, NULL, free, lW);
 }
 
 /** Create empty arrays of tFFTValues to be used for sin and cos sums
@@ -140,7 +137,7 @@ int fftutils_processValue_CompleteSumCosSin(
 
 /**
  * Process a value read from an input buffer for the CompleteSumCosSin function.
- * Usethe trigo cache.
+ * Use the trigo cache.
  *
  * Parameters:
  * * *iValue* (<em>const tSampleValue</em>): The value being read

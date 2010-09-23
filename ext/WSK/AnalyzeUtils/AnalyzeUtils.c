@@ -1,12 +1,22 @@
 #include "ruby.h"
 #include <math.h>
 #include <stdio.h>
+#include <CommonUtils.h>
 
 // Structure used to compute sum of squares
 typedef struct {
   unsigned long long int high;
   unsigned long long int low;
 } t128bits;
+
+// Structure used to give variables to iteration process
+typedef struct {
+  long long int * maxValues;
+  long long int * minValues;
+  long long int * sumValues;
+  long long int * absSumValues;
+  t128bits * squareSumValues;
+} tAnalyzeStruct;
 
 /** Add a 64 bits unsigned integer to a 128 bits unsigned integer
  *
@@ -22,11 +32,6 @@ inline void add128bits(t128bits* ioPtrVal, const unsigned long long int iAddValu
   if (ioPtrVal->low < lOldLow)
     ++ioPtrVal->high;
 }
-
-// Struct used to interpret raw buffers data
-typedef struct {
-  signed int value:24;
-} t24bits;
 
 /** Create empty arrays of long long integers to be used for various sums
  *
@@ -81,6 +86,42 @@ static VALUE analyzeutils_init128bitsArray(
   return rValContainer;
 }
 
+/**
+ * Process a value read from an input buffer for the Analyze function.
+ * Use the trigo cache.
+ *
+ * Parameters:
+ * * *iValue* (<em>const tSampleValue</em>): The value being read
+ * * *iIdxSample* (<em>const int</em>): Index of this sample
+ * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
+ * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tAnalyzeStruct*</em>.
+ * Return:
+ * * _int_: The return code:
+ * ** 0: Continue iteration
+ * ** 1: Break all iterations
+ * ** 2: Skip directly to the next sample (don't call us for other channels of this sample)
+ */
+int analyzeutils_processValue_Analyze(
+  const tSampleValue iValue,
+  const int iIdxSample,
+  const int iIdxChannel,
+  void* iPtrArgs) {
+  // Interpret parameters
+  tAnalyzeStruct* lPtrVariables = (tAnalyzeStruct*)iPtrArgs;
+
+  if (iValue > lPtrVariables->maxValues[iIdxChannel]) {
+    lPtrVariables->maxValues[iIdxChannel] = iValue;
+  }
+  if (iValue < lPtrVariables->minValues[iIdxChannel]) {
+    lPtrVariables->minValues[iIdxChannel] = iValue;
+  }
+  lPtrVariables->sumValues[iIdxChannel] += iValue;
+  lPtrVariables->absSumValues[iIdxChannel] += abs(iValue);
+  add128bits(&(lPtrVariables->squareSumValues[iIdxChannel]), ((long long int)iValue)*((long long int)iValue));
+
+  return 0;
+}
+
 /** Complete the arrays of sums for analyzis
  * 
  * Parameters:
@@ -107,82 +148,28 @@ static VALUE analyzeutils_completeAnalyze(
   VALUE ioValAbsSumValues,
   VALUE ioValSquareSumValues) {
   // Translate Ruby objects
-  int lNbrSamples = FIX2INT(iValNbrSamples);
-  int lNbrChannels = FIX2INT(iValNbrChannels);
-  int lNbrBitsPerSample = FIX2LONG(iValNbrBitsPerSample);
+  int iNbrSamples = FIX2INT(iValNbrSamples);
+  int iNbrChannels = FIX2INT(iValNbrChannels);
+  int iNbrBitsPerSample = FIX2LONG(iValNbrBitsPerSample);
   char* lPtrRawBuffer = RSTRING(iValInputRawBuffer)->ptr;
   // Get the arrays
-  long long int * lMaxValues;
-  long long int * lMinValues;
-  long long int * lSumValues;
-  long long int * lAbsSumValues;
-  t128bits * lSquareSumValues;
-  Data_Get_Struct(ioValMaxValues, long long int, lMaxValues);
-  Data_Get_Struct(ioValMinValues, long long int, lMinValues);
-  Data_Get_Struct(ioValSumValues, long long int, lSumValues);
-  Data_Get_Struct(ioValAbsSumValues, long long int, lAbsSumValues);
-  Data_Get_Struct(ioValSquareSumValues, t128bits, lSquareSumValues);
-  
-  // Parse the data. This is done differently depending on the data structure
-  // Define variables outside the loops to not allocate and initialize heap size for nothing
-  int lIdxBufferSample;
-  int lIdxChannel;
-  long long int lValue;
-  if (lNbrBitsPerSample == 8) {
-    unsigned char* lPtrData = (unsigned char*)lPtrRawBuffer;
-    for (lIdxBufferSample = 0; lIdxBufferSample < lNbrSamples; ++lIdxBufferSample) {
-      for (lIdxChannel = 0; lIdxChannel < lNbrChannels; ++lIdxChannel) {
-        lValue = (long long int)((*lPtrData) - 128);
-        if (lValue > lMaxValues[lIdxChannel]) {
-          lMaxValues[lIdxChannel] = lValue;
-        }
-        if (lValue < lMinValues[lIdxChannel]) {
-          lMinValues[lIdxChannel] = lValue;
-        }
-        lSumValues[lIdxChannel] += lValue;
-        lAbsSumValues[lIdxChannel] += abs(lValue);
-        add128bits(&(lSquareSumValues[lIdxChannel]), lValue*lValue);
-        ++lPtrData;
-      }
-    }
-  } else if (lNbrBitsPerSample == 16) {
-    signed short int* lPtrData = (signed short int*)lPtrRawBuffer;
-    for (lIdxBufferSample = 0; lIdxBufferSample < lNbrSamples; ++lIdxBufferSample) {
-      for (lIdxChannel = 0; lIdxChannel < lNbrChannels; ++lIdxChannel) {
-        lValue = (long long int)(*lPtrData);
-        if (lValue > lMaxValues[lIdxChannel]) {
-          lMaxValues[lIdxChannel] = lValue;
-        }
-        if (lValue < lMinValues[lIdxChannel]) {
-          lMinValues[lIdxChannel] = lValue;
-        }
-        lSumValues[lIdxChannel] += lValue;
-        lAbsSumValues[lIdxChannel] += abs(lValue);
-        add128bits(&(lSquareSumValues[lIdxChannel]), lValue*lValue);
-        ++lPtrData;
-      }
-    }
-  } else if (lNbrBitsPerSample == 24) {
-    t24bits* lPtrData = (t24bits*)lPtrRawBuffer;
-    for (lIdxBufferSample = 0; lIdxBufferSample < lNbrSamples; ++lIdxBufferSample) {
-      for (lIdxChannel = 0; lIdxChannel < lNbrChannels; ++lIdxChannel) {
-        lValue = (long long int)(lPtrData->value);
-        if (lValue > lMaxValues[lIdxChannel]) {
-          lMaxValues[lIdxChannel] = lValue;
-        }
-        if (lValue < lMinValues[lIdxChannel]) {
-          lMinValues[lIdxChannel] = lValue;
-        }
-        lSumValues[lIdxChannel] += lValue;
-        lAbsSumValues[lIdxChannel] += abs(lValue);
-        add128bits(&(lSquareSumValues[lIdxChannel]), lValue*lValue);
-        // Increase lPtrData this way to ensure alignment.
-        lPtrData = (t24bits*)(((int)lPtrData)+3);
-      }
-    }
-  } else {
-    rb_raise(rb_eRuntimeError, "Unknown bits per samples: %d\n", lNbrBitsPerSample);
-  }
+  tAnalyzeStruct lProcessParams;
+  Data_Get_Struct(ioValMaxValues, long long int, lProcessParams.maxValues);
+  Data_Get_Struct(ioValMinValues, long long int, lProcessParams.minValues);
+  Data_Get_Struct(ioValSumValues, long long int, lProcessParams.sumValues);
+  Data_Get_Struct(ioValAbsSumValues, long long int, lProcessParams.absSumValues);
+  Data_Get_Struct(ioValSquareSumValues, t128bits, lProcessParams.squareSumValues);
+
+  // Parse the data
+  commonutils_iterateThroughRawBuffer(
+    lPtrRawBuffer,
+    iNbrBitsPerSample,
+    iNbrChannels,
+    iNbrSamples,
+    0,
+    &analyzeutils_processValue_Analyze,
+    &lProcessParams
+  );
 
   return Qnil;
 }

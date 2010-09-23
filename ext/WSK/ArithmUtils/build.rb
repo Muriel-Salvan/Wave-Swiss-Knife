@@ -9,5 +9,5 @@ lAdditionalLocalLibs.each do |iLibName|
   $CFLAGS += " -I#{lLibDir}/include "
   $LDFLAGS += " -L#{lLibDir}/lib -l#{iLibName} "
 end
-create_makefile('AnalyzeUtils')
+create_makefile('ArithmUtils')
 system('make')

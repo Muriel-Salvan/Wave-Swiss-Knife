@@ -1,8 +1,9 @@
 lRootDir = File.expand_path(Dir.getwd)
 [
   'external/CommonUtils',
-  'ext/WSK/FFTUtils',
   'ext/WSK/AnalyzeUtils',
+  'ext/WSK/ArithmUtils',
+  'ext/WSK/FFTUtils',
   'ext/WSK/SilentUtils'
 ].each do |iExtPath|
   puts "===== Building #{iExtPath} ..."

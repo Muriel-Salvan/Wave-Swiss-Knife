@@ -9,10 +9,12 @@ typedef struct {
 } t24bits;
 
 // Type used to identify each sample value
-typedef long long int tSampleValue;
+typedef int tSampleValue;
 
 // Pointer to a function that can be called when parsing a raw buffer
 typedef int(*tPtrFctProcess)(const tSampleValue, const int, const int, void*);
+// Pointer to a function that can be called when parsing a raw buffer and writing another raw buffer
+typedef int(*tPtrFctProcessOutput)(const tSampleValue, tSampleValue*, const int, const int, void*);
 
 // Struct containing data for a threshold information
 typedef struct {
@@ -63,6 +65,33 @@ void commonutils_iterateThroughRawBuffer(
   const int iNbrSamples,
   const int iIdxOffsetSample,
   const tPtrFctProcess iPtrProcessMethod,
+  void* iPtrArgs);
+
+/**
+ * Iterate through a raw buffer, and writes another raw buffer.
+ *
+ * Parameters:
+ * * *iSelf* (_Object_): Object used to call log methods
+ * * *iPtrRawBuffer* (<em>const char*</em>): The raw buffer
+ * * *oPtrRawBufferOut* (<em>char*</em>): The raw buffer to write
+ * * *iNbrBitsPerSample* (<em>const int</em>): The number of bits per sample
+ * * *iNbrChannels* (<em>const int</em>): The number of channels
+ * * *iNbrSamples* (<em>const int</em>): The number of samples
+ * * *iIdxOffsetSample* (<em>const int</em>): The base offset of samples to be counted and given to the processing method
+ * * *iNeedCheck* (<em>const int</em>): Do we need checking output value ranges ? 0 = no, 1 = yes
+ * * *iPtrProcessMethod* (<em>const tPtrFctProcessOutput</em>): Pointer to the method to call for processing
+ * * *iPtrArgs* (<em>void*</em>): Pointer to a user specific struct that will be given to the processing function
+ */
+void commonutils_iterateThroughRawBufferOutput(
+  VALUE iSelf,
+  const char* iPtrRawBuffer,
+  char* oPtrRawBufferOut,
+  const int iNbrBitsPerSample,
+  const int iNbrChannels,
+  const int iNbrSamples,
+  const int iIdxOffsetSample,
+  const int iNeedCheck,
+  const tPtrFctProcessOutput iPtrProcessMethod,
   void* iPtrArgs);
 
 /**

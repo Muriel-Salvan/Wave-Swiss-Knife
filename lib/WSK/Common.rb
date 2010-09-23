@@ -2,6 +2,7 @@ require 'WSK/RIFFReader'
 require 'WSK/Model/InputData'
 require 'WSK/Model/Header'
 require 'WSK/FFT'
+require 'WSK/Maps'
 
 module WSK
 
