@@ -22,6 +22,26 @@ typedef struct {
   tSampleValue** map;
 } tApplyMapStruct;
 
+// Struct used to store info about a buffer
+typedef struct {
+  // All buffers point on the same data at the beginning of the iterations
+  unsigned char* buffer_8bits;
+  signed short int* buffer_16bits;
+  t24bits* buffer_24bits;
+  int nbrBufferSamples;
+  long double coeff;
+} tBufferInfo;
+
+// Struct used to convey data among iterators in the Mix method
+typedef struct {
+  tBufferInfo* lstBuffers;
+  int nbrActiveBuffers;
+  long double mainCoeff;
+  // Temporary attributes
+  long double tmpValue;
+  int idxBuffer;
+} tMixStruct;
+
 /**
  * Free a map.
  * This method is called by Ruby GC.
@@ -280,6 +300,261 @@ static VALUE arithmutils_applyMap(
   return rValOutputBuffer;
 }
 
+/**
+ * Process a value read from an input buffer for the mix function.
+ * Optimized for 8 bits samples.
+ *
+ * Parameters:
+ * * *iValue* (<em>const tSampleValue</em>): The value being read
+ * * *iIdxSample* (<em>const int</em>): Index of this sample
+ * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
+ * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tMixStruct*</em>.
+ * Return:
+ * * _int_: The return code:
+ * ** 0: Continue iteration
+ * ** 1: Break all iterations
+ * ** 2: Skip directly to the next sample (don't call us for other channels of this sample)
+ */
+int arithmutils_processValue_mix_8bits(
+  const tSampleValue iValue,
+  tSampleValue* oPtrValue,
+  const int iIdxSample,
+  const int iIdxChannel,
+  void* iPtrArgs) {
+  tMixStruct* lPtrParams = (tMixStruct*)iPtrArgs;
+
+  if (lPtrParams->nbrActiveBuffers > 0) {
+    // Check if we hit the limit of the last active buffer (the one having the least samples)
+    if (iIdxSample == lPtrParams->lstBuffers[lPtrParams->nbrActiveBuffers-1].nbrBufferSamples) {
+      // We have to check the buffers that are to be removed
+      lPtrParams->idxBuffer = lPtrParams->nbrActiveBuffers-1;
+      while ((lPtrParams->idxBuffer >= 0) &&
+             (lPtrParams->lstBuffers[lPtrParams->idxBuffer].nbrBufferSamples == iIdxSample )) {
+        --lPtrParams->nbrActiveBuffers;
+        --lPtrParams->idxBuffer;
+      }
+    }
+    // We have to mix several buffers
+    lPtrParams->tmpValue = ((long double)iValue)*lPtrParams->mainCoeff;
+    for (lPtrParams->idxBuffer = 0; lPtrParams->idxBuffer < lPtrParams->nbrActiveBuffers; ++lPtrParams->idxBuffer) {
+      lPtrParams->tmpValue += (((long double)*(lPtrParams->lstBuffers[lPtrParams->idxBuffer].buffer_8bits))-128)*lPtrParams->lstBuffers[lPtrParams->idxBuffer].coeff;
+      ++lPtrParams->lstBuffers[lPtrParams->idxBuffer].buffer_8bits;
+    }
+    // Export the result
+    (*oPtrValue) = round(lPtrParams->tmpValue);
+  } else {
+    // There is only the main buffer remaining
+    (*oPtrValue) = round(((long double)iValue)*lPtrParams->mainCoeff);
+  }
+
+  return 0;
+}
+
+/**
+ * Process a value read from an input buffer for the mix function.
+ * Optimized for 16 bits samples.
+ *
+ * Parameters:
+ * * *iValue* (<em>const tSampleValue</em>): The value being read
+ * * *iIdxSample* (<em>const int</em>): Index of this sample
+ * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
+ * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tMixStruct*</em>.
+ * Return:
+ * * _int_: The return code:
+ * ** 0: Continue iteration
+ * ** 1: Break all iterations
+ * ** 2: Skip directly to the next sample (don't call us for other channels of this sample)
+ */
+int arithmutils_processValue_mix_16bits(
+  const tSampleValue iValue,
+  tSampleValue* oPtrValue,
+  const int iIdxSample,
+  const int iIdxChannel,
+  void* iPtrArgs) {
+  tMixStruct* lPtrParams = (tMixStruct*)iPtrArgs;
+
+  if (lPtrParams->nbrActiveBuffers > 0) {
+    // Check if we hit the limit of the last active buffer (the one having the least samples)
+    if (iIdxSample == lPtrParams->lstBuffers[lPtrParams->nbrActiveBuffers-1].nbrBufferSamples) {
+      // We have to check the buffers that are to be removed
+      lPtrParams->idxBuffer = lPtrParams->nbrActiveBuffers-1;
+      while ((lPtrParams->idxBuffer >= 0) &&
+             (lPtrParams->lstBuffers[lPtrParams->idxBuffer].nbrBufferSamples == iIdxSample )) {
+        --lPtrParams->nbrActiveBuffers;
+        --lPtrParams->idxBuffer;
+      }
+    }
+    // We have to mix several buffers
+    lPtrParams->tmpValue = ((long double)iValue)*lPtrParams->mainCoeff;
+    for (lPtrParams->idxBuffer = 0; lPtrParams->idxBuffer < lPtrParams->nbrActiveBuffers; ++lPtrParams->idxBuffer) {
+      lPtrParams->tmpValue += ((long double)*(lPtrParams->lstBuffers[lPtrParams->idxBuffer].buffer_16bits))*lPtrParams->lstBuffers[lPtrParams->idxBuffer].coeff;
+      ++lPtrParams->lstBuffers[lPtrParams->idxBuffer].buffer_16bits;
+    }
+    // Export the result
+    (*oPtrValue) = round(lPtrParams->tmpValue);
+  } else {
+    // There is only the main buffer remaining
+    (*oPtrValue) = round(((long double)iValue)*lPtrParams->mainCoeff);
+  }
+
+  return 0;
+}
+
+/**
+ * Process a value read from an input buffer for the mix function.
+ * Optimized for 8 bits samples.
+ *
+ * Parameters:
+ * * *iValue* (<em>const tSampleValue</em>): The value being read
+ * * *iIdxSample* (<em>const int</em>): Index of this sample
+ * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
+ * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tMixStruct*</em>.
+ * Return:
+ * * _int_: The return code:
+ * ** 0: Continue iteration
+ * ** 1: Break all iterations
+ * ** 2: Skip directly to the next sample (don't call us for other channels of this sample)
+ */
+int arithmutils_processValue_mix_24bits(
+  const tSampleValue iValue,
+  tSampleValue* oPtrValue,
+  const int iIdxSample,
+  const int iIdxChannel,
+  void* iPtrArgs) {
+  tMixStruct* lPtrParams = (tMixStruct*)iPtrArgs;
+
+  if (lPtrParams->nbrActiveBuffers > 0) {
+    // Check if we hit the limit of the last active buffer (the one having the least samples)
+    if (iIdxSample == lPtrParams->lstBuffers[lPtrParams->nbrActiveBuffers-1].nbrBufferSamples) {
+      // We have to check the buffers that are to be removed
+      lPtrParams->idxBuffer = lPtrParams->nbrActiveBuffers-1;
+      while ((lPtrParams->idxBuffer >= 0) &&
+             (lPtrParams->lstBuffers[lPtrParams->idxBuffer].nbrBufferSamples == iIdxSample )) {
+        --lPtrParams->nbrActiveBuffers;
+        --lPtrParams->idxBuffer;
+      }
+    }
+    // We have to mix several buffers
+    lPtrParams->tmpValue = ((long double)iValue)*lPtrParams->mainCoeff;
+    for (lPtrParams->idxBuffer = 0; lPtrParams->idxBuffer < lPtrParams->nbrActiveBuffers; ++lPtrParams->idxBuffer) {
+      lPtrParams->tmpValue += ((long double)(lPtrParams->lstBuffers[lPtrParams->idxBuffer].buffer_24bits->value))*lPtrParams->lstBuffers[lPtrParams->idxBuffer].coeff;
+      lPtrParams->lstBuffers[lPtrParams->idxBuffer].buffer_24bits = (t24bits*)(((int)lPtrParams->lstBuffers[lPtrParams->idxBuffer].buffer_24bits)+3);
+    }
+    // Export the result
+    (*oPtrValue) = round(lPtrParams->tmpValue);
+  } else {
+    // There is only the main buffer remaining
+    (*oPtrValue) = round(((long double)iValue)*lPtrParams->mainCoeff);
+  }
+
+  return 0;
+}
+
+/**
+ * Mix a list of buffers.
+ * Prerequisite: The list of buffers have to be sorted, from the one having the more samples to the one having the less.
+ *
+ * Parameters:
+ * * *iSelf* (_FFT_): Self
+ * * *iValBuffers* (<em>list<list<Object>></em>): The list of buffers and their associated info (see Mix.rb for details)
+ * * *iValNbrBitsPerSample* (_Integer_): Number of bits per sample
+ * * *iValNbrChannels* (_Integer_): Number of channels
+ * Return:
+ * * _String_: Output buffer
+ * * _Integer_: Number of samples written
+ **/
+static VALUE arithmutils_mixBuffers(
+  VALUE iSelf,
+  VALUE iValBuffers,
+  VALUE iValNbrBitsPerSample,
+  VALUE iValNbrChannels) {
+  // Translate Ruby objects
+  int iNbrBitsPerSample = FIX2INT(iValNbrBitsPerSample);
+  int iNbrChannels = FIX2INT(iValNbrChannels);
+
+  // Create the list of additional buffers to consider
+  // This list is sorted from the one having the most samples to the one having the least samples
+  int lNbrBuffers = RARRAY(iValBuffers)->len;
+  tBufferInfo lPtrAdditionalBuffers[lNbrBuffers-1];
+  int lIdxBuffer;
+  VALUE lValBufferInfo;
+  char* lPtrBuffer;
+  for (lIdxBuffer = 0; lIdxBuffer < lNbrBuffers-1 ; ++lIdxBuffer) {
+    lValBufferInfo = rb_ary_entry(iValBuffers, lIdxBuffer+1);
+    lPtrBuffer = RSTRING(rb_ary_entry(lValBufferInfo, 3))->ptr;
+    lPtrAdditionalBuffers[lIdxBuffer].coeff = NUM2DBL(rb_ary_entry(lValBufferInfo, 2));
+    lPtrAdditionalBuffers[lIdxBuffer].buffer_8bits = (unsigned char*)lPtrBuffer;
+    lPtrAdditionalBuffers[lIdxBuffer].buffer_16bits = (signed short int*)lPtrBuffer;
+    lPtrAdditionalBuffers[lIdxBuffer].buffer_24bits = (t24bits*)lPtrBuffer;
+    lPtrAdditionalBuffers[lIdxBuffer].nbrBufferSamples = FIX2INT(rb_ary_entry(lValBufferInfo, 4));
+  }
+
+  // Get the first buffer: the one that has the most samples
+  VALUE lValFirstBufferInfo = rb_ary_entry(iValBuffers, 0);
+  VALUE lValFirstBuffer = rb_ary_entry(lValFirstBufferInfo, 3);
+  char* lPtrFirstBuffer = RSTRING(lValFirstBuffer)->ptr;
+  int lBufferCharSize = RSTRING(lValFirstBuffer)->len;
+  int lNbrSamples = FIX2INT(rb_ary_entry(lValFirstBufferInfo, 4));
+
+  // Allocate the output buffer
+  char* lPtrOutputBuffer = ALLOC_N(char, lBufferCharSize);
+
+  // Create variables to give to the iteration
+  tMixStruct lProcessParams;
+  lProcessParams.lstBuffers = lPtrAdditionalBuffers;
+  lProcessParams.nbrActiveBuffers = lNbrBuffers - 1;
+  lProcessParams.mainCoeff = NUM2DBL(rb_ary_entry(lValFirstBufferInfo, 2));
+
+  // Iterate through the raw buffer
+  if (iNbrBitsPerSample == 8) {
+    commonutils_iterateThroughRawBufferOutput(
+      iSelf,
+      lPtrFirstBuffer,
+      lPtrOutputBuffer,
+      iNbrBitsPerSample,
+      iNbrChannels,
+      lNbrSamples,
+      0,
+      1,
+      &arithmutils_processValue_mix_8bits,
+      &lProcessParams
+    );
+  } else if (iNbrBitsPerSample == 16) {
+    commonutils_iterateThroughRawBufferOutput(
+      iSelf,
+      lPtrFirstBuffer,
+      lPtrOutputBuffer,
+      iNbrBitsPerSample,
+      iNbrChannels,
+      lNbrSamples,
+      0,
+      1,
+      &arithmutils_processValue_mix_16bits,
+      &lProcessParams
+    );
+  } else {
+    // If it is not 24 bits, the method will throw an exception. So we are safe.
+    commonutils_iterateThroughRawBufferOutput(
+      iSelf,
+      lPtrFirstBuffer,
+      lPtrOutputBuffer,
+      iNbrBitsPerSample,
+      iNbrChannels,
+      lNbrSamples,
+      0,
+      1,
+      &arithmutils_processValue_mix_24bits,
+      &lProcessParams
+    );
+  }
+
+  VALUE rValOutputBuffer = rb_str_new(lPtrOutputBuffer, lBufferCharSize);
+
+  free(lPtrOutputBuffer);
+
+  return rb_ary_new3(2, rValOutputBuffer, INT2FIX(lNbrSamples));
+}
+
 // Initialize the module
 void Init_ArithmUtils() {
   VALUE lWSKModule = rb_define_module("WSK");
@@ -288,4 +563,5 @@ void Init_ArithmUtils() {
 
   rb_define_method(lArithmUtilsClass, "createMapFromFunctions", arithmutils_createMapFromFunctions, 2);
   rb_define_method(lArithmUtilsClass, "applyMap", arithmutils_applyMap, 4);
+  rb_define_method(lArithmUtilsClass, "mixBuffers", arithmutils_mixBuffers, 3);
 }

@@ -93,6 +93,19 @@ module WSK
         return rBuffer, lIdxEndSample-lIdxStartSample+1, @Header.NbrChannels
       end
 
+      # Get the current raw buffer.
+      # !!! This must be called only if the buffer was previously initialized (call eachRawBuffer to do so).
+      #
+      # Return:
+      # * _String_: The raw buffer
+      # * _Integer_: The number of samples in this buffer
+      # * _Integer_: The number of channels in this buffer
+      def getCurrentRawBuffer
+        rBuffer, lIdxStartSample, lIdxEndSample = @RawReader.getCurrentBuffer
+
+        return rBuffer, lIdxEndSample-lIdxStartSample+1, @Header.NbrChannels
+      end
+
       # Iterate through the buffers in the reverse order. This is far more efficient than iterating over samples.
       #
       # Parameters:

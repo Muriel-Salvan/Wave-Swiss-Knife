@@ -73,84 +73,67 @@ module WSK
         rError = nil
         
         # Store the list of opened files, and initialize it with the input data (first file)
-        # list< [ IO, InputData, Coeff, Buffer ] >
-        lLstOpenedFiles = [ [ nil, iInputData, 1, nil ] ]
+        # list< [ IO, InputData, Coeff, Buffer, NbrSamplesInBuffer ] >
+        lLstOpenedFiles = [ [ nil, iInputData, 1.0, nil, nil ] ]
         @LstFiles.each do |iFileInfo|
           iFileName, iCoeff = iFileInfo
           lFileHandle = File.open(iFileName, 'rb')
           rError, lHeader, lInputData = getWaveFileAccesses(lFileHandle)
           if (rError == nil)
-            lLstOpenedFiles << [ lFileHandle, lInputData, iCoeff, nil ]
+            lLstOpenedFiles << [ lFileHandle, lInputData, iCoeff, nil, nil ]
           else
             break
           end
         end
         if (rError == nil)
-          lMaxValue = 2**(iInputData.Header.NbrBitsPerSample-1)-1
-          lMinValue = -2**(iInputData.Header.NbrBitsPerSample-1)
+          require 'WSK/ArithmUtils/ArithmUtils'
+          lArithmUtils = WSK::ArithmUtils::ArithmUtils.new
           # Loop until we meet the maximal number of samples
           # !!! We assume that buffers have the same size when read
           # Initialize buffers
-          lNbrChannels = iInputData.Header.NbrChannels
-          lNbrSamplesProcessed = 0
           lLstOpenedFiles.each do |ioFileInfo|
             lFileHandle, lInputData, lCoeff, lBuffer = ioFileInfo
-            lInputData.getSampleData(0)
-            lBuffer, lNbrSamples, lNbrChannels2 = lInputData.getCurrentBuffer
-            ioFileInfo[3] = lBuffer
+            lInputData.eachRawBuffer do |iRawBuffer, iNbrSamples, iNbrChannels|
+              break
+            end
+            lRawBuffer, lNbrSamples, lNbrChannels2 = lInputData.getCurrentRawBuffer
+            ioFileInfo[3] = lRawBuffer
+            ioFileInfo[4] = lNbrSamples
           end
-          lNbrOpenedBuffers = lLstOpenedFiles.size
-          while (lNbrOpenedBuffers > 0)
-            # The resulting buffer
-            # This is a buffer of float values
-            lMixBuffer = nil
-            lLstOpenedFiles.each do |ioFileInfo|
-              lFileHandle, lInputData, lCoeff, lBuffer = ioFileInfo
-              # If the file was already terminated, ignore it
-              if (lBuffer != nil)
-                if (lMixBuffer == nil)
-                  lMixBuffer = lBuffer.map do |iValue|
-                    next iValue*lCoeff
-                  end
-                else
-                  # We first add the intersecting buffers
-                  lIntersectingSize = (lMixBuffer.size < lBuffer.size) ? lMixBuffer.size : lBuffer.size
-                  lIntersectingSize.times do |iIdxBuffer|
-                    lMixBuffer[iIdxBuffer] += lBuffer[iIdxBuffer]*lCoeff
-                  end
-                  # Then we complete the mix buffer if needed
-                  if (lMixBuffer.size < lBuffer.size)
-                    lMixBuffer += lBuffer[lMixBuffer.size..-1].map do |iValue|
-                      next iValue*lCoeff
-                    end
-                  end
+          # Sort the list based on the number of samples of each file.
+          # This is a prerequisite of the C function mixing.
+          lLstOpenedFiles.sort! do |iOF1, iOF2|
+            next (iOF2[1].NbrSamples <=> iOF1[1].NbrSamples)
+          end
+          lLstRemainingOpenedFiles = lLstOpenedFiles.clone
+          lNbrSamplesProcessed = 0
+          while (!lLstRemainingOpenedFiles.empty?)
+            # Mix all buffers
+            lMixRawBuffer, lNbrSamplesWritten = lArithmUtils.mixBuffers(lLstRemainingOpenedFiles, iInputData.Header.NbrBitsPerSample, iInputData.Header.NbrChannels)
+            # Remove the ones that don't have data anymore
+            lLstRemainingOpenedFiles.delete_if do |ioFileInfo|
+              lFileHandle, lInputData, lCoeff, lRawBuffer = ioFileInfo
+              rToBeDeleted = false
+              # Set the next buffer of this file
+              if (lNbrSamplesProcessed + lNbrSamplesWritten >= lInputData.NbrSamples)
+                # Close the handle if it is not the main input
+                if (lFileHandle != nil)
+                  lFileHandle.close
                 end
-                # Set the next buffer of this file
-                if (lNbrSamplesProcessed + lMixBuffer.size/lNbrChannels >= lInputData.NbrSamples)
-                  ioFileInfo[3] = nil
-                  lNbrOpenedBuffers -= 1
-                else
-                  # Read next Buffer
-                  lInputData.getSampleData(lNbrSamplesProcessed + lMixBuffer.size/lNbrChannels)
-                  lBuffer, lNbrSamples, lNbrChannels2 = lInputData.getCurrentBuffer
-                  ioFileInfo[3] = lBuffer
-                end
-              end
-            end
-            # Round the mix buffer before writing it
-            lIntMixBuffer = Array.new(lMixBuffer.size) do |iIdx|
-              if (lMixBuffer[iIdx] > lMaxValue)
-                logWarn "Exceeding maximal value: #{lMixBuffer[iIdx]}, set to #{lMaxValue}"
-                next lMaxValue
-              elsif (lMixBuffer[iIdx] < lMinValue)
-                logWarn "Exceeding minimal value: #{lMixBuffer[iIdx]}, set to #{lMinValue}"
-                next lMinValue
+                rToBeDeleted = true
               else
-                next lMixBuffer[iIdx].round
+                # Read next Buffer
+                lInputData.eachRawBuffer(lNbrSamplesProcessed + lNbrSamplesWritten) do |iRawBuffer, iNbrSamples, iNbrChannels|
+                  break
+                end
+                lRawBuffer, lNbrSamples, lNbrChannels2 = lInputData.getCurrentRawBuffer
+                ioFileInfo[3] = lRawBuffer
+                ioFileInfo[4] = lNbrSamples
               end
+              next rToBeDeleted
             end
-            oOutputData.pushBuffer(lIntMixBuffer)
-            lNbrSamplesProcessed += lIntMixBuffer.size/lNbrChannels
+            oOutputData.pushRawBuffer(lMixRawBuffer)
+            lNbrSamplesProcessed += lNbrSamplesWritten
           end
         end
         
