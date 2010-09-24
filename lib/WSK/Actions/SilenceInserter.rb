@@ -20,6 +20,8 @@ module WSK
       # Return:
       # * _Integer_: The number of samples to be written
       def getNbrSamples(iInputData)
+        @NbrSilentSamples = readDuration(@SilenceLength, iInputData.Header.SampleRate)
+
         return iInputData.NbrSamples+@NbrSilentSamples
       end
 
