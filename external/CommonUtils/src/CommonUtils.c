@@ -375,7 +375,7 @@ void commonutils_iterateReverseThroughRawBuffer(
     lPtrData += iNbrSamples*iNbrChannels - 1;
     for (lIdxBufferSample = 0; lIdxBufferSample < iNbrSamples; ++lIdxBufferSample) {
       lProcessResult = 0;
-      for (lIdxChannel = 0; lIdxChannel < iNbrChannels; ++lIdxChannel) {
+      for (lIdxChannel = iNbrChannels-1; lIdxChannel >= 0; --lIdxChannel) {
         if (lProcessResult == 0) {
           lProcessResult = iPtrProcessMethod(((tSampleValue)(*lPtrData)) - 128, lIdxSample, lIdxChannel, iPtrArgs);
         }
@@ -394,7 +394,7 @@ void commonutils_iterateReverseThroughRawBuffer(
     lPtrData += iNbrSamples*iNbrChannels - 1;
     for (lIdxBufferSample = 0; lIdxBufferSample < iNbrSamples; ++lIdxBufferSample) {
       lProcessResult = 0;
-      for (lIdxChannel = 0; lIdxChannel < iNbrChannels; ++lIdxChannel) {
+      for (lIdxChannel = iNbrChannels-1; lIdxChannel >= 0; --lIdxChannel) {
         if (lProcessResult == 0) {
           lProcessResult = iPtrProcessMethod((tSampleValue)(*lPtrData), lIdxSample, lIdxChannel, iPtrArgs);
         }
@@ -413,7 +413,7 @@ void commonutils_iterateReverseThroughRawBuffer(
     lPtrData = (t24bits*)(((int)lPtrData)+3*(iNbrSamples*iNbrChannels - 1));
     for (lIdxBufferSample = 0; lIdxBufferSample < iNbrSamples; ++lIdxBufferSample) {
       lProcessResult = 0;
-      for (lIdxChannel = 0; lIdxChannel < iNbrChannels; ++lIdxChannel) {
+      for (lIdxChannel = iNbrChannels-1; lIdxChannel >= 0; --lIdxChannel) {
         if (lProcessResult == 0) {
           lProcessResult = iPtrProcessMethod((tSampleValue)(lPtrData->value), lIdxSample, lIdxChannel, iPtrArgs);
         }

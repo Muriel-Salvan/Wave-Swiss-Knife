@@ -44,7 +44,10 @@ module WSK
           $stdout.flush
         end
         # Compute the result
+        require 'WSK/FFTUtils/FFTUtils'
+        lFFTUtils = FFTUtils::FFTUtils.new
         lFFTProfile = lFFTComputing.getFFTProfile
+        lFFTReferenceProfile = lFFTUtils.createCFFTProfile(lFFTProfile)
 
         # 2. Compute the distance obtained by comparing this profile with a normal file pass
         logInfo 'Computing average distance ...'
@@ -70,7 +73,7 @@ module WSK
           # Compute its FFT profile
           lFFTComputing2.resetData
           lFFTComputing2.completeFFT(lFFTBuffer, lNbrSamplesFFT)
-          lSumDist += distFFTProfiles(lFFTProfile, lFFTComputing2.getFFTProfile).abs
+          lSumDist += distFFTProfiles(lFFTReferenceProfile, lFFTUtils.createCFFTProfile(lFFTComputing2.getFFTProfile), FFTDIST_MAX).abs
           lNbrTimes += 1
           lIdxSample = lIdxEndFFTSample+1
           $stdout.write("#{(lIdxSample*100)/iInputData.NbrSamples} %\015")

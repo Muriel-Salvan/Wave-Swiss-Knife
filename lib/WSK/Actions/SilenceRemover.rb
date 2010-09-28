@@ -27,7 +27,7 @@ module WSK
           @IdxLastSample = 0
         else
           lNoiseFFTMaxDistance, lNoiseFFTProfile = readFFTProfile(@NoiseFFTFileName)
-          @IdxLastSample, lNextAboveThresholds = getNextNonSilentSample(iInputData, iInputData.NbrSamples, lSilenceThresholds, lNoiseFFTProfile, lNoiseFFTMaxDistance, true)
+          @IdxLastSample, lNextAboveThresholds = getNextNonSilentSample(iInputData, iInputData.NbrSamples-1, lSilenceThresholds, lNoiseFFTProfile, lNoiseFFTMaxDistance, true)
           if (@IdxLastSample == nil)
             logErr "A beginning sample has been found (#{@IdxFirstSample}), but no ending sample could. This is a bug."
             raise RuntimeError.new("A beginning sample has been found (#{@IdxFirstSample}), but no ending sample could. This is a bug.")
