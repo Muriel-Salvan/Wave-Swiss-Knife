@@ -5,7 +5,7 @@
   :OutputInterface => 'DirectStream',
   :Options => {
     :SilenceLength => [
-      '--silence <SilenceLength>', Integer,
+      '--silence <SilenceLength>', String,
       '<SilenceLength>: Length of silence to insert in samples or in float seconds (ie. 234 or 25.3s)',
       'Specify the number of samples to insert at the beginning of the audio data'
     ],

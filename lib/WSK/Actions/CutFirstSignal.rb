@@ -16,8 +16,6 @@ module WSK
       # Return:
       # * _Integer_: The number of samples to be written
       def getNbrSamples(iInputData)
-        require 'time'
-
         @IdxStartSample = 0
         lSilenceThresholds = readThresholds(@SilenceThreshold, iInputData.Header.NbrChannels)
         # Find the first signal
@@ -30,6 +28,15 @@ module WSK
           lIdxSilenceSample, lSilenceLength, lIdxNextAboveThresholds = getNextSilentSample(iInputData, lIdxSignalSample, lSilenceThresholds, lSilenceDuration, lNoiseFFTProfile, lNoiseFFTMaxDistance, false)
           if (lIdxSilenceSample == nil)
             logWarn "No silence found after the signal beginning at #{lIdxSignalSample}. Keeping the whole file."
+          elsif (lSilenceLength == nil)
+            # Find the silence length by parsing following data
+            lIdxNonSilentSample, lIdxNextAboveThresholds = getNextNonSilentSample(iInputData, lIdxSilenceSample+1, lSilenceThresholds, lNoiseFFTProfile, lNoiseFFTMaxDistance, false)
+            if (lIdxNonSilentSample == nil)
+              # The file should be empty
+              @IdxStartSample = iInputData.NbrSamples-1
+            else
+              @IdxStartSample = lIdxNonSilentSample
+            end
           else
             @IdxStartSample = lIdxSilenceSample + lSilenceLength
           end

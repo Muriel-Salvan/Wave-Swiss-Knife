@@ -7,6 +7,8 @@ module WSK
 
     class SilenceInserter
 
+      include WSK::Common
+
       # Number of samples in the silent buffer
       #   Integer
       SILENT_BUFFER_SIZE = 2097152
