@@ -22,9 +22,10 @@ module WSK
       # Return:
       # * _Integer_: The number of samples to be written
       def getNbrSamples(iInputData)
-        @NbrSilentSamples = readDuration(@SilenceLength, iInputData.Header.SampleRate)
+        @NbrBeginSilentSamples = readDuration(@BeginSilenceLength, iInputData.Header.SampleRate)
+        @NbrEndSilentSamples = readDuration(@EndSilenceLength, iInputData.Header.SampleRate)
 
-        return iInputData.NbrSamples+@NbrSilentSamples
+        return iInputData.NbrSamples+@NbrBeginSilentSamples+@NbrEndSilentSamples
       end
 
       # Execute
@@ -35,13 +36,9 @@ module WSK
       # Return:
       # * _Exception_: An error, or nil if success
       def execute(iInputData, oOutputData)
-        if (@InsertAtEnd == 0)
-          pushSilence(iInputData, oOutputData)
-          pushFile(iInputData, oOutputData)
-        else
-          pushFile(iInputData, oOutputData)
-          pushSilence(iInputData, oOutputData)
-        end
+        pushSilence(iInputData, oOutputData, @NbrBeginSilentSamples)
+        pushFile(iInputData, oOutputData)
+        pushSilence(iInputData, oOutputData, @NbrEndSilentSamples)
         
         return nil
       end
@@ -53,16 +50,17 @@ module WSK
       # Parameters:
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
       # * *oOutputData* (_Object_): The output data to fill
-      def pushSilence(iInputData, oOutputData)
+      # * *iNbrSamples* (_Integer_): The number of silent samples to insert
+      def pushSilence(iInputData, oOutputData, iNbrSamples)
         lRawSampleSize = (iInputData.Header.NbrChannels*iInputData.Header.NbrBitsPerSample)/8
-        lNbrCompleteBuffers = @NbrSilentSamples/SILENT_BUFFER_SIZE
+        lNbrCompleteBuffers = iNbrSamples/SILENT_BUFFER_SIZE
         if (lNbrCompleteBuffers > 0)
           lCompleteRawBuffer = "\000"*SILENT_BUFFER_SIZE*lRawSampleSize
           lNbrCompleteBuffers.times do |iIdx|
             oOutputData.pushRawBuffer(lCompleteRawBuffer)
           end
         end
-        lLastBufferSize = @NbrSilentSamples % SILENT_BUFFER_SIZE
+        lLastBufferSize = iNbrSamples % SILENT_BUFFER_SIZE
         if (lLastBufferSize > 0)
           oOutputData.pushRawBuffer("\000"*lLastBufferSize*lRawSampleSize)
         end
