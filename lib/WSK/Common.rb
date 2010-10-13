@@ -127,7 +127,7 @@ module WSK
       if (iStrDuration[-1..-1] == 's')
         rNbrSamples = ((iStrDuration[0..-2].to_f)*iSampleRate).round
       else
-        rNbrSamples = iStrDuration[0..-2].to_i
+        rNbrSamples = iStrDuration.to_i
       end
 
       return rNbrSamples

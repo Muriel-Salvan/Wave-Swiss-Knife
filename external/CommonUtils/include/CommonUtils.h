@@ -3,6 +3,9 @@
 
 #include "ruby.h"
 
+// Function types, as defined in Maps.rb
+#define FCTTYPE_PIECEWISE_LINEAR 0
+
 // Struct used to interpret raw buffers data of 24 bits
 typedef struct {
   signed int value:24;
@@ -11,10 +14,13 @@ typedef struct {
 // Type used to identify each sample value
 typedef int tSampleValue;
 
+// Type used to identify each sample index
+typedef long long int tSampleIndex;
+
 // Pointer to a function that can be called when parsing a raw buffer
-typedef int(*tPtrFctProcess)(const tSampleValue, const int, const int, void*);
+typedef int(*tPtrFctProcess)(const tSampleValue, const tSampleIndex, const int, void*);
 // Pointer to a function that can be called when parsing a raw buffer and writing another raw buffer
-typedef int(*tPtrFctProcessOutput)(const tSampleValue, tSampleValue*, const int, const int, void*);
+typedef int(*tPtrFctProcessOutput)(const tSampleValue, tSampleValue*, const tSampleIndex, const int, void*);
 
 // Struct containing data for a threshold information
 typedef struct {
@@ -53,8 +59,8 @@ VALUE commonutils_callEachReverseRawBuffer(
  * * *iPtrRawBuffer* (<em>const char*</em>): The raw buffer
  * * *iNbrBitsPerSample* (<em>const int</em>): The number of bits per sample
  * * *iNbrChannels* (<em>const int</em>): The number of channels
- * * *iNbrSamples* (<em>const int</em>): The number of samples
- * * *iIdxOffsetSample* (<em>const int</em>): The base offset of samples to be counted and given to the processing method
+ * * *iNbrSamples* (<em>const tSampleIndex</em>): The number of samples
+ * * *iIdxOffsetSample* (<em>const tSampleIndex</em>): The base offset of samples to be counted and given to the processing method
  * * *iPtrProcessMethod* (<em>const tPtrFctProcess</em>): Pointer to the method to call for processing
  * * *iPtrArgs* (<em>void*</em>): Pointer to a user specific struct that will be given to the processing function
  */
@@ -62,8 +68,8 @@ void commonutils_iterateThroughRawBuffer(
   const char* iPtrRawBuffer,
   const int iNbrBitsPerSample,
   const int iNbrChannels,
-  const int iNbrSamples,
-  const int iIdxOffsetSample,
+  const tSampleIndex iNbrSamples,
+  const tSampleIndex iIdxOffsetSample,
   const tPtrFctProcess iPtrProcessMethod,
   void* iPtrArgs);
 
@@ -76,8 +82,8 @@ void commonutils_iterateThroughRawBuffer(
  * * *oPtrRawBufferOut* (<em>char*</em>): The raw buffer to write
  * * *iNbrBitsPerSample* (<em>const int</em>): The number of bits per sample
  * * *iNbrChannels* (<em>const int</em>): The number of channels
- * * *iNbrSamples* (<em>const int</em>): The number of samples
- * * *iIdxOffsetSample* (<em>const int</em>): The base offset of samples to be counted and given to the processing method
+ * * *iNbrSamples* (<em>const tSampleIndex</em>): The number of samples
+ * * *iIdxOffsetSample* (<em>const tSampleIndex</em>): The base offset of samples to be counted and given to the processing method
  * * *iNeedCheck* (<em>const int</em>): Do we need checking output value ranges ? 0 = no, 1 = yes
  * * *iPtrProcessMethod* (<em>const tPtrFctProcessOutput</em>): Pointer to the method to call for processing
  * * *iPtrArgs* (<em>void*</em>): Pointer to a user specific struct that will be given to the processing function
@@ -88,8 +94,8 @@ void commonutils_iterateThroughRawBufferOutput(
   char* oPtrRawBufferOut,
   const int iNbrBitsPerSample,
   const int iNbrChannels,
-  const int iNbrSamples,
-  const int iIdxOffsetSample,
+  const tSampleIndex iNbrSamples,
+  const tSampleIndex iIdxOffsetSample,
   const int iNeedCheck,
   const tPtrFctProcessOutput iPtrProcessMethod,
   void* iPtrArgs);
@@ -101,8 +107,8 @@ void commonutils_iterateThroughRawBufferOutput(
  * * *iPtrRawBuffer* (<em>const char*</em>): The raw buffer
  * * *iNbrBitsPerSample* (<em>const int</em>): The number of bits per sample
  * * *iNbrChannels* (<em>const int</em>): The number of channels
- * * *iNbrSamples* (<em>const int</em>): The number of samples
- * * *iIdxOffsetSample* (<em>const int</em>): The base offset of samples to be counted and given to the processing method
+ * * *iNbrSamples* (<em>const tSampleIndex</em>): The number of samples
+ * * *iIdxOffsetSample* (<em>const tSampleIndex</em>): The base offset of samples to be counted and given to the processing method
  * * *iPtrProcessMethod* (<em>const tPtrFctProcess</em>): Pointer to the method to call for processing
  * * *iPtrArgs* (<em>void*</em>): Pointer to a user specific struct that will be given to the processing function
  */
@@ -110,8 +116,8 @@ void commonutils_iterateReverseThroughRawBuffer(
   const char* iPtrRawBuffer,
   const int iNbrBitsPerSample,
   const int iNbrChannels,
-  const int iNbrSamples,
-  const int iIdxOffsetSample,
+  const tSampleIndex iNbrSamples,
+  const tSampleIndex iIdxOffsetSample,
   const tPtrFctProcess iPtrProcessMethod,
   void* iPtrArgs);
 

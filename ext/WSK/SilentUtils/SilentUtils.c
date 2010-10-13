@@ -3,16 +3,16 @@
 
 // Struct used to convey data among iterators in the getNextSilentSample method
 typedef struct {
-  int* ptrIdxFirstSilentSample;
+  tSampleIndex* ptrIdxFirstSilentSample;
   tThresholdInfo* ptrSilenceThresholds;
-  int* ptrIdxSilenceSample_Result;
-  int minSilenceSamples;
+  tSampleIndex* ptrIdxSilenceSample_Result;
+  tSampleIndex minSilenceSamples;
   int nbrChannels;
 } tFindSilentStruct;
 
 // Struct used to convey data among iterators in the getFirstSampleBeyondThreshold method
 typedef struct {
-  int* ptrIdxSample_Result;
+  tSampleIndex* ptrIdxSample_Result;
   tThresholdInfo* ptrThresholds;
   int nbrChannels;
 } tFirstSampleBeyondThresholdStruct;
@@ -22,7 +22,7 @@ typedef struct {
  *
  * Parameters:
  * * *iValue* (<em>const tSampleValue</em>): The value being read
- * * *iIdxSample* (<em>const int</em>): Index of this sample
+ * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
  * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
  * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tFindSilentStruct*</em>.
  * Return:
@@ -33,7 +33,7 @@ typedef struct {
  */
 int silentutils_processValue(
   const tSampleValue iValue,
-  const int iIdxSample,
+  const tSampleIndex iIdxSample,
   const int iIdxChannel,
   void* iPtrArgs) {
   int rResult = 0;
@@ -72,7 +72,7 @@ int silentutils_processValue(
  *
  * Parameters:
  * * *iValue* (<em>const tSampleValue</em>): The value being read
- * * *iIdxSample* (<em>const int</em>): Index of this sample
+ * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
  * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
  * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tFindSilentStruct*</em>.
  * Return:
@@ -83,7 +83,7 @@ int silentutils_processValue(
  */
 int silentutils_Reverse_processValue(
   const tSampleValue iValue,
-  const int iIdxSample,
+  const tSampleIndex iIdxSample,
   const int iIdxChannel,
   void* iPtrArgs) {
   int rResult = 0;
@@ -150,13 +150,13 @@ static VALUE silentutils_blockEachRawBuffer(
   VALUE iValBackwardsSearch = rb_ary_entry(iValIterateArgs, 6);
   // Translate parameters in C types
   int iNbrBitsPerSample = FIX2INT(iValNbrBitsPerSample);
-  int iNbrSamples = FIX2INT(iValNbrSamples);
+  tSampleIndex iNbrSamples = FIX2LONG(iValNbrSamples);
   int iNbrChannels = FIX2INT(iValNbrChannels);
-  int* lPtrIdxSample = (int*)FIX2INT(iValPtrIdxSample);
-  int* lPtrIdxFirstSilentSample = (int*)FIX2INT(iValPtrIdxFirstSilentSample);
+  tSampleIndex* lPtrIdxSample = (tSampleIndex*)FIX2INT(iValPtrIdxSample);
+  tSampleIndex* lPtrIdxFirstSilentSample = (tSampleIndex*)FIX2INT(iValPtrIdxFirstSilentSample);
   tThresholdInfo* lPtrSilenceThresholds = (tThresholdInfo*)FIX2INT(iValPtrSilenceThresholds);
-  int iMinSilenceSamples = FIX2INT(iValMinSilenceSamples);
-  int* lPtrIdxSilenceSample_Result = (int*)FIX2INT(iValPtrIdxSilenceSample_Result);
+  tSampleIndex iMinSilenceSamples = FIX2LONG(iValMinSilenceSamples);
+  tSampleIndex* lPtrIdxSilenceSample_Result = (tSampleIndex*)FIX2INT(iValPtrIdxSilenceSample_Result);
 
   // Get the real underlying raw buffer
   char* lPtrRawBuffer = RSTRING(iValInputRawBuffer)->ptr;
@@ -227,13 +227,13 @@ static VALUE silentutils_getNextSilentInThresholds(
   VALUE iValSilenceThresholds,
   VALUE iValMinSilenceSamples,
   VALUE iValBackwardsSearch) {
-  VALUE rNextSilentSample = Qnil;
+  VALUE rValNextSilentSample = Qnil;
 
   // Translate parameters in C types
-  int iIdxStartSample = FIX2INT(iValIdxStartSample);
+  tSampleIndex iIdxStartSample = FIX2LONG(iValIdxStartSample);
 
   // The cursor of samples. Set it to the first sample we start from searching.
-  int lIdxSample = iIdxStartSample;
+  tSampleIndex lIdxSample = iIdxStartSample;
   // Read some info from the Header
   VALUE lValHeader = rb_funcall(iValInputData, rb_intern("Header"), 0);
   VALUE lValNbrBitsPerSample = rb_funcall(lValHeader, rb_intern("NbrBitsPerSample"), 0);
@@ -251,9 +251,9 @@ static VALUE silentutils_getNextSilentInThresholds(
 
   // Index of the first silent sample encountered while parsing.
   // Used to assert the minimal duration of the silence. -1 means we don't have one yet.
-  int lIdxFirstSilentSample;
+  tSampleIndex lIdxFirstSilentSample;
   // The result
-  int lIdxSilenceSample_Result;
+  tSampleIndex lIdxSilenceSample_Result;
 
   // Encapsulate pointers to the data that will be used and modified by the iteration block
   VALUE lValPtrIdxSample = INT2FIX(&lIdxSample);
@@ -270,7 +270,7 @@ static VALUE silentutils_getNextSilentInThresholds(
       commonutils_callEachReverseRawBuffer,
       rb_ary_new3(2,
         iValInputData,
-        INT2FIX(lIdxSample)),
+        LONG2FIX(lIdxSample)),
       silentutils_blockEachRawBuffer,
       rb_ary_new3(7,
         lValNbrBitsPerSample,
@@ -286,7 +286,7 @@ static VALUE silentutils_getNextSilentInThresholds(
       commonutils_callEachRawBuffer,
       rb_ary_new3(2,
         iValInputData,
-        INT2FIX(lIdxSample)),
+        LONG2FIX(lIdxSample)),
       silentutils_blockEachRawBuffer,
       rb_ary_new3(7,
         lValNbrBitsPerSample,
@@ -300,10 +300,10 @@ static VALUE silentutils_getNextSilentInThresholds(
   }
 
   if (lIdxSilenceSample_Result != -1) {
-    rNextSilentSample = INT2FIX(lIdxSilenceSample_Result);
+    rValNextSilentSample = LONG2FIX(lIdxSilenceSample_Result);
   }
 
-  return rNextSilentSample;
+  return rValNextSilentSample;
 }
 
 /**
@@ -311,7 +311,7 @@ static VALUE silentutils_getNextSilentInThresholds(
  *
  * Parameters:
  * * *iValue* (<em>const tSampleValue</em>): The value being read
- * * *iIdxSample* (<em>const int</em>): Index of this sample
+ * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
  * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
  * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact an <em>tFirstSampleBeyondThresholdStruct*</em>.
  * Return:
@@ -322,7 +322,7 @@ static VALUE silentutils_getNextSilentInThresholds(
  */
 int silentutils_sbt_processValue(
   const tSampleValue iValue,
-  const int iIdxSample,
+  const tSampleIndex iIdxSample,
   const int iIdxChannel,
   void* iPtrArgs) {
   int rResult = 0;
@@ -362,10 +362,10 @@ static VALUE silentutils_getSampleBeyondThresholds(
   VALUE iValNbrChannels,
   VALUE iValNbrSamples,
   VALUE iValLastSample) {
-  VALUE rIdxFirstSample = Qnil;
+  VALUE rValIdxFirstSample = Qnil;
 
   // Translate parameters in C types
-  int iNbrSamples = FIX2INT(iValNbrSamples);
+  tSampleIndex iNbrSamples = FIX2LONG(iValNbrSamples);
   int iNbrChannels = FIX2INT(iValNbrChannels);
   int iNbrBitsPerSample = FIX2INT(iValNbrBitsPerSample);
   // Get the underlying char*
@@ -380,7 +380,7 @@ static VALUE silentutils_getSampleBeyondThresholds(
     lThresholds[lIdxChannel].max = FIX2INT(rb_ary_entry(lTmpThresholds, 1));
   }
   // Set variables to give to the process
-  int lIdxSampleOut = -1;
+  tSampleIndex lIdxSampleOut = -1;
   tFirstSampleBeyondThresholdStruct lProcessVariables;
   lProcessVariables.ptrThresholds = &lThresholds[0];
   lProcessVariables.ptrIdxSample_Result = &lIdxSampleOut;
@@ -409,10 +409,10 @@ static VALUE silentutils_getSampleBeyondThresholds(
     );
   }
   if (lIdxSampleOut != -1) {
-    rIdxFirstSample = INT2FIX(lIdxSampleOut);
+    rValIdxFirstSample = LONG2FIX(lIdxSampleOut);
   }
 
-  return rIdxFirstSample;
+  return rValIdxFirstSample;
 }
 
 // Initialize the module

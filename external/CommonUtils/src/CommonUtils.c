@@ -45,8 +45,8 @@ VALUE commonutils_callEachReverseRawBuffer(
  * * *iPtrRawBuffer* (<em>const char*</em>): The raw buffer
  * * *iNbrBitsPerSample* (<em>const int</em>): The number of bits per sample
  * * *iNbrChannels* (<em>const int</em>): The number of channels
- * * *iNbrSamples* (<em>const int</em>): The number of samples
- * * *iIdxOffsetSample* (<em>const int</em>): The base offset of samples to be counted and given to the processing method
+ * * *iNbrSamples* (<em>const tSampleIndex</em>): The number of samples
+ * * *iIdxOffsetSample* (<em>const tSampleIndex</em>): The base offset of samples to be counted and given to the processing method
  * * *iPtrProcessMethod* (<em>const tPtrFctProcess</em>): Pointer to the method to call for processing
  * * *iPtrArgs* (<em>void*</em>): Pointer to a user specific struct that will be given to the processing function
  */
@@ -54,15 +54,15 @@ void commonutils_iterateThroughRawBuffer(
   const char* iPtrRawBuffer,
   const int iNbrBitsPerSample,
   const int iNbrChannels,
-  const int iNbrSamples,
-  const int iIdxOffsetSample,
+  const tSampleIndex iNbrSamples,
+  const tSampleIndex iIdxOffsetSample,
   const tPtrFctProcess iPtrProcessMethod,
   void* iPtrArgs) {
   // Parse the data. This is done differently depending on the data structure
   // Define variables outside the loops to not allocate and initialize heap size for nothing
-  int lIdxBufferSample;
+  tSampleIndex lIdxBufferSample;
   int lIdxChannel;
-  int lIdxSample = iIdxOffsetSample;
+  tSampleIndex lIdxSample = iIdxOffsetSample;
   // 0: Continue iterations
   // 1: Break all
   // 2: Skip to the next sample
@@ -136,8 +136,8 @@ void commonutils_iterateThroughRawBuffer(
  * * *oPtrRawBufferOut* (<em>char*</em>): The raw buffer to write
  * * *iNbrBitsPerSample* (<em>const int</em>): The number of bits per sample
  * * *iNbrChannels* (<em>const int</em>): The number of channels
- * * *iNbrSamples* (<em>const int</em>): The number of samples
- * * *iIdxOffsetSample* (<em>const int</em>): The base offset of samples to be counted and given to the processing method
+ * * *iNbrSamples* (<em>const tSampleIndex</em>): The number of samples
+ * * *iIdxOffsetSample* (<em>const tSampleIndex</em>): The base offset of samples to be counted and given to the processing method
  * * *iNeedCheck* (<em>const int</em>): Do we need checking output value ranges ? 0 = no, 1 = yes
  * * *iPtrProcessMethod* (<em>const tPtrFctProcessOutput</em>): Pointer to the method to call for processing
  * * *iPtrArgs* (<em>void*</em>): Pointer to a user specific struct that will be given to the processing function
@@ -148,16 +148,16 @@ void commonutils_iterateThroughRawBufferOutput(
   char* oPtrRawBufferOut,
   const int iNbrBitsPerSample,
   const int iNbrChannels,
-  const int iNbrSamples,
-  const int iIdxOffsetSample,
+  const tSampleIndex iNbrSamples,
+  const tSampleIndex iIdxOffsetSample,
   const int iNeedCheck,
   const tPtrFctProcessOutput iPtrProcessMethod,
   void* iPtrArgs) {
   // Parse the data. This is done differently depending on the data structure
   // Define variables outside the loops to not allocate and initialize heap size for nothing
-  int lIdxBufferSample;
+  tSampleIndex lIdxBufferSample;
   int lIdxChannel;
-  int lIdxSample = iIdxOffsetSample;
+  tSampleIndex lIdxSample = iIdxOffsetSample;
   // 0: Continue iterations
   // 1: Break all
   // 2: Skip to the next sample
@@ -183,11 +183,11 @@ void commonutils_iterateThroughRawBufferOutput(
           }
           // Write lOutputValue
           if (lOutputValue > lMaxValue) {
-            sprintf(lLogMessage, "@%d,%d - Exceeding maximal value: %d, set to %d", lIdxSample, lIdxChannel, lOutputValue, lMaxValue);
+            sprintf(lLogMessage, "@%lld,%d - Exceeding maximal value: %d, set to %d", lIdxSample, lIdxChannel, lOutputValue, lMaxValue);
             rb_funcall(iSelf, lIDLogWarn, 1, rb_str_new2(lLogMessage));
             lOutputValue = lMaxValue;
           } else if (lOutputValue < lMinValue) {
-            sprintf(lLogMessage, "@%d,%d - Exceeding minimal value: %d, set to %d", lIdxSample, lIdxChannel, lOutputValue, lMinValue);
+            sprintf(lLogMessage, "@%lld,%d - Exceeding minimal value: %d, set to %d", lIdxSample, lIdxChannel, lOutputValue, lMinValue);
             rb_funcall(iSelf, lIDLogWarn, 1, rb_str_new2(lLogMessage));
             lOutputValue = lMinValue;
           }
@@ -214,11 +214,11 @@ void commonutils_iterateThroughRawBufferOutput(
           }
           // Write lOutputValue
           if (lOutputValue > lMaxValue) {
-            sprintf(lLogMessage, "@%d,%d - Exceeding maximal value: %d, set to %d", lIdxSample, lIdxChannel, lOutputValue, lMaxValue);
+            sprintf(lLogMessage, "@%lld,%d - Exceeding maximal value: %d, set to %d", lIdxSample, lIdxChannel, lOutputValue, lMaxValue);
             rb_funcall(iSelf, lIDLogWarn, 1, rb_str_new2(lLogMessage));
             lOutputValue = lMaxValue;
           } else if (lOutputValue < lMinValue) {
-            sprintf(lLogMessage, "@%d,%d - Exceeding minimal value: %d, set to %d", lIdxSample, lIdxChannel, lOutputValue, lMinValue);
+            sprintf(lLogMessage, "@%lld,%d - Exceeding minimal value: %d, set to %d", lIdxSample, lIdxChannel, lOutputValue, lMinValue);
             rb_funcall(iSelf, lIDLogWarn, 1, rb_str_new2(lLogMessage));
             lOutputValue = lMinValue;
           }
@@ -245,11 +245,11 @@ void commonutils_iterateThroughRawBufferOutput(
           }
           // Write lOutputValue
           if (lOutputValue > lMaxValue) {
-            sprintf(lLogMessage, "@%d,%d - Exceeding maximal value: %d, set to %d", lIdxSample, lIdxChannel, lOutputValue, lMaxValue);
+            sprintf(lLogMessage, "@%lld,%d - Exceeding maximal value: %d, set to %d", lIdxSample, lIdxChannel, lOutputValue, lMaxValue);
             rb_funcall(iSelf, lIDLogWarn, 1, rb_str_new2(lLogMessage));
             lOutputValue = lMaxValue;
           } else if (lOutputValue < lMinValue) {
-            sprintf(lLogMessage, "@%d,%d - Exceeding minimal value: %d, set to %d", lIdxSample, lIdxChannel, lOutputValue, lMinValue);
+            sprintf(lLogMessage, "@%lld,%d - Exceeding minimal value: %d, set to %d", lIdxSample, lIdxChannel, lOutputValue, lMinValue);
             rb_funcall(iSelf, lIDLogWarn, 1, rb_str_new2(lLogMessage));
             lOutputValue = lMinValue;
           }
@@ -348,8 +348,8 @@ void commonutils_iterateThroughRawBufferOutput(
  * * *iPtrRawBuffer* (<em>const char*</em>): The raw buffer
  * * *iNbrBitsPerSample* (<em>const int</em>): The number of bits per sample
  * * *iNbrChannels* (<em>const int</em>): The number of channels
- * * *iNbrSamples* (<em>const int</em>): The number of samples
- * * *iIdxOffsetSample* (<em>const int</em>): The base offset of samples to be counted and given to the processing method
+ * * *iNbrSamples* (<em>const tSampleIndex</em>): The number of samples
+ * * *iIdxOffsetSample* (<em>const tSampleIndex</em>): The base offset of samples to be counted and given to the processing method
  * * *iPtrProcessMethod* (<em>const tPtrFctProcess</em>): Pointer to the method to call for processing
  * * *iPtrArgs* (<em>void*</em>): Pointer to a user specific struct that will be given to the processing function
  */
@@ -357,15 +357,15 @@ void commonutils_iterateReverseThroughRawBuffer(
   const char* iPtrRawBuffer,
   const int iNbrBitsPerSample,
   const int iNbrChannels,
-  const int iNbrSamples,
-  const int iIdxOffsetSample,
+  const tSampleIndex iNbrSamples,
+  const tSampleIndex iIdxOffsetSample,
   const tPtrFctProcess iPtrProcessMethod,
   void* iPtrArgs) {
   // Parse the data. This is done differently depending on the data structure
   // Define variables outside the loops to not allocate and initialize heap size for nothing
-  int lIdxBufferSample;
+  tSampleIndex lIdxBufferSample;
   int lIdxChannel;
-  int lIdxSample = iIdxOffsetSample;
+  tSampleIndex lIdxSample = iIdxOffsetSample;
   // 0: Continue iterations
   // 1: Break all
   // 2: Skip to the next sample
@@ -410,7 +410,7 @@ void commonutils_iterateReverseThroughRawBuffer(
     }
   } else if (iNbrBitsPerSample == 24) {
     t24bits* lPtrData = (t24bits*)iPtrRawBuffer;
-    lPtrData = (t24bits*)(((int)lPtrData)+3*(iNbrSamples*iNbrChannels - 1));
+    lPtrData = (t24bits*)(((int)lPtrData)+3*(((int)iNbrSamples)*iNbrChannels - 1));
     for (lIdxBufferSample = 0; lIdxBufferSample < iNbrSamples; ++lIdxBufferSample) {
       lProcessResult = 0;
       for (lIdxChannel = iNbrChannels-1; lIdxChannel >= 0; --lIdxChannel) {

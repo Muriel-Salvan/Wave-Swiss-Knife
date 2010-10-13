@@ -44,6 +44,7 @@ module WSK
             @NbrSamples = lDataSize / lSampleSize
             @RawReader = RawReader.new(@File, @File.pos, lSampleSize, @NbrSamples)
             @WaveReader = WaveReader.new(@RawReader, @Header)
+            logDebug "Number of samples: #{@NbrSamples}"
           else
             rError = RuntimeError.new("Data size (#{lDataSize} should be a multiple of #{lSampleSize} according to header.")
           end

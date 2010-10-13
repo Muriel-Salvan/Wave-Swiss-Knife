@@ -103,7 +103,7 @@ static VALUE fftutils_initSumArray(
  *
  * Parameters:
  * * *iValue* (<em>const tSampleValue</em>): The value being read
- * * *iIdxSample* (<em>const int</em>): Index of this sample
+ * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
  * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
  * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tNextSilentStruct*</em>.
  * Return:
@@ -114,7 +114,7 @@ static VALUE fftutils_initSumArray(
  */
 int fftutils_processValue_CompleteSumCosSin(
   const tSampleValue iValue,
-  const int iIdxSample,
+  const tSampleIndex iIdxSample,
   const int iIdxChannel,
   void* iPtrArgs) {
   // Interpret parameters
@@ -123,10 +123,10 @@ int fftutils_processValue_CompleteSumCosSin(
   if (iIdxChannel == 0) {
     *(lPtrVariables->ptrIdxSum) = 0;
   }
-  double lTrigoValue;
+  long double lTrigoValue;
   int lIdxW;
   for (lIdxW = 0; lIdxW < lPtrVariables->nbrFreq; ++lIdxW) {
-    lTrigoValue = lPtrVariables->w[lIdxW] * iIdxSample;
+    lTrigoValue = ((long double)lPtrVariables->w[lIdxW]) * ((long double)iIdxSample);
     lPtrVariables->sumCos[*(lPtrVariables->ptrIdxSum)] += (tFFTValue)(iValue*cos(lTrigoValue));
     lPtrVariables->sumSin[*(lPtrVariables->ptrIdxSum)] += (tFFTValue)(iValue*sin(lTrigoValue));
     ++(*(lPtrVariables->ptrIdxSum));
@@ -141,7 +141,7 @@ int fftutils_processValue_CompleteSumCosSin(
  *
  * Parameters:
  * * *iValue* (<em>const tSampleValue</em>): The value being read
- * * *iIdxSample* (<em>const int</em>): Index of this sample
+ * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
  * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
  * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tNextSilentStruct*</em>.
  * Return:
@@ -152,7 +152,7 @@ int fftutils_processValue_CompleteSumCosSin(
  */
 int fftutils_processValue_CompleteSumCosSinWithCache(
   const tSampleValue iValue,
-  const int iIdxSample,
+  const tSampleIndex iIdxSample,
   const int iIdxChannel,
   void* iPtrArgs) {
   // Interpret parameters
@@ -199,12 +199,12 @@ static VALUE fftutils_completeSumCosSin(
   VALUE ioValSumCos,
   VALUE ioValSumSin) {
   // Translate Ruby objects
-  int iNbrSamples = FIX2INT(iValNbrSamples);
+  tSampleIndex iNbrSamples = FIX2LONG(iValNbrSamples);
   int iNbrChannels = FIX2INT(iValNbrChannels);
   int iNbrFreq = FIX2INT(iValNbrFreq);
   int iNbrBitsPerSample = FIX2INT(iValNbrBitsPerSample);
   char* lPtrRawBuffer = RSTRING(iValInputRawBuffer)->ptr;
-  int iIdxSample = FIX2INT(iValIdxSample);
+  tSampleIndex iIdxSample = FIX2LONG(iValIdxSample);
   // Get the lW array
   double * lW = NULL;
   if (iValW != Qnil) {
@@ -415,14 +415,14 @@ static VALUE fftutils_initTrigoCache(
   VALUE iValNbrSamples) {
   // Translate parameters in C types
   int iNbrFreq = FIX2INT(iValNbrFreq);
-  int iNbrSamples = FIX2INT(iValNbrSamples);
+  tSampleIndex iNbrSamples = FIX2LONG(iValNbrSamples);
   // Get the lW array
   double * lW;
   Data_Get_Struct(iValW, double, lW);
 
   // Create the cache
   int lIdxW;
-  int lIdxSample;
+  tSampleIndex lIdxSample;
   double* lTmpSamplesValuesCos;
   double* lTmpSamplesValuesSin;
   double lTrigoValue;
@@ -533,7 +533,7 @@ static VALUE fftutils_createCFFTProfile(
   // The C profile
   tFFTProfile* lPtrFFTProfile = ALLOC(tFFTProfile);
   int lNbrBitsPerSample = FIX2INT(rb_ary_entry(iValFFTProfile, 0));
-  int lNbrSamples = FIX2INT(rb_ary_entry(iValFFTProfile, 1));
+  tSampleIndex lNbrSamples = FIX2LONG(rb_ary_entry(iValFFTProfile, 1));
   VALUE lValFFTCoeffs = rb_ary_entry(iValFFTProfile, 2);
   lPtrFFTProfile->nbrFreq = RARRAY(lValFFTCoeffs)->len;
   lPtrFFTProfile->nbrChannels = RARRAY(rb_ary_entry(lValFFTCoeffs, 0))->len;

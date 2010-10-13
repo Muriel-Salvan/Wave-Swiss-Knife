@@ -4,7 +4,8 @@ module WSK
 
     # Function type piecewise linear.
     # Here are the possible attributes used by this type:
-    # *:Scale* (_Integer_): Maximal value of the plots of the function
+    # *:MinValue* (_Integer_): Minimal value of the plots of the function [optional = Minimal value of points]
+    # *:MaxValue* (_Integer_): Maximal value of the plots of the function [optional = Maximal value of points]
     # *:Points* (<em>map<Integer,Integer></em>): Coordinates of points indicating each linear part
     FCTTYPE_PIECEWISE_LINEAR = 0
 

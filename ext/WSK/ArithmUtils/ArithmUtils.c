@@ -3,9 +3,6 @@
 #include <stdio.h>
 #include <CommonUtils.h>
 
-// Function types, as defined in Maps.rb
-#define FCTTYPE_PIECEWISE_LINEAR 0
-
 // Struct used to store a map
 typedef struct {
   // Number of channels
@@ -28,7 +25,7 @@ typedef struct {
   unsigned char* buffer_8bits;
   signed short int* buffer_16bits;
   t24bits* buffer_24bits;
-  int nbrBufferSamples;
+  tSampleIndex nbrBufferSamples;
   long double coeff;
 } tBufferInfo;
 
@@ -223,7 +220,7 @@ static VALUE arithmutils_createMapFromFunctions(
  *
  * Parameters:
  * * *iValue* (<em>const tSampleValue</em>): The value being read
- * * *iIdxSample* (<em>const int</em>): Index of this sample
+ * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
  * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
  * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tApplyMapStruct*</em>.
  * Return:
@@ -235,7 +232,7 @@ static VALUE arithmutils_createMapFromFunctions(
 int arithmutils_processValue_applyMap(
   const tSampleValue iValue,
   tSampleValue* oPtrValue,
-  const int iIdxSample,
+  const tSampleIndex iIdxSample,
   const int iIdxChannel,
   void* iPtrArgs) {
 
@@ -262,7 +259,7 @@ static VALUE arithmutils_applyMap(
   VALUE iValNbrBitsPerSample,
   VALUE iValNbrSamples) {
   // Translate Ruby objects
-  int iNbrSamples = FIX2INT(iValNbrSamples);
+  tSampleIndex iNbrSamples = FIX2LONG(iValNbrSamples);
   int iNbrBitsPerSample = FIX2INT(iValNbrBitsPerSample);
   // Get the map
   tMap* lPtrMap;
@@ -306,7 +303,7 @@ static VALUE arithmutils_applyMap(
  *
  * Parameters:
  * * *iValue* (<em>const tSampleValue</em>): The value being read
- * * *iIdxSample* (<em>const int</em>): Index of this sample
+ * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
  * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
  * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tMixStruct*</em>.
  * Return:
@@ -318,7 +315,7 @@ static VALUE arithmutils_applyMap(
 int arithmutils_processValue_mix_8bits(
   const tSampleValue iValue,
   tSampleValue* oPtrValue,
-  const int iIdxSample,
+  const tSampleIndex iIdxSample,
   const int iIdxChannel,
   void* iPtrArgs) {
   tMixStruct* lPtrParams = (tMixStruct*)iPtrArgs;
@@ -356,7 +353,7 @@ int arithmutils_processValue_mix_8bits(
  *
  * Parameters:
  * * *iValue* (<em>const tSampleValue</em>): The value being read
- * * *iIdxSample* (<em>const int</em>): Index of this sample
+ * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
  * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
  * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tMixStruct*</em>.
  * Return:
@@ -368,7 +365,7 @@ int arithmutils_processValue_mix_8bits(
 int arithmutils_processValue_mix_16bits(
   const tSampleValue iValue,
   tSampleValue* oPtrValue,
-  const int iIdxSample,
+  const tSampleIndex iIdxSample,
   const int iIdxChannel,
   void* iPtrArgs) {
   tMixStruct* lPtrParams = (tMixStruct*)iPtrArgs;
@@ -406,7 +403,7 @@ int arithmutils_processValue_mix_16bits(
  *
  * Parameters:
  * * *iValue* (<em>const tSampleValue</em>): The value being read
- * * *iIdxSample* (<em>const int</em>): Index of this sample
+ * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
  * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
  * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tMixStruct*</em>.
  * Return:
@@ -418,7 +415,7 @@ int arithmutils_processValue_mix_16bits(
 int arithmutils_processValue_mix_24bits(
   const tSampleValue iValue,
   tSampleValue* oPtrValue,
-  const int iIdxSample,
+  const tSampleIndex iIdxSample,
   const int iIdxChannel,
   void* iPtrArgs) {
   tMixStruct* lPtrParams = (tMixStruct*)iPtrArgs;
@@ -494,7 +491,7 @@ static VALUE arithmutils_mixBuffers(
   VALUE lValFirstBuffer = rb_ary_entry(lValFirstBufferInfo, 3);
   char* lPtrFirstBuffer = RSTRING(lValFirstBuffer)->ptr;
   int lBufferCharSize = RSTRING(lValFirstBuffer)->len;
-  int lNbrSamples = FIX2INT(rb_ary_entry(lValFirstBufferInfo, 4));
+  tSampleIndex lNbrSamples = FIX2INT(rb_ary_entry(lValFirstBufferInfo, 4));
 
   // Allocate the output buffer
   char* lPtrOutputBuffer = ALLOC_N(char, lBufferCharSize);
@@ -552,7 +549,7 @@ static VALUE arithmutils_mixBuffers(
 
   free(lPtrOutputBuffer);
 
-  return rb_ary_new3(2, rValOutputBuffer, INT2FIX(lNbrSamples));
+  return rb_ary_new3(2, rValOutputBuffer, LONG2FIX(lNbrSamples));
 }
 
 // Initialize the module

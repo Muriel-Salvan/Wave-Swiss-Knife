@@ -4,7 +4,8 @@ lRootDir = File.expand_path(Dir.getwd)
   'ext/WSK/AnalyzeUtils',
   'ext/WSK/ArithmUtils',
   'ext/WSK/FFTUtils',
-  'ext/WSK/SilentUtils'
+  'ext/WSK/SilentUtils',
+  'ext/WSK/VolumeUtils'
 ].each do |iExtPath|
   puts "===== Building #{iExtPath} ..."
   Dir.chdir("#{lRootDir}/#{iExtPath}")

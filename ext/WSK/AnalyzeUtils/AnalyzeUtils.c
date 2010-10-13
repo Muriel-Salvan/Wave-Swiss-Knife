@@ -92,7 +92,7 @@ static VALUE analyzeutils_init128bitsArray(
  *
  * Parameters:
  * * *iValue* (<em>const tSampleValue</em>): The value being read
- * * *iIdxSample* (<em>const int</em>): Index of this sample
+ * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
  * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
  * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tAnalyzeStruct*</em>.
  * Return:
@@ -103,7 +103,7 @@ static VALUE analyzeutils_init128bitsArray(
  */
 int analyzeutils_processValue_Analyze(
   const tSampleValue iValue,
-  const int iIdxSample,
+  const tSampleIndex iIdxSample,
   const int iIdxChannel,
   void* iPtrArgs) {
   // Interpret parameters
@@ -148,7 +148,7 @@ static VALUE analyzeutils_completeAnalyze(
   VALUE ioValAbsSumValues,
   VALUE ioValSquareSumValues) {
   // Translate Ruby objects
-  int iNbrSamples = FIX2INT(iValNbrSamples);
+  tSampleIndex iNbrSamples = FIX2LONG(iValNbrSamples);
   int iNbrChannels = FIX2INT(iValNbrChannels);
   int iNbrBitsPerSample = FIX2LONG(iValNbrBitsPerSample);
   char* lPtrRawBuffer = RSTRING(iValInputRawBuffer)->ptr;
