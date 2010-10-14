@@ -2,6 +2,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <CommonUtils.h>
+#include <gmp.h>
 
 // Struct used to convey data among iterators in the applyVolumeFct method for piecewise linear functions
 typedef struct {
@@ -19,6 +20,12 @@ typedef struct {
   // These must be refreshed each time we change the current sample. They are the same for all the channels of the current sample.
   long double currentRatio;
 } tApplyVolumeFctStruct_PiecewiseLinear;
+
+// Struct used to convey data among iterators in the MeasureRMS method
+typedef struct {
+  mpz_t* squareSums;
+  mpz_t tmpInt;
+} tMeasureRMSStruct;
 
 /**
  * Process a value read from an input buffer for the applyVolumeFct function in case of piecewise linear function.
@@ -87,7 +94,6 @@ static VALUE volumeutils_applyVolumeFct(
   VALUE iValNbrChannels,
   VALUE iValNbrSamples,
   VALUE iValIdxBufferFirstSample) {
-
   // Translate Ruby objects
   int iNbrBitsPerSample = FIX2INT(iValNbrBitsPerSample);
   int iNbrChannels = FIX2INT(iValNbrChannels);
@@ -144,6 +150,96 @@ static VALUE volumeutils_applyVolumeFct(
   return rValOutputBuffer;
 }
 
+/**
+ * Process a value read from an input buffer for the MeasureRMS function.
+ * Use the trigo cache.
+ *
+ * Parameters:
+ * * *iValue* (<em>const tSampleValue</em>): The value being read
+ * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
+ * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
+ * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tMeasureRMSStruct*</em>.
+ * Return:
+ * * _int_: The return code:
+ * ** 0: Continue iteration
+ * ** 1: Break all iterations
+ * ** 2: Skip directly to the next sample (don't call us for other channels of this sample)
+ */
+int volumeutils_processValue_MeasureRMS(
+  const tSampleValue iValue,
+  const tSampleIndex iIdxSample,
+  const int iIdxChannel,
+  void* iPtrArgs) {
+  // Interpret parameters
+  tMeasureRMSStruct* lPtrParams = (tMeasureRMSStruct*)iPtrArgs;
+
+  mpz_set_si(lPtrParams->tmpInt, iValue);
+  mpz_addmul(lPtrParams->squareSums[iIdxChannel], lPtrParams->tmpInt, lPtrParams->tmpInt);
+
+  return 0;
+}
+
+/**
+ * Measure the RMS values of a given raw buffer.
+ *
+ * Parameters:
+ * * *iSelf* (_FFT_): Self
+ * * *iValInputRawBuffer* (_String_): The input raw buffer
+ * * *iValNbrBitsPerSample* (_Integer_): Number of bits per sample
+ * * *iValNbrChannels* (_Integer_): Number of channels
+ * * *iValNbrSamples* (_Integer_): Number of samples
+ * Return:
+ * * <em>list<Integer></em>: List of integer values
+ **/
+static VALUE volumeutils_measureRMS(
+  VALUE iSelf,
+  VALUE iValInputRawBuffer,
+  VALUE iValNbrBitsPerSample,
+  VALUE iValNbrChannels,
+  VALUE iValNbrSamples) {
+  // Translate Ruby objects
+  int iNbrBitsPerSample = FIX2INT(iValNbrBitsPerSample);
+  int iNbrChannels = FIX2INT(iValNbrChannels);
+  tSampleIndex iNbrSamples = FIX2LONG(iValNbrSamples);
+  // Get the input buffer
+  char* lPtrRawBuffer = RSTRING(iValInputRawBuffer)->ptr;
+
+  // Allocate the array that will store the square sums
+  mpz_t lSquareSums[iNbrChannels];
+  int lIdxChannel;
+  for (lIdxChannel = 0; lIdxChannel < iNbrChannels; ++lIdxChannel) {
+    mpz_init(lSquareSums[lIdxChannel]);
+  }
+
+  // Parse the data
+  tMeasureRMSStruct lParams;
+  lParams.squareSums = lSquareSums;
+  mpz_init(lParams.tmpInt);
+  commonutils_iterateThroughRawBuffer(
+    lPtrRawBuffer,
+    iNbrBitsPerSample,
+    iNbrChannels,
+    iNbrSamples,
+    0,
+    &volumeutils_processValue_MeasureRMS,
+    &lParams
+  );
+  mpz_clear(lParams.tmpInt);
+
+  // Build the resulting array
+  VALUE lRMSValues[iNbrChannels];
+  // Buffer that stores string representation of mpz_t for Ruby RBigNum
+  char lStrValue[128];
+  for (lIdxChannel = 0; lIdxChannel < iNbrChannels; ++lIdxChannel) {
+    mpz_cdiv_q_ui(lSquareSums[lIdxChannel], lSquareSums[lIdxChannel], iNbrSamples);
+    mpz_sqrt(lSquareSums[lIdxChannel], lSquareSums[lIdxChannel]);
+    lRMSValues[lIdxChannel] = rb_cstr2inum(mpz_get_str(lStrValue, 16, lSquareSums[lIdxChannel]), 16);
+    mpz_clear(lSquareSums[lIdxChannel]);
+  }
+
+  return rb_ary_new4(iNbrChannels, lRMSValues);
+}
+
 // Initialize the module
 void Init_VolumeUtils() {
   VALUE lWSKModule = rb_define_module("WSK");
@@ -151,4 +247,5 @@ void Init_VolumeUtils() {
   VALUE lVolumeUtilsClass = rb_define_class_under(lVolumeUtilsModule, "VolumeUtils", rb_cObject);
 
   rb_define_method(lVolumeUtilsClass, "applyVolumeFct", volumeutils_applyVolumeFct, 6);
+  rb_define_method(lVolumeUtilsClass, "measureRMS", volumeutils_measureRMS, 4);
 }

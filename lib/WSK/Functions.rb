@@ -16,10 +16,6 @@ module WSK
       def initialize
         # The underlying Ruby function
         @Function = nil
-        # The underlying C function
-        @CFunction = nil
-        # The range for which the C function was instantiated
-        @CFunction_Range = nil
         # The C libraries
         @FunctionUtils = nil
         @VolumeUtils = nil
@@ -45,6 +41,56 @@ module WSK
         end
       end
 
+      # Read a function from the volume of an input data
+      #
+      # Parameters:
+      # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
+      # * *iIdxBeginSample* (_Integer_): Index of the first sample beginning the volume reading
+      # * *iIdxEndSample* (_Integer_): Index of the last sample ending the volume reading
+      # * *iInterval* (_Integer_): The number of samples used as an interval in measuring the volume
+      def readFromInputVolume(iInputData, iIdxBeginSample, iIdxEndSample, iInterval)
+        @Function = {
+          :FunctionType => FCTTYPE_PIECEWISE_LINEAR,
+          :Points => []
+        }
+        # Profile
+        prepareVolumeUtils
+        lIdxCurrentSample = iIdxBeginSample
+        while (lIdxCurrentSample <= iIdxEndSample)
+          lIdxCurrentEndSample = lIdxCurrentSample + iInterval - 1
+          if (lIdxCurrentEndSample > iIdxEndSample)
+            lIdxCurrentEndSample = iIdxEndSample
+          end
+          lRawBuffer = ''
+          iInputData.eachRawBuffer(lIdxCurrentSample, lIdxCurrentEndSample, :NbrSamplesPrefetch => iIdxEndSample-lIdxCurrentSample) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
+            lRawBuffer += iInputRawBuffer
+          end
+          # Profile this buffer
+          lRMSValues = @VolumeUtils.measureRMS(lRawBuffer, iInputData.Header.NbrBitsPerSample, iInputData.Header.NbrChannels, lIdxCurrentEndSample - lIdxCurrentSample + 1)
+          lRMSMoyValue = 0
+          lRMSValues.each do |iRMSValue|
+            lRMSMoyValue += iRMSValue
+          end
+          lRMSMoyValue /= lRMSValues.size
+          # Complete the function
+          if (@Function[:Points].empty?)
+            # First points: add also the point 0
+            @Function[:Points] = [ [0, lRMSMoyValue] ]
+          end
+          # Add a point to the function in the middle of this interval
+          lPointX = lIdxCurrentSample - iIdxBeginSample + (lIdxCurrentEndSample - lIdxCurrentSample + 1)/2
+          @Function[:Points] << [lPointX, lRMSMoyValue]
+          # Increment the cursor
+          lIdxCurrentSample = lIdxCurrentEndSample + 1
+          if (lIdxCurrentSample == iIdxEndSample + 1)
+            # The last point: add the ending one
+            @Function[:Points] << [iIdxEndSample - iIdxBeginSample, lRMSMoyValue]
+          end
+          $stdout.write("#{(lIdxCurrentSample*100)/(iIdxEndSample - iIdxBeginSample + 1)} %\015")
+          $stdout.flush
+        end
+      end
+
       # Apply the function on the volume of a raw buffer
       #
       # Parameters:
@@ -53,32 +99,28 @@ module WSK
       # * *iIdxBeginSample* (_Integer_): Index of the first sample beginning the volume transformation
       # * *iIdxEndSample* (_Integer_): Index of the last sample ending the volume transformation
       def applyOnVolume(iInputData, oOutputData, iIdxBeginSample, iIdxEndSample)
-        prepareCFunction(iIdxBeginSample, iIdxEndSample)
+        prepareFunctionUtils
+        lCFunction = @FunctionUtils.createCFunction(@Function, iIdxBeginSample, iIdxEndSample)
         lIdxBufferSample = iIdxBeginSample
         iInputData.eachRawBuffer(iIdxBeginSample, iIdxEndSample) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
           prepareVolumeUtils
-          oOutputData.pushRawBuffer(@VolumeUtils.applyVolumeFct(@CFunction, iInputRawBuffer, iInputData.Header.NbrBitsPerSample, iInputData.Header.NbrChannels, iNbrSamples, lIdxBufferSample))
+          oOutputData.pushRawBuffer(@VolumeUtils.applyVolumeFct(lCFunction, iInputRawBuffer, iInputData.Header.NbrBitsPerSample, iInputData.Header.NbrChannels, iNbrSamples, lIdxBufferSample))
           lIdxBufferSample += iNbrSamples
         end
       end
 
-      private
-
-      # Prepare the C function to be used.
-      # This can be called several times.
-      # It creates the C function translated into a given sample range, for optimized processing by C methods.
+      # Write the function to a file
       #
       # Parameters:
-      # * *iIdxBeginSample* (_Integer_): Index of the first sample that will begin the function
-      # * *iIdxEndSample* (_Integer_): Index of the last sample that will end the function
-      def prepareCFunction(iIdxBeginSample, iIdxEndSample)
-        if ((@CFunction == nil) or
-            (@CFunction_Range != [iIdxBeginSample, iIdxEndSample]))
-          prepareFunctionUtils
-          @CFunction = @FunctionUtils.createCFunction(@Function, iIdxBeginSample, iIdxEndSample)
-          @CFunction_Range = [iIdxBeginSample, iIdxEndSample]
+      # * *iFileName* (_String_): File name to write
+      def writeToFile(iFileName)
+        require 'pp'
+        File.open(iFileName, 'w') do |oFile|
+          oFile.write(@Function.pretty_inspect)
         end
       end
+
+      private
 
       # Prepare the Function utils C library.
       # This can be called several times.
