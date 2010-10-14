@@ -39,6 +39,8 @@ module WSK
         else
           lFunction = WSK::Functions::Function.new
           lFunction.readFromInputVolume(iInputData, lIdxBegin, lIdxEnd, lInterval)
+          # Normalize it
+          lFunction.divideBy(2**(iInputData.Header.NbrBitsPerSample-1))
           lFunction.writeToFile(@FctFileName)
         end
 

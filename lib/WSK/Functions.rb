@@ -109,6 +109,22 @@ module WSK
         end
       end
 
+      # Divide values by a given factor
+      #
+      # Parameters:
+      # * *iFactor* (_Integer_): Factor to divide by
+      def divideBy(iFactor)
+        lFloatFactor = iFactor.to_f
+        case @Function[:FunctionType]
+        when FCTTYPE_PIECEWISE_LINEAR
+          @Function[:Points].each do |ioPoint|
+            ioPoint[1] /= lFloatFactor
+          end
+        else
+          logErr "Unknown function type: #{@Function[:FunctionType]}"
+        end
+      end
+
       # Write the function to a file
       #
       # Parameters:
