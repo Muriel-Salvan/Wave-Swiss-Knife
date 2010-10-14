@@ -3,9 +3,6 @@
 
 #include "ruby.h"
 
-// Function types, as defined in Maps.rb
-#define FCTTYPE_PIECEWISE_LINEAR 0
-
 // Struct used to interpret raw buffers data of 24 bits
 typedef struct {
   signed int value:24;
@@ -27,6 +24,29 @@ typedef struct {
   tSampleValue min;
   tSampleValue max;
 } tThresholdInfo;
+
+// Function types, as defined in Functions.rb
+#define FCTTYPE_PIECEWISE_LINEAR 0
+
+// Function pointer for free
+typedef void(*tPtrFctFree)(void*);
+
+// Struct used to store piecewise linear function data
+typedef struct {
+  // The array of points coordinates, sorted by X value
+  tSampleIndex* pointsX;
+  long double* pointsY;
+} tFunction_PiecewiseLinear;
+
+// Struct used to store a function
+typedef struct {
+  // The function type
+  int fctType;
+  // The pointer to the free method (it will be called by the GC)
+  tPtrFctFree freeFct;
+  // The function object (should be a tFunction_Xxxx* type)
+  void* fctData;
+} tFunction;
 
 /**
  * Invoke eachRawBuffer on an input data.

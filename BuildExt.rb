@@ -4,6 +4,7 @@ lRootDir = File.expand_path(Dir.getwd)
   'ext/WSK/AnalyzeUtils',
   'ext/WSK/ArithmUtils',
   'ext/WSK/FFTUtils',
+  'ext/WSK/FunctionUtils',
   'ext/WSK/SilentUtils',
   'ext/WSK/VolumeUtils'
 ].each do |iExtPath|

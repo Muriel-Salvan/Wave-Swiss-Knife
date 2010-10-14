@@ -5,7 +5,7 @@ module WSK
 
   module Actions
 
-    class ApplyVolumeFct
+    class VolumeProfile
 
       include WSK::Common
       include WSK::Functions
@@ -19,7 +19,7 @@ module WSK
       # Return:
       # * _Integer_: The number of samples to be written
       def getNbrSamples(iInputData)
-        return iInputData.NbrSamples
+        return 0
       end
 
       # Execute
@@ -34,30 +34,34 @@ module WSK
 
         lIdxBegin = readDuration(@Begin, iInputData.Header.SampleRate)
         lIdxEnd = readDuration(@End, iInputData.Header.SampleRate)
+        lInterval = readDuration(@Interval, iInputData.Header.SampleRate)
         if (lIdxEnd >= iInputData.NbrSamples)
-          rError = RuntimeError.new("Transformation ends at #{lIdxEnd}, superceeding last sample (#{iInputData.NbrSamples-1})")
+          rError = RuntimeError.new("Profile ends at #{lIdxEnd}, superceeding last sample (#{iInputData.NbrSamples-1})")
         else
-          lFunction = WSK::Functions::Function.new
-          begin
-            lFunction.readFromFile(@FctFileName)
-          rescue Exception
-            rError = $!
-          end
-          if (rError == nil)
-            # First, write samples before
-            iInputData.eachRawBuffer(0, lIdxBegin-1) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
-              oOutputData.pushRawBuffer(iInputRawBuffer)
+          require 'WSK/VolumeUtils/VolumeUtils'
+          lVolumeUtils = VolumeUtils::VolumeUtils.new
+          # Create the C object that will store the volume profile
+          # TODO
+          # Profile
+          lIdxCurrentSample = lIdxBegin
+          while (lIdxCurrentSample <= lIdxEnd)
+            lIdxCurrentEndSample = lIdxCurrentSample + lInterval - 1
+            if (lIdxCurrentEndSample > lIdxEnd)
+              lIdxCurrentEndSample = lIdxEnd
             end
-            # Then apply volume transformation
-            lFunction.applyOnVolume(iInputData, oOutputData, lIdxBegin, lIdxEnd)
-            # Last, write samples after
-            iInputData.eachRawBuffer(lIdxEnd+1) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
-              oOutputData.pushRawBuffer(iInputRawBuffer)
+            lRawBuffer = ''
+            iInputData.eachRawBuffer(lIdxCurrentSample, lIdxCurrentEndSample, :NbrSamplesPrefetch => lIdxEnd-lIdxCurrentSample+1) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
+              lRawBuffer += iInputRawBuffer
             end
+            # Profile this buffer
+            # TODO
+            lIdxCurrentSample = lIdxCurrentEndSample + 1
           end
+          # Get the profile back from C and write it into the required file
+          # TODO
         end
 
-        return rError
+        return 0
       end
 
     end

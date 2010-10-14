@@ -3,6 +3,7 @@ require 'WSK/Model/InputData'
 require 'WSK/Model/Header'
 require 'WSK/FFT'
 require 'WSK/Maps'
+require 'WSK/Functions'
 
 module WSK
 
