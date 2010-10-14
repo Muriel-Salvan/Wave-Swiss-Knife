@@ -50,7 +50,7 @@ module WSK
           lMaxValue = 2**(iInputData.Header.NbrBitsPerSample-1) - 1
           lMinValue = -2**(iInputData.Header.NbrBitsPerSample-1)
           lFunction = {
-            :FunctionType => FCTTYPE_PIECEWISE_LINEAR,
+            :FunctionType => WSK::Functions::FCTTYPE_PIECEWISE_LINEAR,
             :MinValue => lMinValue,
             :MaxValue => lMaxValue,
             :Points => {

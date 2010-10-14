@@ -44,7 +44,7 @@ module WSK
         lFunctions = []
         lOffsets.each do |iOffset|
           lFunctions << {
-            :FunctionType => FCTTYPE_PIECEWISE_LINEAR,
+            :FunctionType => WSK::Functions::FCTTYPE_PIECEWISE_LINEAR,
             :MinValue => lMinValue,
             :MaxValue => lMaxValue,
             :Points => {
