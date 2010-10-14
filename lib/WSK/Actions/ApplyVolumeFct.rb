@@ -34,6 +34,9 @@ module WSK
 
         lIdxBegin = readDuration(@Begin, iInputData.Header.SampleRate)
         lIdxEnd = readDuration(@End, iInputData.Header.SampleRate)
+        if (lIdxEnd == -1)
+          lIdxEnd = iInputData.NbrSamples - 1
+        end
         if (lIdxEnd >= iInputData.NbrSamples)
           rError = RuntimeError.new("Transformation ends at #{lIdxEnd}, superceeding last sample (#{iInputData.NbrSamples-1})")
         else
@@ -49,7 +52,7 @@ module WSK
               oOutputData.pushRawBuffer(iInputRawBuffer)
             end
             # Then apply volume transformation
-            lFunction.applyOnVolume(iInputData, oOutputData, lIdxBegin, lIdxEnd)
+            lFunction.applyOnVolume(iInputData, oOutputData, lIdxBegin, lIdxEnd, (@UnitDB == 1))
             # Last, write samples after
             iInputData.eachRawBuffer(lIdxEnd+1) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
               oOutputData.pushRawBuffer(iInputRawBuffer)

@@ -12,6 +12,8 @@ module WSK
     # Class implementing a mathematical function that can then be used in many contexts
     class Function
 
+      include WSK::Common
+
       # Constructor
       def initialize
         # The underlying Ruby function
@@ -91,6 +93,14 @@ module WSK
         end
       end
 
+      # Set directly a function from a hash
+      #
+      # Parameters:
+      # * *iHashFunction* (<em>map<Symbol,Object></em>): The hashed function
+      def set(iHashFunction)
+        @Function = iHashFunction
+      end
+
       # Apply the function on the volume of a raw buffer
       #
       # Parameters:
@@ -98,13 +108,14 @@ module WSK
       # * *oOutputData* (<em>WSK::Model::DirectStream</em>): The output data
       # * *iIdxBeginSample* (_Integer_): Index of the first sample beginning the volume transformation
       # * *iIdxEndSample* (_Integer_): Index of the last sample ending the volume transformation
-      def applyOnVolume(iInputData, oOutputData, iIdxBeginSample, iIdxEndSample)
+      # * *iUnitDB* (_Boolean_): Are function values to be interpreted as DB units ?
+      def applyOnVolume(iInputData, oOutputData, iIdxBeginSample, iIdxEndSample, iUnitDB)
         prepareFunctionUtils
         lCFunction = @FunctionUtils.createCFunction(@Function, iIdxBeginSample, iIdxEndSample)
         lIdxBufferSample = iIdxBeginSample
         iInputData.eachRawBuffer(iIdxBeginSample, iIdxEndSample) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
           prepareVolumeUtils
-          oOutputData.pushRawBuffer(@VolumeUtils.applyVolumeFct(lCFunction, iInputRawBuffer, iInputData.Header.NbrBitsPerSample, iInputData.Header.NbrChannels, iNbrSamples, lIdxBufferSample))
+          oOutputData.pushRawBuffer(@VolumeUtils.applyVolumeFct(lCFunction, iInputRawBuffer, iInputData.Header.NbrBitsPerSample, iInputData.Header.NbrChannels, iNbrSamples, lIdxBufferSample, iUnitDB))
           lIdxBufferSample += iNbrSamples
         end
       end
@@ -119,6 +130,18 @@ module WSK
         when FCTTYPE_PIECEWISE_LINEAR
           @Function[:Points].each do |ioPoint|
             ioPoint[1] /= lFloatFactor
+          end
+        else
+          logErr "Unknown function type: #{@Function[:FunctionType]}"
+        end
+      end
+
+      # Convert the units in DB equivalent
+      def convertToDB
+        case @Function[:FunctionType]
+        when FCTTYPE_PIECEWISE_LINEAR
+          @Function[:Points].each do |ioPoint|
+            ioPoint[1], lPC = val2db(ioPoint[1])
           end
         else
           logErr "Unknown function type: #{@Function[:FunctionType]}"

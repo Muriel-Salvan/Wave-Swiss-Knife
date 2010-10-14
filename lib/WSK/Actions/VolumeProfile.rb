@@ -34,6 +34,9 @@ module WSK
         lIdxBegin = readDuration(@Begin, iInputData.Header.SampleRate)
         lIdxEnd = readDuration(@End, iInputData.Header.SampleRate)
         lInterval = readDuration(@Interval, iInputData.Header.SampleRate)
+        if (lIdxEnd == -1)
+          lIdxEnd = iInputData.NbrSamples - 1
+        end
         if (lIdxEnd >= iInputData.NbrSamples)
           rError = RuntimeError.new("Profile ends at #{lIdxEnd}, superceeding last sample (#{iInputData.NbrSamples-1})")
         else

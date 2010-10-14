@@ -16,8 +16,13 @@
     ],
     :End => [
       '--end <EndPos>', String,
-      '<EndPos>: Position to apply volume transformation to. Can be specified as a sample number or a float seconds (ie. 12.3s).',
+      '<EndPos>: Position to apply volume transformation to. Can be specified as a sample number or a float seconds (ie. 12.3s). -1 means to the end of file.',
       'Specify the last sample that will have the function applied'
+    ],
+    :UnitDB => [
+      '--unitdb <Switch>', Integer,
+      '<Switch>: 0 means that units used in the function are ratios. 1 means that units used in the functions are db.',
+      'Specify the unit used in the function'
     ]
   }
 }

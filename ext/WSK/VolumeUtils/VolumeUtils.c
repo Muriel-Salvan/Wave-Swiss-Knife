@@ -7,6 +7,7 @@
 // Struct used to convey data among iterators in the applyVolumeFct method for piecewise linear functions
 typedef struct {
   tFunction_PiecewiseLinear* fctData;
+  int unitDB;
   int idxPreviousPoint;
   int idxNextPoint;
   // Values used to cache segment computations
@@ -63,7 +64,11 @@ int volumeutils_processValue_applyVolumeFct_PiecewiseLinear(
       lPtrArgs->idxNextSegmentX = lPtrArgs->fctData->pointsX[lPtrArgs->idxNextPoint]+1;
     }
     // Compute the ratio to apply
-    lPtrArgs->currentRatio = lPtrArgs->idxPreviousPointY+((iIdxSample-lPtrArgs->idxPreviousPointX)*lPtrArgs->distWithNextY)/lPtrArgs->distWithNextX;
+    if (lPtrArgs->unitDB == 1) {
+      lPtrArgs->currentRatio = pow(2, (lPtrArgs->idxPreviousPointY+((iIdxSample-lPtrArgs->idxPreviousPointX)*lPtrArgs->distWithNextY)/lPtrArgs->distWithNextX)/6);
+    } else {
+      lPtrArgs->currentRatio = lPtrArgs->idxPreviousPointY+((iIdxSample-lPtrArgs->idxPreviousPointX)*lPtrArgs->distWithNextY)/lPtrArgs->distWithNextX;
+    }
   }
 
   // Write the correct value
@@ -83,6 +88,7 @@ int volumeutils_processValue_applyVolumeFct_PiecewiseLinear(
  * * *iValNbrChannels* (_Integer_): Number of channels
  * * *iValNbrSamples* (_Integer_): Number of samples
  * * *iValIdxBufferFirstSample* (_Integer_): Index of the first buffer's sample in the input data
+ * * *iValUnitDB* (_Boolean_): Are the units in DB scale ?
  * Return:
  * * _String_: Output buffer
  **/
@@ -93,12 +99,14 @@ static VALUE volumeutils_applyVolumeFct(
   VALUE iValNbrBitsPerSample,
   VALUE iValNbrChannels,
   VALUE iValNbrSamples,
-  VALUE iValIdxBufferFirstSample) {
+  VALUE iValIdxBufferFirstSample,
+  VALUE iValUnitDB) {
   // Translate Ruby objects
   int iNbrBitsPerSample = FIX2INT(iValNbrBitsPerSample);
   int iNbrChannels = FIX2INT(iValNbrChannels);
   tSampleIndex iNbrSamples = FIX2LONG(iValNbrSamples);
   tSampleIndex iIdxBufferFirstSample = FIX2LONG(iValIdxBufferFirstSample);
+  int iUnitDB = (iValUnitDB == Qtrue ? 1 : 0);
   // Get the C function
   tFunction* lPtrFct;
   Data_Get_Struct(iValCFunction, tFunction, lPtrFct);
@@ -122,6 +130,7 @@ static VALUE volumeutils_applyVolumeFct(
       lProcessParams.idxPreviousPointY = lProcessParams.fctData->pointsY[lProcessParams.idxPreviousPoint];
       lProcessParams.distWithNextY = lProcessParams.fctData->pointsY[lProcessParams.idxNextPoint]-lProcessParams.idxPreviousPointY;
       lProcessParams.idxNextSegmentX = lProcessParams.fctData->pointsX[lProcessParams.idxNextPoint]+1;
+      lProcessParams.unitDB = iUnitDB;
       // Iterate through the raw buffer
       commonutils_iterateThroughRawBufferOutput(
         iSelf,
@@ -246,6 +255,6 @@ void Init_VolumeUtils() {
   VALUE lVolumeUtilsModule = rb_define_module_under(lWSKModule, "VolumeUtils");
   VALUE lVolumeUtilsClass = rb_define_class_under(lVolumeUtilsModule, "VolumeUtils", rb_cObject);
 
-  rb_define_method(lVolumeUtilsClass, "applyVolumeFct", volumeutils_applyVolumeFct, 6);
+  rb_define_method(lVolumeUtilsClass, "applyVolumeFct", volumeutils_applyVolumeFct, 7);
   rb_define_method(lVolumeUtilsClass, "measureRMS", volumeutils_measureRMS, 4);
 }

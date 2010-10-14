@@ -1,10 +1,3 @@
-require 'WSK/RIFFReader'
-require 'WSK/Model/InputData'
-require 'WSK/Model/Header'
-require 'WSK/FFT'
-require 'WSK/Maps'
-require 'WSK/Functions'
-
 module WSK
 
   # Common methods
@@ -191,6 +184,25 @@ module WSK
       return rFFTMaxDistance, rFFTProfile
     end
 
+    # Convert a value to its db notation and % notation
+    #
+    # Parameters:
+    # * *iValue* (_Integer_): The value
+    # * *iMaxValue* (_Integer_): The maximal possible value
+    # Return:
+    # * _Float_: Its corresponding db
+    # * _Float_: Its corresponding percentage
+    def val2db(iValue, iMaxValue)
+      if (iValue == 0)
+        return -1.0/0, 0.0
+      else
+        if (defined?(@Log2) == nil)
+          @Log2 = Math.log(2.0)
+        end
+        return -6*(Math.log(Float(iMaxValue))-Math.log(Float(iValue.abs)))/@Log2, (Float(iValue.abs)*100)/Float(iMaxValue)
+      end
+    end
+
     private
 
     # Write the header to a file.
@@ -260,3 +272,10 @@ module WSK
   end
 
 end
+
+require 'WSK/RIFFReader'
+require 'WSK/Model/InputData'
+require 'WSK/Model/Header'
+require 'WSK/FFT'
+require 'WSK/Maps'
+require 'WSK/Functions'

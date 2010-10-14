@@ -16,7 +16,7 @@
     ],
     :End => [
       '--end <EndPos>', String,
-      '<EndPos>: Position to end profiling volume to. Can be specified as a sample number or a float seconds (ie. 12.3s).',
+      '<EndPos>: Position to end profiling volume to. Can be specified as a sample number or a float seconds (ie. 12.3s). -1 means to the end.',
       'Specify the ending of the profile'
     ],
     :Interval => [
