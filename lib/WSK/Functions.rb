@@ -137,15 +137,134 @@ module WSK
       end
 
       # Convert the units in DB equivalent
-      def convertToDB
+      #
+      # Parameters:
+      # * *iMaxYValue* (_Integer_): Maximal Y value
+      def convertToDB(iMaxYValue)
         case @Function[:FunctionType]
         when FCTTYPE_PIECEWISE_LINEAR
           @Function[:Points].each do |ioPoint|
-            ioPoint[1], lPC = val2db(ioPoint[1])
+            ioPoint[1], lPC = val2db(ioPoint[1], iMaxYValue)
           end
         else
           logErr "Unknown function type: #{@Function[:FunctionType]}"
         end
+      end
+
+      # Apply damping.
+      #
+      # Parameters:
+      # * *iSlopeUp* (_Float_): The maximal value of slope when increasing (should be > 0)
+      # * *iSlopeDown* (_Float_): The minimal value of slope when decreasing (should be < 0)
+      def applyDamping(iSlopeUp, iSlopeDown)
+        case @Function[:FunctionType]
+        when FCTTYPE_PIECEWISE_LINEAR
+          # Keep the first point
+          lNewPoints = [ @Function[:Points][0] ]
+          lIdxSegment = 0
+          while (lIdxSegment < @Function[:Points].size - 1)
+            # Compute the slope of this segment
+            lSegmentSlope = Float((@Function[:Points][lIdxSegment+1][1]-@Function[:Points][lIdxSegment][1]))/Float((@Function[:Points][lIdxSegment+1][0]-@Function[:Points][lIdxSegment][0]))
+            if (((lSegmentSlope > 0) and
+                 (lSegmentSlope > iSlopeUp)) or
+                ((lSegmentSlope < 0) and
+                 (lSegmentSlope < iSlopeDown)))
+              # Choose the correct damping slope depending on the direction
+              lSlope = nil
+              if (lSegmentSlope > 0)
+                lSlope = iSlopeUp
+              else
+                lSlope = iSlopeDown
+              end
+              # We have to apply damping starting the beginning of this segment.
+              # Find the next intersection between the damped segment and our function.
+              # The abscisse of the intersection
+              lIntersectX = nil
+              # A constant for the next loop
+              lDampedSegmentOffsetY = @Function[:Points][lIdxSegment][1] - @Function[:Points][lIdxSegment][0]*lSlope
+              lIdxSegmentIntersect = lIdxSegment + 1
+              while (lIdxSegmentIntersect < @Function[:Points].size - 1)
+                # Find if there is an intersection
+                lSegmentIntersectDistX = @Function[:Points][lIdxSegmentIntersect+1][0] - @Function[:Points][lIdxSegmentIntersect][0]
+                lSegmentIntersectDistY = @Function[:Points][lIdxSegmentIntersect+1][1] - @Function[:Points][lIdxSegmentIntersect][1]
+                lIntersectX = ((lDampedSegmentOffsetY - @Function[:Points][lIdxSegmentIntersect][1])*lSegmentIntersectDistX + @Function[:Points][lIdxSegmentIntersect][0]*lSegmentIntersectDistY)/(lSegmentIntersectDistY - lSlope*lSegmentIntersectDistX)
+                # Is lIntersectX among our range ?
+                if ((lIntersectX >= @Function[:Points][lIdxSegmentIntersect][0]) and
+                    (lIntersectX <= @Function[:Points][lIdxSegmentIntersect+1][0]))
+                  # We have an intersection in the segment beginning at point n. lIdxSegmentIntersect, exactly at abscisse lIntersectX.
+                  break
+                else
+                  # Erase it as we will test for it after the loop
+                  lIntersectX = nil
+                end
+                lIdxSegmentIntersect += 1
+              end
+              # Here, lIdxSegmentIntersect can point to the last point if no intersection was found
+              if (lIntersectX == nil)
+                # We could not find any intersection
+                # We consider adding a point following the damped slope till the end of the function
+                lIntersectX = @Function[:Points][-1][0]
+              end
+              # Add the intersecting point (could be the last one)
+              lIntersectPoint = [ lIntersectX, (lIntersectX - @Function[:Points][lIdxSegment][0])*lSlope + @Function[:Points][lIdxSegment][1] ]
+              lNewPoints << lIntersectPoint
+              # Continue after this intersection (we create also the intersecting point on our old points by modifying them)
+              @Function[:Points][lIdxSegmentIntersect] = lIntersectPoint
+              lIdxSegment = lIdxSegmentIntersect
+            else
+              # The slope is ok, keep this segment as it is
+              lNewPoints << @Function[:Points][lIdxSegment+1]
+              lIdxSegment += 1
+            end
+          end
+          # Replace our points with new ones
+          @Function[:Points] = lNewPoints
+        else
+          logErr "Unknown function type: #{@Function[:FunctionType]}"
+        end
+      end
+
+      # Get the function bounds
+      #
+      # Return:
+      # * _Float_: Minimal X
+      # * _Float_: Minimal Y
+      # * _Float_: Maximal X
+      # * _Float_: Maximal Y
+      def getBounds
+        rMinX = nil
+        rMinY = nil
+        rMaxX = nil
+        rMaxY = nil
+
+        case @Function[:FunctionType]
+        when FCTTYPE_PIECEWISE_LINEAR
+          @Function[:Points].each do |ioPoint|
+            if (rMinX == nil)
+              rMinX = ioPoint[0]
+              rMinY = ioPoint[1]
+              rMaxX = ioPoint[0]
+              rMaxY = ioPoint[1]
+            else
+              if (rMinX > ioPoint[0])
+                rMinX = ioPoint[0]
+              end
+              if (rMaxX < ioPoint[0])
+                rMaxX = ioPoint[0]
+              end
+              if (rMinY > ioPoint[1])
+                rMinY = ioPoint[1]
+              end
+              if (rMaxY < ioPoint[1])
+                rMaxY = ioPoint[1]
+              end
+            end
+          end
+        else
+          logErr "Unknown function type: #{@Function[:FunctionType]}"
+        end
+
+        return rMinX, rMinY, rMaxX, rMaxY
       end
 
       # Write the function to a file
