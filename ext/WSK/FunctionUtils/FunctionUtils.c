@@ -61,8 +61,8 @@ static int functionutils_fillCFunction_PiecewiseLinear(
   lPtrFctData->pointsY = ALLOC_N(long double, lNbrPoints);
 
   // Get the X bounds
-  long double lMinX = FIX2LONG(rb_ary_entry(rb_ary_entry(lValSortedPoints, 0), 0));
-  long double lDistX = FIX2LONG(rb_ary_entry(rb_ary_entry(lValSortedPoints, lNbrPoints-1), 0))-lMinX;
+  long double lMinX = NUM2DBL(rb_ary_entry(rb_ary_entry(lValSortedPoints, 0), 0));
+  long double lDistX = NUM2DBL(rb_ary_entry(rb_ary_entry(lValSortedPoints, lNbrPoints-1), 0))-lMinX;
   long double lDistSample = iIdxEndSample-iIdxBeginSample;
 
   // Loop on each points pair
@@ -70,10 +70,10 @@ static int functionutils_fillCFunction_PiecewiseLinear(
   int lIdxPoint;
   for (lIdxPoint = 0; lIdxPoint < lNbrPoints; ++lIdxPoint) {
     lValPoint = rb_ary_entry(lValSortedPoints, lIdxPoint);
-    lPtrFctData->pointsX[lIdxPoint] = iIdxBeginSample+((tSampleIndex)((lDistSample*(FIX2LONG(rb_ary_entry(lValPoint, 0))-lMinX))/lDistX));
+    lPtrFctData->pointsX[lIdxPoint] = iIdxBeginSample+((tSampleIndex)((lDistSample*(((long double)NUM2DBL(rb_ary_entry(lValPoint, 0)))-lMinX))/lDistX));
     lPtrFctData->pointsY[lIdxPoint] = NUM2DBL(rb_ary_entry(lValPoint, 1));
 /*
-    printf("Function point: %lld,%LF\n", lPtrFctData->pointsX[lIdxPoint], lPtrFctData->pointsY[lIdxPoint]);
+    printf("Function point n.%d: %lld,%LF\n", lIdxPoint, lPtrFctData->pointsX[lIdxPoint], lPtrFctData->pointsY[lIdxPoint]);
 */
   }
 

@@ -122,8 +122,12 @@ static VALUE volumeutils_applyVolumeFct(
       // Create parameters to give the process
       tApplyVolumeFctStruct_PiecewiseLinear lProcessParams;
       lProcessParams.fctData = lPtrFct->fctData;
+      // Find the segment containing iIdxBufferFirstSample
       lProcessParams.idxPreviousPoint = 0;
-      lProcessParams.idxNextPoint = 1;
+      while (lProcessParams.fctData->pointsX[lProcessParams.idxPreviousPoint] < iIdxBufferFirstSample) {
+        ++lProcessParams.idxPreviousPoint;
+      }
+      lProcessParams.idxNextPoint = lProcessParams.idxPreviousPoint + 1;
       // Compute first cache values
       lProcessParams.idxPreviousPointX = lProcessParams.fctData->pointsX[lProcessParams.idxPreviousPoint];
       lProcessParams.distWithNextX = lProcessParams.fctData->pointsX[lProcessParams.idxNextPoint]-lProcessParams.idxPreviousPointX;

@@ -194,7 +194,7 @@ module WSK
               # Find the map function's segment containing the beginning of our segment
               lIdxMapSegment = 0
               while (lBeginY >= lMapPoints[lIdxMapSegment+1][0])
-                ++lIdxMapSegment
+                lIdxMapSegment += 1
               end
               # Compute the new value of our segment beginning
               lNewBeginY = lMapPoints[lIdxMapSegment][1] + ((lMapPoints[lIdxMapSegment+1][1]-lMapPoints[lIdxMapSegment][1])*(lBeginY-lMapPoints[lIdxMapSegment][0]))/(lMapPoints[lIdxMapSegment+1][0]-lMapPoints[lIdxMapSegment][0])
@@ -207,7 +207,7 @@ module WSK
                   # Find the absciss at which our Y coordinates get the value lMapPoints[lIdxMapSegment+1][0]
                   lNewSegmentX = lBeginX + ((lEndX-lBeginX)*(lMapPoints[lIdxMapSegment+1][0] - lBeginY))/(lEndY-lBeginY)
                   lNewPoints << [ lNewSegmentX, lMapPoints[lIdxMapSegment+1][1] ]
-                  ++lIdxMapSegment
+                  lIdxMapSegment += 1
                 end
                 # Our segment ends before next map segment
               else
@@ -216,7 +216,7 @@ module WSK
                   # Find the absciss at which our Y coordinates get the value lMapPoints[lIdxMapSegment][0]
                   lNewSegmentX = lBeginX + ((lEndX-lBeginX)*(lMapPoints[lIdxMapSegment][0] - lBeginY))/(lEndY-lBeginY)
                   lNewPoints << [ lNewSegmentX, lMapPoints[lIdxMapSegment][1] ]
-                  --lIdxMapSegment
+                  lIdxMapSegment -= 1
                 end
                 # Our segment ends before previous map segment
               end
@@ -225,7 +225,7 @@ module WSK
                 lNewEndY = lMapPoints[lIdxMapSegment][1] + ((lMapPoints[lIdxMapSegment+1][1]-lMapPoints[lIdxMapSegment][1])*(lEndY-lMapPoints[lIdxMapSegment][0]))/(lMapPoints[lIdxMapSegment+1][0]-lMapPoints[lIdxMapSegment][0])
                 lNewPoints << [ lEndX, lNewEndY ]
               end
-              ++lIdxSegment
+              lIdxSegment += 1
             end
             # Replace with new points
             @Function[:Points] = lNewPoints
@@ -248,7 +248,13 @@ module WSK
           when FCTTYPE_PIECEWISE_LINEAR
             lNewPoints = []
             unionXWithFunction_PiecewiseLinear(iSubFunction) do |iX, iY, iOtherY|
-              lNewPoints << [ iX, iY - iOtherY ]
+              if (iY == nil)
+                lNewPoints << [ iX, -iOtherY ]
+              elsif (iOtherY == nil)
+                lNewPoints << [ iX, iY ]
+              else
+                lNewPoints << [ iX, iY - iOtherY ]
+              end
             end
             # Replace with new points
             @Function[:Points] = lNewPoints
@@ -271,7 +277,13 @@ module WSK
           when FCTTYPE_PIECEWISE_LINEAR
             lNewPoints = []
             unionXWithFunction_PiecewiseLinear(iDivFunction) do |iX, iY, iOtherY|
-              lNewPoints << [ iX, iY / iOtherY ]
+              if (iY == nil)
+                lNewPoints << [ iX, 0 ]
+              elsif (iOtherY == nil)
+                lNewPoints << [ iX, 0 ]
+              else
+                lNewPoints << [ iX, iY / iOtherY ]
+              end
             end
             # Replace with new points
             @Function[:Points] = lNewPoints
@@ -328,21 +340,32 @@ module WSK
         lIdxSegment = 0
         lIdxOtherSegment = 0
         lXList.each do |iX|
-          if (lPoints[lIdxSegment][0] == iX)
+          if (lPoints[lIdxSegment] == nil)
+            # No abscisse on lPoints for this iX
+            # Forcefully we have lOtherPoints[lIdxOtherSegment][0] == iX
+            yield(iX, nil, lOtherPoints[lIdxOtherSegment][1])
+            lIdxOtherSegment += 1
+          elsif (lOtherPoints[lIdxOtherSegment] == nil)
+            # No abscisse on lOtherPoints for this iX
+            # Forcefully we have lPoints[lIdxSegment][0] == iX
+            yield(iX, lPoints[lIdxSegment][1], nil)
+            lIdxSegment += 1
+          elsif (lPoints[lIdxSegment][0] == iX)
+            # lPoints has this abscisse
             if (lOtherPoints[lIdxOtherSegment][0] == iX)
               # If both functions have a point here, it's easy.
               yield(iX, lPoints[lIdxSegment][1], lOtherPoints[lIdxOtherSegment][1])
-              ++lIdxOtherSegment
+              lIdxOtherSegment += 1
             else
               # Compute the Y value for the other function
               yield(iX, lPoints[lIdxSegment][1], lOtherPoints[lIdxOtherSegment-1][1] + ((lOtherPoints[lIdxOtherSegment][1] - lOtherPoints[lIdxOtherSegment-1][1])*(iX - lOtherPoints[lIdxOtherSegment-1][0]))/(lOtherPoints[lIdxOtherSegment][0] - lOtherPoints[lIdxOtherSegment-1][0]))
             end
-            ++lIdxSegment
+            lIdxSegment += 1
           else
             # We have forcefully lOtherPoints[lIdxOtherSegment][0] == iX
             # Compute the Y value for this function
             yield(iX, lPoints[lIdxSegment-1][1] + ((lPoints[lIdxSegment][1] - lPoints[lIdxSegment-1][1])*(iX - lPoints[lIdxSegment-1][0]))/(lPoints[lIdxSegment][0] - lPoints[lIdxSegment-1][0]), lOtherPoints[lIdxOtherSegment][1])
-            ++lIdxOtherSegment
+            lIdxOtherSegment += 1
           end
         end
       end
