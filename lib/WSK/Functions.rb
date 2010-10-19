@@ -465,7 +465,7 @@ module WSK
               lNewPoints << @Function[:Points][lIdxSegment]
               lLastSlope = lSlope
             end
-            ++lIdxSegment
+            lIdxSegment += 1
           end
           # Add last point
           lNewPoints << @Function[:Points][-1]
