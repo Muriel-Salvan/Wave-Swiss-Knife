@@ -53,6 +53,9 @@ int volumeutils_processValue_applyVolumeFct_PiecewiseLinear(
   // Change caches if needed
   if (iIdxChannel == 0) {
     if (iIdxSample == lPtrArgs->idxNextSegmentX) {
+/*
+      printf("[%lld] Changing segment (%lld reached) to [%d - %d] ([%lld - %lld])\n", iIdxSample, lPtrArgs->idxNextSegmentX, lPtrArgs->idxPreviousPoint+1, lPtrArgs->idxNextPoint+1, lPtrArgs->fctData->pointsX[lPtrArgs->idxPreviousPoint+1], lPtrArgs->fctData->pointsX[lPtrArgs->idxNextPoint+1]);
+*/
       // Switch to the next segment
       ++lPtrArgs->idxNextPoint;
       ++lPtrArgs->idxPreviousPoint;
@@ -69,11 +72,16 @@ int volumeutils_processValue_applyVolumeFct_PiecewiseLinear(
     } else {
       lPtrArgs->currentRatio = lPtrArgs->idxPreviousPointY+((iIdxSample-lPtrArgs->idxPreviousPointX)*lPtrArgs->distWithNextY)/lPtrArgs->distWithNextX;
     }
+/*
+    if ((iIdxSample > 26563930) && (iIdxSample < 26563940)) {
+      printf("[%lld] idxPreviousPoint=%d idxPreviousPointX=%lld idxPreviousPointY=%Lf idxNextPoint=%d distWithNextX=%lld distWithNextY=%Lf idxNextSegmentX=%lld currentRatio=%Lf\n", iIdxSample, lPtrArgs->idxPreviousPoint, lPtrArgs->idxPreviousPointX, lPtrArgs->idxPreviousPointY, lPtrArgs->idxNextPoint, lPtrArgs->distWithNextX, lPtrArgs->distWithNextY, lPtrArgs->idxNextSegmentX, lPtrArgs->currentRatio);
+    }
+*/
   }
 
   // Write the correct value
   (*oPtrValue) = iValue*lPtrArgs->currentRatio;
-
+  
   return 0;
 }
 
@@ -123,11 +131,14 @@ static VALUE volumeutils_applyVolumeFct(
       tApplyVolumeFctStruct_PiecewiseLinear lProcessParams;
       lProcessParams.fctData = lPtrFct->fctData;
       // Find the segment containing iIdxBufferFirstSample
-      lProcessParams.idxPreviousPoint = 0;
-      while (lProcessParams.fctData->pointsX[lProcessParams.idxPreviousPoint] < iIdxBufferFirstSample) {
-        ++lProcessParams.idxPreviousPoint;
+      lProcessParams.idxNextPoint = 0;
+      while (lProcessParams.fctData->pointsX[lProcessParams.idxNextPoint] <= iIdxBufferFirstSample) {
+        ++lProcessParams.idxNextPoint;
       }
-      lProcessParams.idxNextPoint = lProcessParams.idxPreviousPoint + 1;
+      lProcessParams.idxPreviousPoint = lProcessParams.idxNextPoint - 1;
+/*
+      printf("Apply on volume starts on sample %lld at segment [%d - %d] (%lld - %lld]).\n", iIdxBufferFirstSample, lProcessParams.idxPreviousPoint, lProcessParams.idxNextPoint, lProcessParams.fctData->pointsX[lProcessParams.idxPreviousPoint], lProcessParams.fctData->pointsX[lProcessParams.idxNextPoint]);
+*/
       // Compute first cache values
       lProcessParams.idxPreviousPointX = lProcessParams.fctData->pointsX[lProcessParams.idxPreviousPoint];
       lProcessParams.distWithNextX = lProcessParams.fctData->pointsX[lProcessParams.idxNextPoint]-lProcessParams.idxPreviousPointX;
