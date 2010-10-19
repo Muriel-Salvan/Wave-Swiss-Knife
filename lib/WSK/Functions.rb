@@ -1,12 +1,14 @@
+require 'bigdecimal'
+
 module WSK
 
   module Functions
 
     # Function type piecewise linear.
     # Here are the possible attributes used by this type:
-    # *:MinValue* (_Integer_): Minimal value of the plots of the function [optional = Minimal value of points]
-    # *:MaxValue* (_Integer_): Maximal value of the plots of the function [optional = Maximal value of points]
-    # *:Points* (<em>map<Integer,Integer></em>): Coordinates of points indicating each linear part
+    # *:MinValue* (_BigDecimal_): Minimal value of the plots of the function [optional = Minimal value of points]
+    # *:MaxValue* (_BigDecimal_): Maximal value of the plots of the function [optional = Maximal value of points]
+    # *:Points* (<em>map<BigDecimal,BigDecimal></em>): Coordinates of points indicating each linear part
     FCTTYPE_PIECEWISE_LINEAR = 0
 
     # Class implementing a mathematical function that can then be used in many contexts
@@ -41,6 +43,8 @@ module WSK
         rescue Exception
           raise RuntimeError.new("Invalid function specified in file #{iFileName}: #{$!}")
         end
+        convertToBigDecimal
+        optimize
       end
 
       # Read a function from the volume of an input data
@@ -91,6 +95,7 @@ module WSK
           $stdout.write("#{(lIdxCurrentSample*100)/(iIdxEndSample - iIdxBeginSample + 1)} %\015")
           $stdout.flush
         end
+        convertToBigDecimal
         optimize
       end
 
@@ -100,6 +105,8 @@ module WSK
       # * *iHashFunction* (<em>map<Symbol,Object></em>): The hashed function
       def set(iHashFunction)
         @Function = iHashFunction
+        convertToBigDecimal
+        optimize
       end
 
       # Apply the function on the volume of a raw buffer
@@ -126,16 +133,15 @@ module WSK
       # Parameters:
       # * *iFactor* (_Integer_): Factor to divide by
       def divideBy(iFactor)
-        lFloatFactor = iFactor.to_f
+        lFactor = BigDecimal(iFactor.to_s)
         case @Function[:FunctionType]
         when FCTTYPE_PIECEWISE_LINEAR
           @Function[:Points].each do |ioPoint|
-            ioPoint[1] /= lFloatFactor
+            ioPoint[1] /= lFactor
           end
         else
           logErr "Unknown function type: #{@Function[:FunctionType]}"
         end
-        optimize
       end
 
       # Convert the units in DB equivalent
@@ -146,7 +152,7 @@ module WSK
         case @Function[:FunctionType]
         when FCTTYPE_PIECEWISE_LINEAR
           @Function[:Points].each do |ioPoint|
-            ioPoint[1], lPC = val2db(ioPoint[1], iMaxYValue)
+            ioPoint[1] = BigDecimal(val2db(ioPoint[1], iMaxYValue)[0].to_s)
           end
         else
           logErr "Unknown function type: #{@Function[:FunctionType]}"
@@ -173,7 +179,7 @@ module WSK
             lIdxSegment = 0
             while (lIdxSegment < @Function[:Points].size - 1)
               # Compute the slope of this segment
-              lSegmentSlope = Float((@Function[:Points][lIdxSegment+1][1]-@Function[:Points][lIdxSegment][1]))/Float((@Function[:Points][lIdxSegment+1][0]-@Function[:Points][lIdxSegment][0]))
+              lSegmentSlope = (@Function[:Points][lIdxSegment+1][1]-@Function[:Points][lIdxSegment][1])/(@Function[:Points][lIdxSegment+1][0]-@Function[:Points][lIdxSegment][0])
               if (((lSegmentSlope > 0) and
                    (iSlopeUp != nil) and
                    (lSegmentSlope > iSlopeUp)) or
@@ -183,9 +189,9 @@ module WSK
                 # Choose the correct damping slope depending on the direction
                 lSlope = nil
                 if (lSegmentSlope > 0)
-                  lSlope = iSlopeUp.to_f
+                  lSlope = BigDecimal(iSlopeUp.to_s)
                 else
-                  lSlope = iSlopeDown.to_f
+                  lSlope = BigDecimal(iSlopeDown.to_s)
                 end
                 # We have to apply damping starting the beginning of this segment.
                 # Find the next intersection between the damped segment and our function.
@@ -294,9 +300,20 @@ module WSK
       # Parameters:
       # * *iFileName* (_String_): File name to write
       def writeToFile(iFileName)
-        require 'pp'
-        File.open(iFileName, 'w') do |oFile|
-          oFile.write(@Function.pretty_inspect)
+        case @Function[:FunctionType]
+        when FCTTYPE_PIECEWISE_LINEAR
+          # First, convert points into float
+          lData = @Function.clone
+          lFloatPoints = lData[:Points].map do |iPoint|
+            next [iPoint[0].to_f, iPoint[1].to_f ]
+          end
+          lData[:Points] = lFloatPoints
+          require 'pp'
+          File.open(iFileName, 'w') do |oFile|
+            oFile.write(lData.pretty_inspect)
+          end
+        else
+          logErr "Unknown function type: #{@Function[:FunctionType]}"
         end
       end
 
@@ -425,7 +442,7 @@ module WSK
               elsif (iOtherY == nil)
                 lNewPoints << [ iX, 0 ]
               else
-                lNewPoints << [ iX, iY / Float(iOtherY) ]
+                lNewPoints << [ iX, iY / iOtherY ]
               end
             end
             # Replace with new points
@@ -476,6 +493,28 @@ module WSK
         end
       end
 
+      # Convert Floats into BigDecimals
+      def convertToBigDecimal
+        case @Function[:FunctionType]
+        when FCTTYPE_PIECEWISE_LINEAR
+          @Function[:Points] = @Function[:Points].map do |iPoint|
+            if (iPoint[0].is_a?(BigDecimal))
+              if (iPoint[1].is_a?(BigDecimal))
+                next iPoint
+              else
+                next [ iPoint[0], BigDecimal(iPoint[1].to_s) ]
+              end
+            elsif (iPoint[1].is_a?(BigDecimal))
+              next [ BigDecimal(iPoint[0].to_s), iPoint[1] ]
+            else
+              next [ BigDecimal(iPoint[0].to_s), BigDecimal(iPoint[1].to_s) ]
+            end
+          end
+        else
+          logErr "Unknown function type: #{@Function[:FunctionType]}"
+        end
+      end
+
       # Prepare the Function utils C library.
       # This can be called several times.
       def prepareFunctionUtils
@@ -499,9 +538,9 @@ module WSK
       # Parameters:
       # * *iOtherFunction* (_Function_): The other function
       # * *CodeBlock*: Code called for each point found:
-      # ** *iX* (_Integer_): The corresponding abscisse (can be nil if none)
-      # ** *iY* (_Float_): The corresponding Y value for this function (can be nil if none)
-      # ** *iOtherY* (_Float_): The corresponding Y value for the other function
+      # ** *iX* (_BigDecimal_): The corresponding abscisse (can be nil if none)
+      # ** *iY* (_BigDecimal_): The corresponding Y value for this function (can be nil if none)
+      # ** *iOtherY* (_BigDecimal_): The corresponding Y value for the other function
       def unionXWithFunction_PiecewiseLinear(iOtherFunction)
         lPoints = @Function[:Points]
         lOtherPoints = iOtherFunction.functionData[:Points]

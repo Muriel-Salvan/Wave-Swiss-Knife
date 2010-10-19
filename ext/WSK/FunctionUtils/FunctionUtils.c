@@ -32,6 +32,21 @@ static void functionutils_freeCFct_PiecewiseLinear(void* iPtrCFct) {
   free(lPtrCFct->pointsY);
 }
 
+static int gID_to_f;
+
+/**
+ * Convert a Ruby BigDecimal into a long double
+ *
+ * Parameters:
+ * * *iValBD* (_BigDecimal_): The BigDecimal to convert
+ * Return:
+ * * <em>long double</em>: The equivalent long double
+ */
+inline long double bd2ld(
+  VALUE iValBD) {
+  return NUM2DBL(rb_funcall(iValBD, gID_to_f, 0));
+}
+
 /**
  * Fill a C function with a given function of type Piecewise Linear
  *
@@ -61,8 +76,8 @@ static int functionutils_fillCFunction_PiecewiseLinear(
   lPtrFctData->pointsY = ALLOC_N(long double, lNbrPoints);
 
   // Get the X bounds
-  long double lMinX = NUM2DBL(rb_ary_entry(rb_ary_entry(lValSortedPoints, 0), 0));
-  long double lDistX = NUM2DBL(rb_ary_entry(rb_ary_entry(lValSortedPoints, lNbrPoints-1), 0))-lMinX;
+  long double lMinX = bd2ld(rb_ary_entry(rb_ary_entry(lValSortedPoints, 0), 0));
+  long double lDistX = bd2ld(rb_ary_entry(rb_ary_entry(lValSortedPoints, lNbrPoints-1), 0))-lMinX;
   long double lDistSample = iIdxEndSample-iIdxBeginSample;
 
   // Loop on each points pair
@@ -70,8 +85,8 @@ static int functionutils_fillCFunction_PiecewiseLinear(
   int lIdxPoint;
   for (lIdxPoint = 0; lIdxPoint < lNbrPoints; ++lIdxPoint) {
     lValPoint = rb_ary_entry(lValSortedPoints, lIdxPoint);
-    lPtrFctData->pointsX[lIdxPoint] = iIdxBeginSample+((tSampleIndex)((lDistSample*(((long double)NUM2DBL(rb_ary_entry(lValPoint, 0)))-lMinX))/lDistX));
-    lPtrFctData->pointsY[lIdxPoint] = NUM2DBL(rb_ary_entry(lValPoint, 1));
+    lPtrFctData->pointsX[lIdxPoint] = iIdxBeginSample+((tSampleIndex)((lDistSample*(bd2ld(rb_ary_entry(lValPoint, 0))-lMinX))/lDistX));
+    lPtrFctData->pointsY[lIdxPoint] = bd2ld(rb_ary_entry(lValPoint, 1));
 /*
     printf("Function point n.%d: %lld,%LF\n", lIdxPoint, lPtrFctData->pointsX[lIdxPoint], lPtrFctData->pointsY[lIdxPoint]);
 */
@@ -124,4 +139,5 @@ void Init_FunctionUtils() {
   VALUE lFunctionUtilsClass = rb_define_class_under(lFunctionUtilsModule, "FunctionUtils", rb_cObject);
 
   rb_define_method(lFunctionUtilsClass, "createCFunction", functionutils_createCFunction, 3);
+  gID_to_f = rb_intern("to_f");
 }
