@@ -80,7 +80,7 @@ module WSK
             @Function[:Points] = [ [0, lRMSMoyValue] ]
           end
           # Add a point to the function in the middle of this interval
-          lPointX = lIdxCurrentSample - iIdxBeginSample + (lIdxCurrentEndSample - lIdxCurrentSample + 1)/2
+          lPointX = lIdxCurrentSample - iIdxBeginSample + (lIdxCurrentEndSample - lIdxCurrentSample + 1)/2.0
           @Function[:Points] << [lPointX, lRMSMoyValue]
           # Increment the cursor
           lIdxCurrentSample = lIdxCurrentEndSample + 1
@@ -91,6 +91,7 @@ module WSK
           $stdout.write("#{(lIdxCurrentSample*100)/(iIdxEndSample - iIdxBeginSample + 1)} %\015")
           $stdout.flush
         end
+        optimize
       end
 
       # Set directly a function from a hash
@@ -134,6 +135,7 @@ module WSK
         else
           logErr "Unknown function type: #{@Function[:FunctionType]}"
         end
+        optimize
       end
 
       # Convert the units in DB equivalent
@@ -181,9 +183,9 @@ module WSK
                 # Choose the correct damping slope depending on the direction
                 lSlope = nil
                 if (lSegmentSlope > 0)
-                  lSlope = iSlopeUp
+                  lSlope = iSlopeUp.to_f
                 else
-                  lSlope = iSlopeDown
+                  lSlope = iSlopeDown.to_f
                 end
                 # We have to apply damping starting the beginning of this segment.
                 # Find the next intersection between the damped segment and our function.
@@ -232,6 +234,7 @@ module WSK
             logErr "Unknown function type: #{@Function[:FunctionType]}"
           end
         end
+        optimize
       end
 
       # Invert the abscisses of a function
@@ -335,7 +338,7 @@ module WSK
                 lIdxMapSegment += 1
               end
               # Compute the new value of our segment beginning
-              lNewBeginY = lMapPoints[lIdxMapSegment][1] + ((lMapPoints[lIdxMapSegment+1][1]-lMapPoints[lIdxMapSegment][1])*(lBeginY-lMapPoints[lIdxMapSegment][0]))/(lMapPoints[lIdxMapSegment+1][0]-lMapPoints[lIdxMapSegment][0])
+              lNewBeginY = lMapPoints[lIdxMapSegment][1] + ((lMapPoints[lIdxMapSegment+1][1]-lMapPoints[lIdxMapSegment][1])*(lBeginY-lMapPoints[lIdxMapSegment][0]))/Float(lMapPoints[lIdxMapSegment+1][0]-lMapPoints[lIdxMapSegment][0])
               lNewPoints << [ lBeginX, lNewBeginY ]
               # Get the next map segments unless we reach our segment's end
               # !!! Find the next map segment according to the direction
@@ -343,16 +346,16 @@ module WSK
                 while (lEndY > lMapPoints[lIdxMapSegment+1][0])
                   # We have a new map segment to consider in our segment
                   # Find the absciss at which our Y coordinates get the value lMapPoints[lIdxMapSegment+1][0]
-                  lNewSegmentX = lBeginX + ((lEndX-lBeginX)*(lMapPoints[lIdxMapSegment+1][0] - lBeginY))/(lEndY-lBeginY)
+                  lNewSegmentX = lBeginX + ((lEndX-lBeginX)*(lMapPoints[lIdxMapSegment+1][0] - lBeginY))/Float(lEndY-lBeginY)
                   lNewPoints << [ lNewSegmentX, lMapPoints[lIdxMapSegment+1][1] ]
                   lIdxMapSegment += 1
                 end
                 # Our segment ends before next map segment
               else
-                while (lEndY <= lMapPoints[lIdxMapSegment][0])
+                while (lEndY < lMapPoints[lIdxMapSegment][0])
                   # We have a new map segment to consider in our segment
                   # Find the absciss at which our Y coordinates get the value lMapPoints[lIdxMapSegment][0]
-                  lNewSegmentX = lBeginX + ((lEndX-lBeginX)*(lMapPoints[lIdxMapSegment][0] - lBeginY))/(lEndY-lBeginY)
+                  lNewSegmentX = lBeginX + ((lEndX-lBeginX)*(lMapPoints[lIdxMapSegment][0] - lBeginY))/Float(lEndY-lBeginY)
                   lNewPoints << [ lNewSegmentX, lMapPoints[lIdxMapSegment][1] ]
                   lIdxMapSegment -= 1
                 end
@@ -360,7 +363,7 @@ module WSK
               end
               # Write the segment end if it is the last one (otherwise it will be written by the next iteration)
               if (lIdxSegment == lPoints.size-2)
-                lNewEndY = lMapPoints[lIdxMapSegment][1] + ((lMapPoints[lIdxMapSegment+1][1]-lMapPoints[lIdxMapSegment][1])*(lEndY-lMapPoints[lIdxMapSegment][0]))/(lMapPoints[lIdxMapSegment+1][0]-lMapPoints[lIdxMapSegment][0])
+                lNewEndY = lMapPoints[lIdxMapSegment][1] + ((lMapPoints[lIdxMapSegment+1][1]-lMapPoints[lIdxMapSegment][1])*(lEndY-lMapPoints[lIdxMapSegment][0]))/Float(lMapPoints[lIdxMapSegment+1][0]-lMapPoints[lIdxMapSegment][0])
                 lNewPoints << [ lEndX, lNewEndY ]
               end
               lIdxSegment += 1
@@ -373,6 +376,7 @@ module WSK
         else
           logErr "Unknown function type: #{@Function[:FunctionType]}"
         end
+        optimize
       end
 
       # Substract a function to this function
@@ -402,6 +406,7 @@ module WSK
         else
           logErr "Unknown function type: #{@Function[:FunctionType]}"
         end
+        optimize
       end
 
       # Divide this function by another function
@@ -420,7 +425,7 @@ module WSK
               elsif (iOtherY == nil)
                 lNewPoints << [ iX, 0 ]
               else
-                lNewPoints << [ iX, iY / iOtherY ]
+                lNewPoints << [ iX, iY / Float(iOtherY) ]
               end
             end
             # Replace with new points
@@ -431,6 +436,7 @@ module WSK
         else
           logErr "Unknown function type: #{@Function[:FunctionType]}"
         end
+        optimize
       end
 
       # Get the internal function data
@@ -442,6 +448,33 @@ module WSK
       end
 
       private
+
+      # Optimize the function internal representation without modifying it.
+      def optimize
+        case @Function[:FunctionType]
+        when FCTTYPE_PIECEWISE_LINEAR
+          # Join segments that have the same slope
+          lNewPoints = [ @Function[:Points][0] ]
+          lLastSlope = Float(@Function[:Points][1][1]-@Function[:Points][0][1])/(@Function[:Points][1][0]-@Function[:Points][0][0])
+          lIdxSegment = 1
+          while (lIdxSegment < @Function[:Points].size - 1)
+            # Compute this segment's slope
+            lSlope = Float(@Function[:Points][lIdxSegment+1][1]-@Function[:Points][lIdxSegment][1])/(@Function[:Points][lIdxSegment+1][0]-@Function[:Points][lIdxSegment][0])
+            if (lLastSlope != lSlope)
+              # We are changing slopes
+              lNewPoints << @Function[:Points][lIdxSegment]
+              lLastSlope = lSlope
+            end
+            ++lIdxSegment
+          end
+          # Add last point
+          lNewPoints << @Function[:Points][-1]
+          # Change points
+          @Function[:Points] = lNewPoints
+        else
+          logErr "Unknown function type: #{@Function[:FunctionType]}"
+        end
+      end
 
       # Prepare the Function utils C library.
       # This can be called several times.
