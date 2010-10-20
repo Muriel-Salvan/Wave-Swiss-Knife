@@ -425,6 +425,38 @@ module WSK
         optimize
       end
 
+      # Remove intermediate abscisses that are too close to each other
+      #
+      # Parameters:
+      # * *iMinDistance* (_BigDecimal_): Minimal distance for abscisses triplets to have
+      def removeNoiseAbscisses(iMinDistance)
+        case @Function[:FunctionType]
+        when FCTTYPE_PIECEWISE_LINEAR
+          lNewPoints = [ @Function[:Points][0] ]
+          lIdxPoint = 0
+          while (lIdxPoint < @Function[:Points].size - 1)
+            # Now we skip the next last point among iMinDistance range
+            lPointX = @Function[:Points][lIdxPoint][0]
+            lIdxOtherPoint = lIdxPoint + 1
+            while ((lIdxOtherPoint < @Function[:Points].size) and
+                   (@Function[:Points][lIdxOtherPoint][0] - lPointX < iMinDistance))
+              lIdxOtherPoint += 1
+            end
+            # Either lIdxOtherPoint is beyond the end, or it points to the first point that is beyond iMinDistance
+            # We add the previous point if it is not already ours
+            if (lIdxOtherPoint-1 > lIdxPoint)
+              lNewPoints << @Function[:Points][lIdxOtherPoint-1]
+            end
+            # And we continue searching from this new added point
+            lIdxPoint = lIdxOtherPoint-1
+          end
+          @Function[:Points] = lNewPoints
+        else
+          logErr "Unknown function type: #{@Function[:FunctionType]}"
+        end
+        optimize
+      end
+
       # Substract a function to this function
       #
       # Parameters:
