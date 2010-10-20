@@ -1,4 +1,5 @@
 require 'bigdecimal'
+require 'bigdecimal/math'
 
 module WSK
 
@@ -15,6 +16,7 @@ module WSK
     class Function
 
       include WSK::Common
+      include BigMath
 
       # Constructor
       def initialize
@@ -148,22 +150,49 @@ module WSK
       #
       # Parameters:
       # * *iMaxYValue* (_Integer_): Maximal Y value
-      def convertToDB(iMaxYValue)
+      # * *iPrecision* (_Integer_): Number of digits of precision
+      def convertToDB(iMaxYValue, iPrecision)
+        lBDMaxValue = BigDecimal(iMaxYValue.to_s)
         case @Function[:FunctionType]
         when FCTTYPE_PIECEWISE_LINEAR
+          # Prepare variables for log computations
+          setLogPrecision(iPrecision)
+          @Log2 = bdLog(BigDecimal('2'))
+          @LogMax = bdLog(lBDMaxValue)
           @Function[:Points].each do |ioPoint|
-            ioPoint[1] = BigDecimal(val2db(ioPoint[1], iMaxYValue)[0].to_s)
+            ioPoint[1] = bdVal2db_Internal(ioPoint[1])
           end
         else
           logErr "Unknown function type: #{@Function[:FunctionType]}"
         end
       end
-
+      
+      # Round values to a given precision
+      #
+      # Parameters:
+      # * *iPrecisionX* (_BigDecimal_): The desired precision for X values (1000 will round to E-3)
+      # * *iPrecisionY* (_BigDecimal_): The desired precision for Y values (1000 will round to E-3)
+      def roundToPrecision(iPrecisionX, iPrecisionY)
+        case @Function[:FunctionType]
+        when FCTTYPE_PIECEWISE_LINEAR
+          # !!! Do not use BigDecimal.round as Ruby 1.8.7 contains a bug on it (http://rubyforge.org/tracker/index.php?func=detail&aid=14271&group_id=426&atid=1698)
+          # Instead, we truncate to the next precision
+          lPrecisionX = iPrecisionX*10
+          lPrecisionY = iPrecisionY*10
+          @Function[:Points] = @Function[:Points].map do |iPoint|
+            next [ ((iPoint[0]*lPrecisionX).truncate)/lPrecisionX, ((iPoint[1]*lPrecisionY).truncate)/lPrecisionY ]
+          end
+        else
+          logErr "Unknown function type: #{@Function[:FunctionType]}"
+        end
+        optimize
+      end
+      
       # Apply damping.
       #
       # Parameters:
-      # * *iSlopeUp* (_Float_): The maximal value of slope when increasing (should be > 0), or nil if none
-      # * *iSlopeDown* (_Float_): The minimal value of slope when decreasing (should be < 0), or nil if none
+      # * *iSlopeUp* (_BigDecimal_): The maximal value of slope when increasing (should be > 0), or nil if none
+      # * *iSlopeDown* (_BigDecimal_): The minimal value of slope when decreasing (should be < 0), or nil if none
       def applyDamping(iSlopeUp, iSlopeDown)
         if ((iSlopeUp != nil) and
             (iSlopeUp <= 0))
@@ -189,9 +218,9 @@ module WSK
                 # Choose the correct damping slope depending on the direction
                 lSlope = nil
                 if (lSegmentSlope > 0)
-                  lSlope = BigDecimal(iSlopeUp.to_s)
+                  lSlope = iSlopeUp
                 else
-                  lSlope = BigDecimal(iSlopeDown.to_s)
+                  lSlope = iSlopeDown
                 end
                 # We have to apply damping starting the beginning of this segment.
                 # Find the next intersection between the damped segment and our function.
@@ -224,6 +253,7 @@ module WSK
                 end
                 # Add the intersecting point (could be the last one)
                 lIntersectPoint = [ lIntersectX, (lIntersectX - @Function[:Points][lIdxSegment][0])*lSlope + @Function[:Points][lIdxSegment][1] ]
+                #puts "lIntersectX=#{lIntersectX.to_s('F')} @Function[:Points][lIdxSegment][0]=#{@Function[:Points][lIdxSegment][0]} lSlope=#{lSlope} @Function[:Points][lIdxSegment][1]=#{@Function[:Points][lIdxSegment][1]} lIntersectPoint[1]=#{lIntersectPoint[1]}"
                 lNewPoints << lIntersectPoint
                 # Continue after this intersection (we create also the intersecting point on our old points by modifying them)
                 @Function[:Points][lIdxSegmentIntersect] = lIntersectPoint
@@ -302,12 +332,11 @@ module WSK
       def writeToFile(iFileName)
         case @Function[:FunctionType]
         when FCTTYPE_PIECEWISE_LINEAR
-          # First, convert points into float
+          # First, convert points into readable data
           lData = @Function.clone
-          lFloatPoints = lData[:Points].map do |iPoint|
-            next [iPoint[0].to_f, iPoint[1].to_f ]
+          lData[:Points] = lData[:Points].map do |iPoint|
+            next [ iPoint[0].to_s('F'), iPoint[1].to_s('F') ]
           end
-          lData[:Points] = lFloatPoints
           require 'pp'
           File.open(iFileName, 'w') do |oFile|
             oFile.write(lData.pretty_inspect)
@@ -355,7 +384,7 @@ module WSK
                 lIdxMapSegment += 1
               end
               # Compute the new value of our segment beginning
-              lNewBeginY = lMapPoints[lIdxMapSegment][1] + ((lMapPoints[lIdxMapSegment+1][1]-lMapPoints[lIdxMapSegment][1])*(lBeginY-lMapPoints[lIdxMapSegment][0]))/Float(lMapPoints[lIdxMapSegment+1][0]-lMapPoints[lIdxMapSegment][0])
+              lNewBeginY = lMapPoints[lIdxMapSegment][1] + ((lMapPoints[lIdxMapSegment+1][1]-lMapPoints[lIdxMapSegment][1])*(lBeginY-lMapPoints[lIdxMapSegment][0]))/(lMapPoints[lIdxMapSegment+1][0]-lMapPoints[lIdxMapSegment][0])
               lNewPoints << [ lBeginX, lNewBeginY ]
               # Get the next map segments unless we reach our segment's end
               # !!! Find the next map segment according to the direction
@@ -363,7 +392,7 @@ module WSK
                 while (lEndY > lMapPoints[lIdxMapSegment+1][0])
                   # We have a new map segment to consider in our segment
                   # Find the absciss at which our Y coordinates get the value lMapPoints[lIdxMapSegment+1][0]
-                  lNewSegmentX = lBeginX + ((lEndX-lBeginX)*(lMapPoints[lIdxMapSegment+1][0] - lBeginY))/Float(lEndY-lBeginY)
+                  lNewSegmentX = lBeginX + ((lEndX-lBeginX)*(lMapPoints[lIdxMapSegment+1][0] - lBeginY))/(lEndY-lBeginY)
                   lNewPoints << [ lNewSegmentX, lMapPoints[lIdxMapSegment+1][1] ]
                   lIdxMapSegment += 1
                 end
@@ -372,7 +401,7 @@ module WSK
                 while (lEndY < lMapPoints[lIdxMapSegment][0])
                   # We have a new map segment to consider in our segment
                   # Find the absciss at which our Y coordinates get the value lMapPoints[lIdxMapSegment][0]
-                  lNewSegmentX = lBeginX + ((lEndX-lBeginX)*(lMapPoints[lIdxMapSegment][0] - lBeginY))/Float(lEndY-lBeginY)
+                  lNewSegmentX = lBeginX + ((lEndX-lBeginX)*(lMapPoints[lIdxMapSegment][0] - lBeginY))/(lEndY-lBeginY)
                   lNewPoints << [ lNewSegmentX, lMapPoints[lIdxMapSegment][1] ]
                   lIdxMapSegment -= 1
                 end
@@ -380,7 +409,7 @@ module WSK
               end
               # Write the segment end if it is the last one (otherwise it will be written by the next iteration)
               if (lIdxSegment == lPoints.size-2)
-                lNewEndY = lMapPoints[lIdxMapSegment][1] + ((lMapPoints[lIdxMapSegment+1][1]-lMapPoints[lIdxMapSegment][1])*(lEndY-lMapPoints[lIdxMapSegment][0]))/Float(lMapPoints[lIdxMapSegment+1][0]-lMapPoints[lIdxMapSegment][0])
+                lNewEndY = lMapPoints[lIdxMapSegment][1] + ((lMapPoints[lIdxMapSegment+1][1]-lMapPoints[lIdxMapSegment][1])*(lEndY-lMapPoints[lIdxMapSegment][0]))/(lMapPoints[lIdxMapSegment+1][0]-lMapPoints[lIdxMapSegment][0])
                 lNewPoints << [ lEndX, lNewEndY ]
               end
               lIdxSegment += 1
@@ -463,6 +492,45 @@ module WSK
       def functionData
         return @Function
       end
+      
+      # Compute the log of a BigDecimal for a given precision
+      # !!! Prerequisite: Call setLogPrecision first
+      #
+      # Parameters:
+      # * *iValue* (_BigDecimal_): The value
+      def bdLog(iValue)
+        lSign, lSignificantDigits, lBase, lExponent = iValue.split
+        if (lExponent == 0)
+          return log(iValue, @Precision)
+        else
+          return log(BigDecimal("0.#{lSignificantDigits}"), @Precision)+lExponent*@Log10
+        end
+      end
+      
+      # Set the precision of logarithms computations
+      #
+      # Parameters:
+      # * *iPrecision* (_Integer_): Precision to compute logarithms
+      def setLogPrecision(iPrecision)
+        @Precision = iPrecision
+        @Log10 = log(BigDecimal('10'), iPrecision)
+      end
+      
+      # Compute a DB value out of a ratio using BigDecimals
+      #
+      # Parameters:
+      # * *iValue* (_BigDecimal_): The value
+      # * *iMaxValue* (_BigDecimal_): The maximal value
+      # * *iPrecision* (_Integer_): Precision to compute logarithms
+      # Return:
+      # * _BigDecimal_: Its corresponding db
+      def bdVal2db(iValue, iMaxValue, iPrecision)
+        setLogPrecision(iPrecision)
+        @Log2 = bdLog(BigDecimal('2'))
+        @LogMax = bdLog(iMaxValue)
+        
+        return bdVal2db_Internal(iValue)
+      end
 
       private
 
@@ -472,11 +540,11 @@ module WSK
         when FCTTYPE_PIECEWISE_LINEAR
           # Join segments that have the same slope
           lNewPoints = [ @Function[:Points][0] ]
-          lLastSlope = Float(@Function[:Points][1][1]-@Function[:Points][0][1])/(@Function[:Points][1][0]-@Function[:Points][0][0])
+          lLastSlope = (@Function[:Points][1][1]-@Function[:Points][0][1])/(@Function[:Points][1][0]-@Function[:Points][0][0])
           lIdxSegment = 1
           while (lIdxSegment < @Function[:Points].size - 1)
             # Compute this segment's slope
-            lSlope = Float(@Function[:Points][lIdxSegment+1][1]-@Function[:Points][lIdxSegment][1])/(@Function[:Points][lIdxSegment+1][0]-@Function[:Points][lIdxSegment][0])
+            lSlope = (@Function[:Points][lIdxSegment+1][1]-@Function[:Points][lIdxSegment][1])/(@Function[:Points][lIdxSegment+1][0]-@Function[:Points][lIdxSegment][0])
             if (lLastSlope != lSlope)
               # We are changing slopes
               lNewPoints << @Function[:Points][lIdxSegment]
@@ -493,22 +561,28 @@ module WSK
         end
       end
 
-      # Convert Floats into BigDecimals
+      # Convert contained objects into BigDecimals
       def convertToBigDecimal
         case @Function[:FunctionType]
         when FCTTYPE_PIECEWISE_LINEAR
           @Function[:Points] = @Function[:Points].map do |iPoint|
+            lNewPointX = nil
+            lNewPointY = nil
             if (iPoint[0].is_a?(BigDecimal))
-              if (iPoint[1].is_a?(BigDecimal))
-                next iPoint
-              else
-                next [ iPoint[0], BigDecimal(iPoint[1].to_s) ]
-              end
-            elsif (iPoint[1].is_a?(BigDecimal))
-              next [ BigDecimal(iPoint[0].to_s), iPoint[1] ]
+              lNewPointX = iPoint[0]
+            elsif (iPoint[0].is_a?(String))
+              lNewPointX = BigDecimal(iPoint[0])
             else
-              next [ BigDecimal(iPoint[0].to_s), BigDecimal(iPoint[1].to_s) ]
+              lNewPointX = BigDecimal(iPoint[0].to_s)
             end
+            if (iPoint[1].is_a?(BigDecimal))
+              lNewPointY = iPoint[1]
+            elsif (iPoint[1].is_a?(String))
+              lNewPointY = BigDecimal(iPoint[1])
+            else
+              lNewPointY = BigDecimal(iPoint[1].to_s)
+            end
+            next [ lNewPointX, lNewPointY ]
           end
         else
           logErr "Unknown function type: #{@Function[:FunctionType]}"
@@ -577,6 +651,25 @@ module WSK
             yield(iX, lPoints[lIdxSegment-1][1] + ((lPoints[lIdxSegment][1] - lPoints[lIdxSegment-1][1])*(iX - lPoints[lIdxSegment-1][0]))/(lPoints[lIdxSegment][0] - lPoints[lIdxSegment-1][0]), lOtherPoints[lIdxOtherSegment][1])
             lIdxOtherSegment += 1
           end
+        end
+      end
+
+      # Convert a value to its db notation.
+      # Operate on BigDecimal numbers.
+      # !!! Prerequisites: The following variables have to be set before calling this function
+      # * @Log2: Contains log(2)
+      # * @LogMax: Contains log(MaximalValue)
+      # !!! Prerequisite: setLogPrecision must be called before
+      #
+      # Parameters:
+      # * *iValue* (_BigDecimal_): The value
+      # Return:
+      # * _BigDecimal_: Its corresponding db
+      def bdVal2db_Internal(iValue)
+        if (iValue == 0)
+          return BigDecimal('-Infinity')
+        else
+          return -6*(@LogMax-bdLog(iValue.abs))/@Log2
         end
       end
 
