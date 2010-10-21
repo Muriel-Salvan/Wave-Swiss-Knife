@@ -130,6 +130,25 @@ module WSK
         end
       end
 
+      # Draw the function into a raw buffer
+      #
+      # Parameters:
+      # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
+      # * *oOutputData* (<em>WSK::Model::DirectStream</em>): The output data
+      # * *iIdxBeginSample* (_Integer_): Index of the first sample beginning the volume transformation
+      # * *iIdxEndSample* (_Integer_): Index of the last sample ending the volume transformation
+      # * *iUnitDB* (_Boolean_): Are function values to be interpreted as DB units ?
+      def draw(iInputData, oOutputData, iIdxBeginSample, iIdxEndSample, iUnitDB)
+        prepareFunctionUtils
+        lCFunction = @FunctionUtils.createCFunction(@Function, iIdxBeginSample, iIdxEndSample)
+        lIdxBufferSample = iIdxBeginSample
+        iInputData.eachRawBuffer(iIdxBeginSample, iIdxEndSample) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
+          prepareVolumeUtils
+          oOutputData.pushRawBuffer(@VolumeUtils.drawVolumeFct(lCFunction, iInputRawBuffer, iInputData.Header.NbrBitsPerSample, iInputData.Header.NbrChannels, iNbrSamples, lIdxBufferSample, iUnitDB))
+          lIdxBufferSample += iNbrSamples
+        end
+      end
+
       # Divide values by a given factor
       #
       # Parameters:

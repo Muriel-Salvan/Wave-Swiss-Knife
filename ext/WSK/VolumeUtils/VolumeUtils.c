@@ -22,6 +22,25 @@ typedef struct {
   long double currentRatio;
 } tApplyVolumeFctStruct_PiecewiseLinear;
 
+// Struct used to convey data among iterators in the drawVolumeFct method for piecewise linear functions
+typedef struct {
+  tFunction_PiecewiseLinear* fctData;
+  int unitDB;
+  int idxPreviousPoint;
+  int idxNextPoint;
+  tSampleValue medianValue;
+  // Values used to cache segment computations
+  // These must be refreshed each time idxPreviousPoint or idxNextPoint is set/changed.
+  tSampleIndex idxPreviousPointX;
+  tSampleIndex distWithNextX;
+  long double idxPreviousPointY;
+  long double distWithNextY;
+  tSampleIndex idxNextSegmentX;
+  // Values used to cache sample computations
+  // These must be refreshed each time we change the current sample. They are the same for all the channels of the current sample.
+  long double currentRatio;
+} tDrawVolumeFctStruct_PiecewiseLinear;
+
 // Struct used to convey data among iterators in the MeasureRMS method
 typedef struct {
   mpz_t* squareSums;
@@ -175,6 +194,145 @@ static VALUE volumeutils_applyVolumeFct(
 }
 
 /**
+ * Process a value read from an input buffer for the drawVolumeFct function in case of piecewise linear function.
+ *
+ * Parameters:
+ * * *iValue* (<em>const tSampleValue</em>): The value being read
+ * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
+ * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
+ * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tApplyVolumeFctStruct_PiecewiseLinear*</em>.
+ * Return:
+ * * _int_: The return code:
+ * ** 0: Continue iteration
+ * ** 1: Break all iterations
+ * ** 2: Skip directly to the next sample (don't call us for other channels of this sample)
+ */
+int volumeutils_processValue_drawVolumeFct_PiecewiseLinear(
+  const tSampleValue iValue,
+  tSampleValue* oPtrValue,
+  const tSampleIndex iIdxSample,
+  const int iIdxChannel,
+  void* iPtrArgs) {
+  tDrawVolumeFctStruct_PiecewiseLinear* lPtrArgs = (tDrawVolumeFctStruct_PiecewiseLinear*)iPtrArgs;
+
+  // Change caches if needed
+  if (iIdxChannel == 0) {
+    if (iIdxSample == lPtrArgs->idxNextSegmentX) {
+      // Switch to the next segment
+      ++lPtrArgs->idxNextPoint;
+      ++lPtrArgs->idxPreviousPoint;
+      // Compute next cache values
+      lPtrArgs->idxPreviousPointX = lPtrArgs->fctData->pointsX[lPtrArgs->idxPreviousPoint];
+      lPtrArgs->distWithNextX = lPtrArgs->fctData->pointsX[lPtrArgs->idxNextPoint]-lPtrArgs->idxPreviousPointX;
+      lPtrArgs->idxPreviousPointY = lPtrArgs->fctData->pointsY[lPtrArgs->idxPreviousPoint];
+      lPtrArgs->distWithNextY = lPtrArgs->fctData->pointsY[lPtrArgs->idxNextPoint]-lPtrArgs->idxPreviousPointY;
+      lPtrArgs->idxNextSegmentX = lPtrArgs->fctData->pointsX[lPtrArgs->idxNextPoint]+1;
+    }
+    // Compute the ratio to apply
+    if (lPtrArgs->unitDB == 1) {
+      lPtrArgs->currentRatio = pow(2, (lPtrArgs->idxPreviousPointY+((iIdxSample-lPtrArgs->idxPreviousPointX)*lPtrArgs->distWithNextY)/lPtrArgs->distWithNextX)/6);
+    } else {
+      lPtrArgs->currentRatio = lPtrArgs->idxPreviousPointY+((iIdxSample-lPtrArgs->idxPreviousPointX)*lPtrArgs->distWithNextY)/lPtrArgs->distWithNextX;
+    }
+  }
+
+  // Write the correct value
+  (*oPtrValue) = (lPtrArgs->medianValue)*(lPtrArgs->currentRatio);
+
+  return 0;
+}
+
+/**
+ * Draw a function on an output buffer.
+ *
+ * Parameters:
+ * * *iSelf* (_FFT_): Self
+ * * *iValCFunction* (_Object_): The container of the C function (created with createCFunction)
+ * * *iValInputBuffer* (_String_): The input buffer
+ * * *iValNbrBitsPerSample* (_Integer_): Number of bits per sample
+ * * *iValNbrChannels* (_Integer_): Number of channels
+ * * *iValNbrSamples* (_Integer_): Number of samples
+ * * *iValIdxBufferFirstSample* (_Integer_): Index of the first buffer's sample in the input data
+ * * *iValUnitDB* (_Boolean_): Are the units in DB scale ?
+ * * *iValMedianValue* (_Integer_): Sample value to take as the reference to draw the function
+ * Return:
+ * * _String_: Output buffer
+ **/
+static VALUE volumeutils_drawVolumeFct(
+  VALUE iSelf,
+  VALUE iValCFunction,
+  VALUE iValInputBuffer,
+  VALUE iValNbrBitsPerSample,
+  VALUE iValNbrChannels,
+  VALUE iValNbrSamples,
+  VALUE iValIdxBufferFirstSample,
+  VALUE iValUnitDB,
+  VALUE iValMedianValue) {
+  // Translate Ruby objects
+  int iNbrBitsPerSample = FIX2INT(iValNbrBitsPerSample);
+  int iNbrChannels = FIX2INT(iValNbrChannels);
+  tSampleIndex iNbrSamples = FIX2LONG(iValNbrSamples);
+  tSampleIndex iIdxBufferFirstSample = FIX2LONG(iValIdxBufferFirstSample);
+  int iUnitDB = (iValUnitDB == Qtrue ? 1 : 0);
+  tSampleValue iMedianValue = FIX2LONG(iValMedianValue);
+  // Get the C function
+  tFunction* lPtrFct;
+  Data_Get_Struct(iValCFunction, tFunction, lPtrFct);
+  // Get the input buffer
+  char* lPtrRawBuffer = RSTRING(iValInputBuffer)->ptr;
+  int lBufferCharSize = RSTRING(iValInputBuffer)->len;
+  // Allocate the output buffer
+  char* lPtrOutputBuffer = ALLOC_N(char, lBufferCharSize);
+
+  // Call the relevant method based on the type
+  switch (lPtrFct->fctType) {
+    case FCTTYPE_PIECEWISE_LINEAR: ;
+      // Create parameters to give the process
+      tDrawVolumeFctStruct_PiecewiseLinear lProcessParams;
+      lProcessParams.fctData = lPtrFct->fctData;
+      lProcessParams.medianValue = iMedianValue;
+      // Find the segment containing iIdxBufferFirstSample
+      lProcessParams.idxNextPoint = 0;
+      while (lProcessParams.fctData->pointsX[lProcessParams.idxNextPoint] <= iIdxBufferFirstSample) {
+        ++lProcessParams.idxNextPoint;
+      }
+      lProcessParams.idxPreviousPoint = lProcessParams.idxNextPoint - 1;
+      // Compute first cache values
+      lProcessParams.idxPreviousPointX = lProcessParams.fctData->pointsX[lProcessParams.idxPreviousPoint];
+      lProcessParams.distWithNextX = lProcessParams.fctData->pointsX[lProcessParams.idxNextPoint]-lProcessParams.idxPreviousPointX;
+      lProcessParams.idxPreviousPointY = lProcessParams.fctData->pointsY[lProcessParams.idxPreviousPoint];
+      lProcessParams.distWithNextY = lProcessParams.fctData->pointsY[lProcessParams.idxNextPoint]-lProcessParams.idxPreviousPointY;
+      lProcessParams.idxNextSegmentX = lProcessParams.fctData->pointsX[lProcessParams.idxNextPoint]+1;
+      lProcessParams.unitDB = iUnitDB;
+      // Iterate through the raw buffer
+      commonutils_iterateThroughRawBufferOutput(
+        iSelf,
+        lPtrRawBuffer,
+        lPtrOutputBuffer,
+        iNbrBitsPerSample,
+        iNbrChannels,
+        iNbrSamples,
+        iIdxBufferFirstSample,
+        1,
+        &volumeutils_processValue_drawVolumeFct_PiecewiseLinear,
+        &lProcessParams
+      );
+      break;
+    default: ; // The ; is here to make gcc compile: variables declarations are forbidden after a label.
+      char lLogMessage[256];
+      sprintf(lLogMessage, "Unknown function type %d", lPtrFct->fctType);
+      rb_funcall(iSelf, rb_intern("logErr"), 1, rb_str_new2(lLogMessage));
+      break;
+  }
+
+  VALUE rValOutputBuffer = rb_str_new(lPtrOutputBuffer, lBufferCharSize);
+
+  free(lPtrOutputBuffer);
+
+  return rValOutputBuffer;
+}
+
+/**
  * Process a value read from an input buffer for the MeasureRMS function.
  * Use the trigo cache.
  *
@@ -271,5 +429,6 @@ void Init_VolumeUtils() {
   VALUE lVolumeUtilsClass = rb_define_class_under(lVolumeUtilsModule, "VolumeUtils", rb_cObject);
 
   rb_define_method(lVolumeUtilsClass, "applyVolumeFct", volumeutils_applyVolumeFct, 7);
+  rb_define_method(lVolumeUtilsClass, "drawVolumeFct", volumeutils_drawVolumeFct, 8);
   rb_define_method(lVolumeUtilsClass, "measureRMS", volumeutils_measureRMS, 4);
 }
