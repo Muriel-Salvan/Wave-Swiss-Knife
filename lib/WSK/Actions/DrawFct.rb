@@ -40,7 +40,7 @@ module WSK
         end
         if (rError == nil)
           # Then draw it
-          lMinX, lMinY, lMaxX, lMaxY = lFunction.getBounds
+          lMaxY = lFunction.getBounds[3]
           if (@UnitDB == 1)
             lMaxY = BigDecimal((2**(lMaxY.to_f/6)).to_s)
           end

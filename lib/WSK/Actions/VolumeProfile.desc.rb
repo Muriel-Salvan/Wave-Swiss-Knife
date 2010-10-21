@@ -23,6 +23,11 @@
       '--interval <Interval>', String,
       '<Interval>: Number of samples defining an interval for the volume measurement. Can be specified as a sample number or a float seconds (ie. 12.3s).',
       'Specify the granularity of the volume profile'
+    ],
+    :RMSRatio => [
+      '--rmsratio <Ratio>', Float,
+      '<Ratio>: Ratio of RMS measure vs Peak level measure, expressed in floats of range [0.0 .. 1.0]. 0.0 = Only Peak. 1.0 = Only RMS.',
+      'Specify the way the level is measured.'
     ]
   }
 }

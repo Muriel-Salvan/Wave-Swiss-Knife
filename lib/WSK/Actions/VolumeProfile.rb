@@ -41,12 +41,14 @@ module WSK
           rError = RuntimeError.new("Profile ends at #{lIdxEnd}, superceeding last sample (#{iInputData.NbrSamples-1})")
         else
           lFunction = WSK::Functions::Function.new
-          lFunction.readFromInputVolume(iInputData, lIdxBegin, lIdxEnd, lInterval)
+          lFunction.readFromInputVolume(iInputData, lIdxBegin, lIdxEnd, lInterval, @RMSRatio)
           # Normalize the volume function on a [-1..1] scale
-          lFunction.divideBy(2**(iInputData.Header.NbrBitsPerSample-1))
+          lFunction.divideBy(BigDecimal('2')**(iInputData.Header.NbrBitsPerSample-1))
           lMinX, lMinY, lMaxX, lMaxY = lFunction.getBounds
-          lDBMinY = val2db(lMinY, 1)[0]
-          lDBMaxY = val2db(lMaxY, 1)[0]
+          # TODO: Find a good way to set its value
+          lLogPrecision = 10
+          lDBMinY = lFunction.bdVal2db(lMinY, 1, lLogPrecision)
+          lDBMaxY = lFunction.bdVal2db(lMaxY, 1, lLogPrecision)
           logInfo "Dynamic range: [#{sprintf('%.2f',lMinY)} - #{sprintf('%.2f',lMaxY)}] ([#{sprintf('%.2f',lDBMinY)}db - #{sprintf('%.2f',lDBMaxY)}db] = #{sprintf('%.2f',lDBMaxY-lDBMinY)}db)"
           lFunction.writeToFile(@FctFileName)
         end

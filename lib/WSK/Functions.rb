@@ -56,7 +56,8 @@ module WSK
       # * *iIdxBeginSample* (_Integer_): Index of the first sample beginning the volume reading
       # * *iIdxEndSample* (_Integer_): Index of the last sample ending the volume reading
       # * *iInterval* (_Integer_): The number of samples used as an interval in measuring the volume
-      def readFromInputVolume(iInputData, iIdxBeginSample, iIdxEndSample, iInterval)
+      # * *iRMSRatio* (_Float_): The ratio of RMS measure vs Peak measure (0.0 = only peak, 1.0 = only RMS)
+      def readFromInputVolume(iInputData, iIdxBeginSample, iIdxEndSample, iInterval, iRMSRatio)
         @Function = {
           :FunctionType => FCTTYPE_PIECEWISE_LINEAR,
           :Points => []
@@ -74,7 +75,7 @@ module WSK
             lRawBuffer += iInputRawBuffer
           end
           # Profile this buffer
-          lRMSValues = @VolumeUtils.measureRMS(lRawBuffer, iInputData.Header.NbrBitsPerSample, iInputData.Header.NbrChannels, lIdxCurrentEndSample - lIdxCurrentSample + 1)
+          lRMSValues = @VolumeUtils.measureLevel(lRawBuffer, iInputData.Header.NbrBitsPerSample, iInputData.Header.NbrChannels, lIdxCurrentEndSample - lIdxCurrentSample + 1, iRMSRatio)
           lRMSMoyValue = 0
           lRMSValues.each do |iRMSValue|
             lRMSMoyValue += iRMSValue
@@ -153,13 +154,12 @@ module WSK
       # Divide values by a given factor
       #
       # Parameters:
-      # * *iFactor* (_Integer_): Factor to divide by
+      # * *iFactor* (_BigDecimal_): Factor to divide by
       def divideBy(iFactor)
-        lFactor = BigDecimal(iFactor.to_s)
         case @Function[:FunctionType]
         when FCTTYPE_PIECEWISE_LINEAR
           @Function[:Points].each do |ioPoint|
-            ioPoint[1] /= lFactor
+            ioPoint[1] /= iFactor
           end
         else
           logErr "Unknown function type: #{@Function[:FunctionType]}"

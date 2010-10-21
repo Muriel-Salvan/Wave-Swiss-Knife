@@ -41,11 +41,12 @@ typedef struct {
   long double currentRatio;
 } tDrawVolumeFctStruct_PiecewiseLinear;
 
-// Struct used to convey data among iterators in the MeasureRMS method
+// Struct used to convey data among iterators in the MeasureLevel method
 typedef struct {
   mpz_t* squareSums;
+  tSampleValue* maxAbsValue;
   mpz_t tmpInt;
-} tMeasureRMSStruct;
+} tMeasureLevelStruct;
 
 /**
  * Process a value read from an input buffer for the applyVolumeFct function in case of piecewise linear function.
@@ -333,36 +334,42 @@ static VALUE volumeutils_drawVolumeFct(
 }
 
 /**
- * Process a value read from an input buffer for the MeasureRMS function.
+ * Process a value read from an input buffer for the MeasureLevel function.
  * Use the trigo cache.
  *
  * Parameters:
  * * *iValue* (<em>const tSampleValue</em>): The value being read
  * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
  * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
- * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tMeasureRMSStruct*</em>.
+ * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tMeasureLevelStruct*</em>.
  * Return:
  * * _int_: The return code:
  * ** 0: Continue iteration
  * ** 1: Break all iterations
  * ** 2: Skip directly to the next sample (don't call us for other channels of this sample)
  */
-int volumeutils_processValue_MeasureRMS(
+int volumeutils_processValue_MeasureLevel(
   const tSampleValue iValue,
   const tSampleIndex iIdxSample,
   const int iIdxChannel,
   void* iPtrArgs) {
   // Interpret parameters
-  tMeasureRMSStruct* lPtrParams = (tMeasureRMSStruct*)iPtrArgs;
+  tMeasureLevelStruct* lPtrParams = (tMeasureLevelStruct*)iPtrArgs;
 
+  // RMS computation
   mpz_set_si(lPtrParams->tmpInt, iValue);
   mpz_addmul(lPtrParams->squareSums[iIdxChannel], lPtrParams->tmpInt, lPtrParams->tmpInt);
+  // Peak computation
+  if (abs(iValue) > lPtrParams->maxAbsValue[iIdxChannel]) {
+    lPtrParams->maxAbsValue[iIdxChannel] = abs(iValue);
+  }
+
 
   return 0;
 }
 
 /**
- * Measure the RMS values of a given raw buffer.
+ * Measure the Level values of a given raw buffer.
  *
  * Parameters:
  * * *iSelf* (_FFT_): Self
@@ -370,32 +377,40 @@ int volumeutils_processValue_MeasureRMS(
  * * *iValNbrBitsPerSample* (_Integer_): Number of bits per sample
  * * *iValNbrChannels* (_Integer_): Number of channels
  * * *iValNbrSamples* (_Integer_): Number of samples
+ * * *iValRMSRatio* (_Float_): Ratio of RMS measure vs Peak level measure
  * Return:
  * * <em>list<Integer></em>: List of integer values
  **/
-static VALUE volumeutils_measureRMS(
+static VALUE volumeutils_measureLevel(
   VALUE iSelf,
   VALUE iValInputRawBuffer,
   VALUE iValNbrBitsPerSample,
   VALUE iValNbrChannels,
-  VALUE iValNbrSamples) {
+  VALUE iValNbrSamples,
+  VALUE iValRMSRatio) {
   // Translate Ruby objects
   int iNbrBitsPerSample = FIX2INT(iValNbrBitsPerSample);
   int iNbrChannels = FIX2INT(iValNbrChannels);
   tSampleIndex iNbrSamples = FIX2LONG(iValNbrSamples);
+  double iRMSRatio = NUM2DBL(iValRMSRatio);
   // Get the input buffer
   char* lPtrRawBuffer = RSTRING(iValInputRawBuffer)->ptr;
 
   // Allocate the array that will store the square sums
   mpz_t lSquareSums[iNbrChannels];
+  // The array that will store the maximal absolute values
+  tSampleValue lMaxAbsValues[iNbrChannels];
+  // Initialize everything
   int lIdxChannel;
   for (lIdxChannel = 0; lIdxChannel < iNbrChannels; ++lIdxChannel) {
     mpz_init(lSquareSums[lIdxChannel]);
+    lMaxAbsValues[lIdxChannel] = 0;
   }
 
   // Parse the data
-  tMeasureRMSStruct lParams;
+  tMeasureLevelStruct lParams;
   lParams.squareSums = lSquareSums;
+  lParams.maxAbsValue = lMaxAbsValues;
   mpz_init(lParams.tmpInt);
   commonutils_iterateThroughRawBuffer(
     lPtrRawBuffer,
@@ -403,23 +418,48 @@ static VALUE volumeutils_measureRMS(
     iNbrChannels,
     iNbrSamples,
     0,
-    &volumeutils_processValue_MeasureRMS,
+    &volumeutils_processValue_MeasureLevel,
     &lParams
   );
   mpz_clear(lParams.tmpInt);
 
   // Build the resulting array
-  VALUE lRMSValues[iNbrChannels];
+  VALUE lLevelValues[iNbrChannels];
   // Buffer that stores string representation of mpz_t for Ruby RBigNum
   char lStrValue[128];
+  // Temporary variables needed
+  mpf_t lRMSCoeff;
+  mpf_t lPeakCoeff;
+  mpf_t lRMSRatio;
+  mpf_t lPeakRatio;
+  mpz_t lLevel;
+  mpf_init(lRMSCoeff);
+  mpf_init(lPeakCoeff);
+  mpf_init_set_d(lRMSRatio, iRMSRatio);
+  mpf_init_set_d(lPeakRatio, 1.0-iRMSRatio);
+  mpz_init(lLevel);
   for (lIdxChannel = 0; lIdxChannel < iNbrChannels; ++lIdxChannel) {
-    mpz_cdiv_q_ui(lSquareSums[lIdxChannel], lSquareSums[lIdxChannel], iNbrSamples);
-    mpz_sqrt(lSquareSums[lIdxChannel], lSquareSums[lIdxChannel]);
-    lRMSValues[lIdxChannel] = rb_cstr2inum(mpz_get_str(lStrValue, 16, lSquareSums[lIdxChannel]), 16);
+    // Finalize computing the RMS value using a float
+    mpf_set_z(lRMSCoeff, lSquareSums[lIdxChannel]);
+    mpf_div_ui(lRMSCoeff, lRMSCoeff, iNbrSamples);
+    mpf_sqrt(lRMSCoeff, lRMSCoeff);
+    // Mix RMS and Peak levels according to the ratio
+    mpf_mul(lRMSCoeff, lRMSCoeff, lRMSRatio);
+    mpf_set_ui(lPeakCoeff, lMaxAbsValues[lIdxChannel]);
+    mpf_mul(lPeakCoeff, lPeakCoeff, lPeakRatio);
+    // Use lRMSCoeff to contain the result
+    mpf_add(lRMSCoeff, lRMSCoeff, lPeakCoeff);
+    mpz_set_f(lLevel, lRMSCoeff);
+    lLevelValues[lIdxChannel] = rb_cstr2inum(mpz_get_str(lStrValue, 16, lLevel), 16);
     mpz_clear(lSquareSums[lIdxChannel]);
   }
+  mpz_clear(lLevel);
+  mpf_clear(lPeakRatio);
+  mpf_clear(lRMSRatio);
+  mpf_clear(lPeakCoeff);
+  mpf_clear(lRMSCoeff);
 
-  return rb_ary_new4(iNbrChannels, lRMSValues);
+  return rb_ary_new4(iNbrChannels, lLevelValues);
 }
 
 // Initialize the module
@@ -430,5 +470,5 @@ void Init_VolumeUtils() {
 
   rb_define_method(lVolumeUtilsClass, "applyVolumeFct", volumeutils_applyVolumeFct, 7);
   rb_define_method(lVolumeUtilsClass, "drawVolumeFct", volumeutils_drawVolumeFct, 8);
-  rb_define_method(lVolumeUtilsClass, "measureRMS", volumeutils_measureRMS, 4);
+  rb_define_method(lVolumeUtilsClass, "measureLevel", volumeutils_measureLevel, 5);
 }
