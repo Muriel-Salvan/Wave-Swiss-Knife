@@ -5,7 +5,7 @@ module WSK
 
   module Actions
 
-    class ApplyVolumeFct
+    class DrawFct
 
       include WSK::Common
       include WSK::Functions
@@ -42,10 +42,12 @@ module WSK
           # Then draw it
           lMinX, lMinY, lMaxX, lMaxY = lFunction.getBounds
           if (@UnitDB == 1)
-            lMaxY = 2**(lMaxY/6)
+            lMaxY = BigDecimal((2**(lMaxY.to_f/6)).to_s)
           end
+          lMedianValue = ((2**(iInputData.Header.NbrBitsPerSample-1)-1)/lMaxY).to_i
+          logInfo "Draw function with maximal ratio #{lMaxY.to_s('F')}, using median value #{lMedianValue}"
           # Take the median value as a fraction of the maximal value
-          lFunction.draw(iInputData, oOutputData, 0, iInputData.NbrSamples-1, (@UnitDB == 1), (2**(iInputData.NbrBitsPerSample-1))/lMaxY)
+          lFunction.draw(iInputData, oOutputData, 0, iInputData.NbrSamples-1, (@UnitDB == 1), lMedianValue)
         end
 
         return rError

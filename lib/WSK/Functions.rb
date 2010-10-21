@@ -138,13 +138,14 @@ module WSK
       # * *iIdxBeginSample* (_Integer_): Index of the first sample beginning the volume transformation
       # * *iIdxEndSample* (_Integer_): Index of the last sample ending the volume transformation
       # * *iUnitDB* (_Boolean_): Are function values to be interpreted as DB units ?
-      def draw(iInputData, oOutputData, iIdxBeginSample, iIdxEndSample, iUnitDB)
+      # * *iMedianValue* (_Integer_): Median value to draw function ratio of 1.
+      def draw(iInputData, oOutputData, iIdxBeginSample, iIdxEndSample, iUnitDB, iMedianValue)
         prepareFunctionUtils
         lCFunction = @FunctionUtils.createCFunction(@Function, iIdxBeginSample, iIdxEndSample)
         lIdxBufferSample = iIdxBeginSample
         iInputData.eachRawBuffer(iIdxBeginSample, iIdxEndSample) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
           prepareVolumeUtils
-          oOutputData.pushRawBuffer(@VolumeUtils.drawVolumeFct(lCFunction, iInputRawBuffer, iInputData.Header.NbrBitsPerSample, iInputData.Header.NbrChannels, iNbrSamples, lIdxBufferSample, iUnitDB))
+          oOutputData.pushRawBuffer(@VolumeUtils.drawVolumeFct(lCFunction, iInputRawBuffer, iInputData.Header.NbrBitsPerSample, iInputData.Header.NbrChannels, iNbrSamples, lIdxBufferSample, iUnitDB, iMedianValue))
           lIdxBufferSample += iNbrSamples
         end
       end
