@@ -446,9 +446,13 @@ module WSK
             # We add the previous point if it is not already ours
             if (lIdxOtherPoint-1 > lIdxPoint)
               lNewPoints << @Function[:Points][lIdxOtherPoint-1]
+              # And we continue searching from this new added point
+              lIdxPoint = lIdxOtherPoint-1
+            else
+              # It is our point, continue on to the next one
+              lNewPoints << @Function[:Points][lIdxOtherPoint]
+              lIdxPoint = lIdxOtherPoint
             end
-            # And we continue searching from this new added point
-            lIdxPoint = lIdxOtherPoint-1
           end
           @Function[:Points] = lNewPoints
         else
