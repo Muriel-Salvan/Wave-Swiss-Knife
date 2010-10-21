@@ -47,8 +47,8 @@ module WSK
           lMinX, lMinY, lMaxX, lMaxY = lFunction.getBounds
           # TODO: Find a good way to set its value
           lLogPrecision = 10
-          lDBMinY = lFunction.bdVal2db(lMinY, 1, lLogPrecision)
-          lDBMaxY = lFunction.bdVal2db(lMaxY, 1, lLogPrecision)
+          lDBMinY = lFunction.bdVal2db(lMinY, BigDecimal('1'), lLogPrecision)
+          lDBMaxY = lFunction.bdVal2db(lMaxY, BigDecimal('1'), lLogPrecision)
           logInfo "Dynamic range: [#{sprintf('%.2f',lMinY)} - #{sprintf('%.2f',lMaxY)}] ([#{sprintf('%.2f',lDBMinY)}db - #{sprintf('%.2f',lDBMaxY)}db] = #{sprintf('%.2f',lDBMaxY-lDBMinY)}db)"
           lFunction.writeToFile(@FctFileName)
         end
