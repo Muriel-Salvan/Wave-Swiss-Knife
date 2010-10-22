@@ -43,12 +43,10 @@ module WSK
           lFunction = WSK::Functions::Function.new
           lFunction.readFromInputVolume(iInputData, lIdxBegin, lIdxEnd, lInterval, @RMSRatio)
           # Normalize the volume function on a [-1..1] scale
-          lFunction.divideBy(BigDecimal('2')**(iInputData.Header.NbrBitsPerSample-1))
+          lFunction.divideBy(Rational(2)**(iInputData.Header.NbrBitsPerSample-1))
           lMinX, lMinY, lMaxX, lMaxY = lFunction.getBounds
-          # TODO: Find a good way to set its value
-          lLogPrecision = 10
-          lDBMinY = lFunction.bdVal2db(lMinY, BigDecimal('1'), lLogPrecision)
-          lDBMaxY = lFunction.bdVal2db(lMaxY, BigDecimal('1'), lLogPrecision)
+          lDBMinY = lFunction.valueVal2db(lMinY, Rational(1))
+          lDBMaxY = lFunction.valueVal2db(lMaxY, Rational(1))
           logInfo "Dynamic range: [#{sprintf('%.2f',lMinY)} - #{sprintf('%.2f',lMaxY)}] ([#{sprintf('%.2f',lDBMinY)}db - #{sprintf('%.2f',lDBMaxY)}db] = #{sprintf('%.2f',lDBMaxY-lDBMinY)}db)"
           lFunction.writeToFile(@FctFileName)
         end

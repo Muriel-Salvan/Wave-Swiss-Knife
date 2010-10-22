@@ -1,5 +1,35 @@
-require 'bigdecimal'
-require 'bigdecimal/math'
+require 'rational'
+
+# Convert a float to a Rational
+class Float
+
+  # Convert to a Rational
+  #
+  # Return:
+  # * _Rational_: Corresponding Rational
+  def to_r
+    rResult = nil
+
+    if (self.nan?)
+      rResult = Rational(0,0) # Div by zero error
+    elsif (self.infinite?)
+      rResult = Rational(self<0 ? -1 : 1,0) # Div by zero error
+    else
+      lSign, lExponent, lFloat = [self].pack("G").unpack("B*").first.unpack("AA11A52")
+      lSign = (-1)**lSign.to_i
+      lExponent = lExponent.to_i(2)
+      if ((lExponent.nonzero?) and
+          (lExponent<2047))
+        rResult = Rational(lSign)*Rational(2)**(lExponent-1023)*Rational("1#{lFloat}".to_i(2),0x10000000000000)
+      elsif (lExponent.zero?)
+        rResult = Rational(lSign)*Rational(2)**(-1024)*Rational("0#{lFloat}".to_i(2),0x10000000000000)
+      end
+    end
+
+    return rResult
+  end
+
+end
 
 module WSK
 
@@ -7,16 +37,15 @@ module WSK
 
     # Function type piecewise linear.
     # Here are the possible attributes used by this type:
-    # *:MinValue* (_BigDecimal_): Minimal value of the plots of the function [optional = Minimal value of points]
-    # *:MaxValue* (_BigDecimal_): Maximal value of the plots of the function [optional = Maximal value of points]
-    # *:Points* (<em>map<BigDecimal,BigDecimal></em>): Coordinates of points indicating each linear part
+    # *:MinValue* (_Rational_): Minimal value of the plots of the function [optional = Minimal value of points]
+    # *:MaxValue* (_Rational_): Maximal value of the plots of the function [optional = Maximal value of points]
+    # *:Points* (<em>map<Rational,Rational></em>): Coordinates of points indicating each linear part
     FCTTYPE_PIECEWISE_LINEAR = 0
 
     # Class implementing a mathematical function that can then be used in many contexts
     class Function
 
       include WSK::Common
-      include BigMath
 
       # Constructor
       def initialize
@@ -45,7 +74,7 @@ module WSK
         rescue Exception
           raise RuntimeError.new("Invalid function specified in file #{iFileName}: #{$!}")
         end
-        convertToBigDecimal
+        convertDataTypes
         optimize
       end
 
@@ -76,7 +105,7 @@ module WSK
           end
           # Profile this buffer
           lRMSValues = @VolumeUtils.measureLevel(lRawBuffer, iInputData.Header.NbrBitsPerSample, iInputData.Header.NbrChannels, lIdxCurrentEndSample - lIdxCurrentSample + 1, iRMSRatio)
-          lRMSMoyValue = 0
+          lRMSMoyValue = Rational(0, 1)
           lRMSValues.each do |iRMSValue|
             lRMSMoyValue += iRMSValue
           end
@@ -84,21 +113,20 @@ module WSK
           # Complete the function
           if (@Function[:Points].empty?)
             # First points: add also the point 0
-            @Function[:Points] = [ [0, lRMSMoyValue] ]
+            @Function[:Points] = [ [ Rational(0, 1), lRMSMoyValue] ]
           end
           # Add a point to the function in the middle of this interval
-          lPointX = lIdxCurrentSample - iIdxBeginSample + (lIdxCurrentEndSample - lIdxCurrentSample + 1)/2.0
+          lPointX = lIdxCurrentSample - iIdxBeginSample + Rational(lIdxCurrentEndSample - lIdxCurrentSample + 1, 2)
           @Function[:Points] << [lPointX, lRMSMoyValue]
           # Increment the cursor
           lIdxCurrentSample = lIdxCurrentEndSample + 1
           if (lIdxCurrentSample == iIdxEndSample + 1)
             # The last point: add the ending one
-            @Function[:Points] << [iIdxEndSample - iIdxBeginSample, lRMSMoyValue]
+            @Function[:Points] << [Rational(iIdxEndSample - iIdxBeginSample, 1), lRMSMoyValue]
           end
           $stdout.write("#{(lIdxCurrentSample*100)/(iIdxEndSample - iIdxBeginSample + 1)} %\015")
           $stdout.flush
         end
-        convertToBigDecimal
         optimize
       end
 
@@ -108,7 +136,7 @@ module WSK
       # * *iHashFunction* (<em>map<Symbol,Object></em>): The hashed function
       def set(iHashFunction)
         @Function = iHashFunction
-        convertToBigDecimal
+        convertDataTypes
         optimize
       end
 
@@ -154,7 +182,7 @@ module WSK
       # Divide values by a given factor
       #
       # Parameters:
-      # * *iFactor* (_BigDecimal_): Factor to divide by
+      # * *iFactor* (_Rational_): Factor to divide by
       def divideBy(iFactor)
         case @Function[:FunctionType]
         when FCTTYPE_PIECEWISE_LINEAR
@@ -166,21 +194,18 @@ module WSK
         end
       end
 
-      # Convert the units in DB equivalent
+      # Convert the Y units in DB equivalent
       #
       # Parameters:
-      # * *iMaxYValue* (_Integer_): Maximal Y value
-      # * *iPrecision* (_Integer_): Number of digits of precision
-      def convertToDB(iMaxYValue, iPrecision)
-        lBDMaxValue = BigDecimal(iMaxYValue.to_s)
+      # * *iMaxYValue* (_Rational_): Maximal Y value
+      def convertToDB(iMaxYValue)
         case @Function[:FunctionType]
         when FCTTYPE_PIECEWISE_LINEAR
           # Prepare variables for log computations
-          setLogPrecision(iPrecision)
-          @Log2 = bdLog(BigDecimal('2'))
-          @LogMax = bdLog(lBDMaxValue)
+          @Log2 = Math::log(2).to_r
+          @LogMax = valueLog(iMaxYValue)
           @Function[:Points].each do |ioPoint|
-            ioPoint[1] = bdVal2db_Internal(ioPoint[1])
+            ioPoint[1] = valueVal2db_Internal(ioPoint[1])
           end
         else
           logErr "Unknown function type: #{@Function[:FunctionType]}"
@@ -190,17 +215,13 @@ module WSK
       # Round values to a given precision
       #
       # Parameters:
-      # * *iPrecisionX* (_BigDecimal_): The desired precision for X values (1000 will round to E-3)
-      # * *iPrecisionY* (_BigDecimal_): The desired precision for Y values (1000 will round to E-3)
+      # * *iPrecisionX* (_Rational_): The desired precision for X values (1000 will round to E-3)
+      # * *iPrecisionY* (_Rational_): The desired precision for Y values (1000 will round to E-3)
       def roundToPrecision(iPrecisionX, iPrecisionY)
         case @Function[:FunctionType]
         when FCTTYPE_PIECEWISE_LINEAR
-          # !!! Do not use BigDecimal.round as Ruby 1.8.7 contains a bug on it (http://rubyforge.org/tracker/index.php?func=detail&aid=14271&group_id=426&atid=1698)
-          # Instead, we truncate to the next precision
-          lPrecisionX = iPrecisionX*10
-          lPrecisionY = iPrecisionY*10
           @Function[:Points] = @Function[:Points].map do |iPoint|
-            next [ ((iPoint[0]*lPrecisionX).truncate)/lPrecisionX, ((iPoint[1]*lPrecisionY).truncate)/lPrecisionY ]
+            next [ (Rational((iPoint[0]*iPrecisionX).round, 1))/iPrecisionX, (Rational((iPoint[1]*iPrecisionY).round, 1))/iPrecisionY ]
           end
         else
           logErr "Unknown function type: #{@Function[:FunctionType]}"
@@ -211,8 +232,8 @@ module WSK
       # Apply damping.
       #
       # Parameters:
-      # * *iSlopeUp* (_BigDecimal_): The maximal value of slope when increasing (should be > 0), or nil if none
-      # * *iSlopeDown* (_BigDecimal_): The minimal value of slope when decreasing (should be < 0), or nil if none
+      # * *iSlopeUp* (_Rational_): The maximal value of slope when increasing (should be > 0), or nil if none
+      # * *iSlopeDown* (_Rational_): The minimal value of slope when decreasing (should be < 0), or nil if none
       def applyDamping(iSlopeUp, iSlopeDown)
         if ((iSlopeUp != nil) and
             (iSlopeUp <= 0))
@@ -273,7 +294,7 @@ module WSK
                 end
                 # Add the intersecting point (could be the last one)
                 lIntersectPoint = [ lIntersectX, (lIntersectX - @Function[:Points][lIdxSegment][0])*lSlope + @Function[:Points][lIdxSegment][1] ]
-                #puts "lIntersectX=#{lIntersectX.to_s('F')} @Function[:Points][lIdxSegment][0]=#{@Function[:Points][lIdxSegment][0]} lSlope=#{lSlope} @Function[:Points][lIdxSegment][1]=#{@Function[:Points][lIdxSegment][1]} lIntersectPoint[1]=#{lIntersectPoint[1]}"
+                #puts "lIntersectX=#{lIntersectX.to_f} @Function[:Points][lIdxSegment][0]=#{@Function[:Points][lIdxSegment][0].to_f} lSlope=#{lSlope.to_f} @Function[:Points][lIdxSegment][1]=#{@Function[:Points][lIdxSegment][1].to_f} lIntersectPoint[1]=#{lIntersectPoint[1].to_f}"
                 lNewPoints << lIntersectPoint
                 # Continue after this intersection (we create also the intersecting point on our old points by modifying them)
                 @Function[:Points][lIdxSegmentIntersect] = lIntersectPoint
@@ -311,10 +332,10 @@ module WSK
       # Get the function bounds
       #
       # Return:
-      # * _Float_: Minimal X
-      # * _Float_: Minimal Y
-      # * _Float_: Maximal X
-      # * _Float_: Maximal Y
+      # * _Rational_: Minimal X
+      # * _Rational_: Minimal Y
+      # * _Rational_: Maximal X
+      # * _Rational_: Maximal Y
       def getBounds
         rMinX = nil
         rMinY = nil
@@ -352,14 +373,9 @@ module WSK
       def writeToFile(iFileName)
         case @Function[:FunctionType]
         when FCTTYPE_PIECEWISE_LINEAR
-          # First, convert points into readable data
-          lData = @Function.clone
-          lData[:Points] = lData[:Points].map do |iPoint|
-            next [ iPoint[0].to_s('F'), iPoint[1].to_s('F') ]
-          end
           require 'pp'
           File.open(iFileName, 'w') do |oFile|
-            oFile.write(lData.pretty_inspect)
+            oFile.write(@Function.pretty_inspect)
           end
         else
           logErr "Unknown function type: #{@Function[:FunctionType]}"
@@ -448,7 +464,7 @@ module WSK
       # Remove intermediate abscisses that are too close to each other
       #
       # Parameters:
-      # * *iMinDistance* (_BigDecimal_): Minimal distance for abscisses triplets to have
+      # * *iMinDistance* (_Rational_): Minimal distance for abscisses triplets to have
       def removeNoiseAbscisses(iMinDistance)
         case @Function[:FunctionType]
         when FCTTYPE_PIECEWISE_LINEAR
@@ -548,44 +564,27 @@ module WSK
       def functionData
         return @Function
       end
-      
-      # Compute the log of a BigDecimal for a given precision
-      # !!! Prerequisite: Call setLogPrecision first
+
+      # Compute the log of a function value.
       #
       # Parameters:
-      # * *iValue* (_BigDecimal_): The value
-      def bdLog(iValue)
-        lSign, lSignificantDigits, lBase, lExponent = iValue.split
-        if (lExponent == 0)
-          return log(iValue, @Precision)
-        else
-          return log(BigDecimal("0.#{lSignificantDigits}"), @Precision)+lExponent*@Log10
-        end
+      # * *iValue* (_Rational_): The value
+      def valueLog(iValue)
+        return Math::log(iValue).to_r
       end
       
-      # Set the precision of logarithms computations
+      # Compute a DB value out of a ratio using function values
       #
       # Parameters:
-      # * *iPrecision* (_Integer_): Precision to compute logarithms
-      def setLogPrecision(iPrecision)
-        @Precision = iPrecision
-        @Log10 = log(BigDecimal('10'), iPrecision)
-      end
-      
-      # Compute a DB value out of a ratio using BigDecimals
-      #
-      # Parameters:
-      # * *iValue* (_BigDecimal_): The value
-      # * *iMaxValue* (_BigDecimal_): The maximal value
-      # * *iPrecision* (_Integer_): Precision to compute logarithms
+      # * *iValue* (_Rational_): The value
+      # * *iMaxValue* (_Rational_): The maximal value
       # Return:
-      # * _BigDecimal_: Its corresponding db
-      def bdVal2db(iValue, iMaxValue, iPrecision)
-        setLogPrecision(iPrecision)
-        @Log2 = bdLog(BigDecimal('2'))
-        @LogMax = bdLog(iMaxValue)
+      # * _Rational_: Its corresponding db
+      def valueVal2db(iValue, iMaxValue)
+        @Log2 = Math::log(2).to_r
+        @LogMax = valueLog(iMaxValue)
         
-        return bdVal2db_Internal(iValue)
+        return valueVal2db_Internal(iValue)
       end
 
       private
@@ -617,26 +616,26 @@ module WSK
         end
       end
 
-      # Convert contained objects into BigDecimals
-      def convertToBigDecimal
+      # Convert contained objects into the types used for function values
+      def convertDataTypes
         case @Function[:FunctionType]
         when FCTTYPE_PIECEWISE_LINEAR
           @Function[:Points] = @Function[:Points].map do |iPoint|
             lNewPointX = nil
             lNewPointY = nil
-            if (iPoint[0].is_a?(BigDecimal))
+            if (iPoint[0].is_a?(Rational))
               lNewPointX = iPoint[0]
-            elsif (iPoint[0].is_a?(String))
-              lNewPointX = BigDecimal(iPoint[0])
+            elsif (iPoint[0].is_a?(Float))
+              lNewPointX = iPoint[0].to_r
             else
-              lNewPointX = BigDecimal(iPoint[0].to_s)
+              lNewPointX = Rational(iPoint[0])
             end
-            if (iPoint[1].is_a?(BigDecimal))
+            if (iPoint[1].is_a?(Rational))
               lNewPointY = iPoint[1]
-            elsif (iPoint[1].is_a?(String))
-              lNewPointY = BigDecimal(iPoint[1])
+            elsif (iPoint[1].is_a?(Float))
+              lNewPointY = iPoint[1].to_r
             else
-              lNewPointY = BigDecimal(iPoint[1].to_s)
+              lNewPointY = Rational(iPoint[1])
             end
             next [ lNewPointX, lNewPointY ]
           end
@@ -668,9 +667,9 @@ module WSK
       # Parameters:
       # * *iOtherFunction* (_Function_): The other function
       # * *CodeBlock*: Code called for each point found:
-      # ** *iX* (_BigDecimal_): The corresponding abscisse (can be nil if none)
-      # ** *iY* (_BigDecimal_): The corresponding Y value for this function (can be nil if none)
-      # ** *iOtherY* (_BigDecimal_): The corresponding Y value for the other function
+      # ** *iX* (_Rational_): The corresponding abscisse (can be nil if none)
+      # ** *iY* (_Rational_): The corresponding Y value for this function (can be nil if none)
+      # ** *iOtherY* (_Rational_): The corresponding Y value for the other function
       def unionXWithFunction_PiecewiseLinear(iOtherFunction)
         lPoints = @Function[:Points]
         lOtherPoints = iOtherFunction.functionData[:Points]
@@ -711,21 +710,21 @@ module WSK
       end
 
       # Convert a value to its db notation.
-      # Operate on BigDecimal numbers.
+      # Operate on the function values numbers.
       # !!! Prerequisites: The following variables have to be set before calling this function
       # * @Log2: Contains log(2)
       # * @LogMax: Contains log(MaximalValue)
-      # !!! Prerequisite: setLogPrecision must be called before
       #
       # Parameters:
-      # * *iValue* (_BigDecimal_): The value
+      # * *iValue* (_Rational_): The value
       # Return:
-      # * _BigDecimal_: Its corresponding db
-      def bdVal2db_Internal(iValue)
+      # * _Rational_: Its corresponding db
+      def valueVal2db_Internal(iValue)
         if (iValue == 0)
-          return BigDecimal('-Infinity')
+          # -Infinity
+          return -1.0/0.0
         else
-          return -6*(@LogMax-bdLog(iValue.abs))/@Log2
+          return -6*(@LogMax-valueLog(iValue.abs))/@Log2
         end
       end
 

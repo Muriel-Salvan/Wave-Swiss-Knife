@@ -42,7 +42,7 @@ module WSK
           # Then draw it
           lMaxY = lFunction.getBounds[3]
           if (@UnitDB == 1)
-            lMaxY = BigDecimal((2**(lMaxY.to_f/6)).to_s)
+            lMaxY = (2**(lMaxY.to_f/6)).to_r
           end
           lMedianValue = ((2**(iInputData.Header.NbrBitsPerSample-1)-1)/lMaxY).to_i
           logInfo "Draw function with maximal ratio #{lMaxY.to_s('F')}, using median value #{lMedianValue}"

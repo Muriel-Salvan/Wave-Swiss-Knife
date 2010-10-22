@@ -2,6 +2,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <CommonUtils.h>
+#include <gmp.h>
 
 /**
  * Free a C function.
@@ -32,19 +33,32 @@ static void functionutils_freeCFct_PiecewiseLinear(void* iPtrCFct) {
   free(lPtrCFct->pointsY);
 }
 
-static int gID_to_f;
+static int gID_to_s;
+static int gID_numerator;
+static int gID_denominator;
 
 /**
- * Convert a Ruby BigDecimal into a long double
+ * Convert a Ruby function value into a long double
  *
  * Parameters:
- * * *iValBD* (_BigDecimal_): The BigDecimal to convert
+ * * *iValBD* (_Rational_): The value to convert
  * Return:
  * * <em>long double</em>: The equivalent long double
  */
-inline long double bd2ld(
+inline long double value2ld(
   VALUE iValBD) {
-  return NUM2DBL(rb_funcall(iValBD, gID_to_f, 0));
+  long double rResult;
+
+  mpf_t lDenominator;
+  mpf_init_set_str(lDenominator, RSTRING(rb_funcall(rb_funcall(iValBD, gID_denominator, 0), gID_to_s, 0))->ptr, 10);
+  mpf_t lDivResult;
+  mpf_init_set_str(lDivResult, RSTRING(rb_funcall(rb_funcall(iValBD, gID_numerator, 0), gID_to_s, 0))->ptr, 10);
+  mpf_div(lDivResult, lDivResult, lDenominator);
+  rResult = mpf_get_d(lDivResult);
+  mpf_clear(lDivResult);
+  mpf_clear(lDenominator);
+
+  return rResult;
 }
 
 /**
@@ -76,8 +90,8 @@ static int functionutils_fillCFunction_PiecewiseLinear(
   lPtrFctData->pointsY = ALLOC_N(long double, lNbrPoints);
 
   // Get the X bounds
-  long double lMinX = bd2ld(rb_ary_entry(rb_ary_entry(lValSortedPoints, 0), 0));
-  long double lDistX = bd2ld(rb_ary_entry(rb_ary_entry(lValSortedPoints, lNbrPoints-1), 0))-lMinX;
+  long double lMinX = value2ld(rb_ary_entry(rb_ary_entry(lValSortedPoints, 0), 0));
+  long double lDistX = value2ld(rb_ary_entry(rb_ary_entry(lValSortedPoints, lNbrPoints-1), 0))-lMinX;
   long double lDistSample = iIdxEndSample-iIdxBeginSample;
 
   // Loop on each points pair
@@ -85,8 +99,8 @@ static int functionutils_fillCFunction_PiecewiseLinear(
   int lIdxPoint;
   for (lIdxPoint = 0; lIdxPoint < lNbrPoints; ++lIdxPoint) {
     lValPoint = rb_ary_entry(lValSortedPoints, lIdxPoint);
-    lPtrFctData->pointsX[lIdxPoint] = iIdxBeginSample+((tSampleIndex)((lDistSample*(bd2ld(rb_ary_entry(lValPoint, 0))-lMinX))/lDistX));
-    lPtrFctData->pointsY[lIdxPoint] = bd2ld(rb_ary_entry(lValPoint, 1));
+    lPtrFctData->pointsX[lIdxPoint] = iIdxBeginSample+((tSampleIndex)((lDistSample*(value2ld(rb_ary_entry(lValPoint, 0))-lMinX))/lDistX));
+    lPtrFctData->pointsY[lIdxPoint] = value2ld(rb_ary_entry(lValPoint, 1));
 /*
     printf("Function point n.%d: %lld,%LF\n", lIdxPoint, lPtrFctData->pointsX[lIdxPoint], lPtrFctData->pointsY[lIdxPoint]);
 */
@@ -139,5 +153,7 @@ void Init_FunctionUtils() {
   VALUE lFunctionUtilsClass = rb_define_class_under(lFunctionUtilsModule, "FunctionUtils", rb_cObject);
 
   rb_define_method(lFunctionUtilsClass, "createCFunction", functionutils_createCFunction, 3);
-  gID_to_f = rb_intern("to_f");
+  gID_to_s = rb_intern("to_s");
+  gID_numerator = rb_intern("numerator");
+  gID_denominator = rb_intern("denominator");
 }
