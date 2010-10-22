@@ -2,6 +2,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <CommonUtils.h>
+#include <gmp.h>
 
 // Struct used to store a map
 typedef struct {
@@ -38,6 +39,18 @@ typedef struct {
   long double tmpValue;
   int idxBuffer;
 } tMixStruct;
+
+// Struct used to convey data among iterators in the Compare method
+typedef struct {
+  unsigned char* buffer2_8bits;
+  signed short int* buffer2_16bits;
+  t24bits* buffer2_24bits;
+  long double coeffDiff;
+  tSampleValue* map;
+  tSampleValue mapOffset;
+  VALUE self;
+  mpz_t cumulativeErrors;
+} tCompareStruct;
 
 /**
  * Free a map.
@@ -552,6 +565,284 @@ static VALUE arithmutils_mixBuffers(
   return rb_ary_new3(2, rValOutputBuffer, LONG2FIX(lNbrSamples));
 }
 
+// The value that represents nil in the maps
+static tSampleValue gImpossibleValue;
+static ID gID_logWarn;
+
+/**
+ * Process a value read from an input buffer for the compare function.
+ * Optimized for 8 bits samples.
+ *
+ * Parameters:
+ * * *iValue* (<em>const tSampleValue</em>): The value being read
+ * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
+ * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
+ * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tMixStruct*</em>.
+ * Return:
+ * * _int_: The return code:
+ * ** 0: Continue iteration
+ * ** 1: Break all iterations
+ * ** 2: Skip directly to the next sample (don't call us for other channels of this sample)
+ */
+int arithmutils_processValue_compare_8bits(
+  const tSampleValue iValue,
+  tSampleValue* oPtrValue,
+  const tSampleIndex iIdxSample,
+  const int iIdxChannel,
+  void* iPtrArgs) {
+  tCompareStruct* lPtrParams = (tCompareStruct*)iPtrArgs;
+
+  tSampleValue lValue2 = (*lPtrParams->buffer2_8bits)-128;
+  if (lPtrParams->map != NULL) {
+    // Complete the map
+    if (lPtrParams->map[lPtrParams->mapOffset+iValue] == gImpossibleValue) {
+      lPtrParams->map[lPtrParams->mapOffset+iValue] = lValue2;
+    } else if (lPtrParams->map[lPtrParams->mapOffset+iValue] != lValue2) {
+      char lMessage[256];
+      sprintf(lMessage, "Distortion for input value %d was found both %d and %d", iValue, lPtrParams->map[lPtrParams->mapOffset+iValue], lValue2);
+      rb_funcall(lPtrParams->self, gID_logWarn, 1, rb_str_new2(lMessage));
+    }
+  }
+  *oPtrValue = (tSampleValue)(((long double)(lValue2-iValue))*lPtrParams->coeffDiff);
+  mpz_add_ui(lPtrParams->cumulativeErrors, lPtrParams->cumulativeErrors, abs(lValue2-iValue));
+  ++lPtrParams->buffer2_8bits;
+
+  return 0;
+}
+
+/**
+ * Process a value read from an input buffer for the compare function.
+ * Optimized for 16 bits samples.
+ *
+ * Parameters:
+ * * *iValue* (<em>const tSampleValue</em>): The value being read
+ * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
+ * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
+ * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tMixStruct*</em>.
+ * Return:
+ * * _int_: The return code:
+ * ** 0: Continue iteration
+ * ** 1: Break all iterations
+ * ** 2: Skip directly to the next sample (don't call us for other channels of this sample)
+ */
+int arithmutils_processValue_compare_16bits(
+  const tSampleValue iValue,
+  tSampleValue* oPtrValue,
+  const tSampleIndex iIdxSample,
+  const int iIdxChannel,
+  void* iPtrArgs) {
+  tCompareStruct* lPtrParams = (tCompareStruct*)iPtrArgs;
+
+  tSampleValue lValue2 = *lPtrParams->buffer2_16bits;
+  if (lPtrParams->map != NULL) {
+    // Complete the map
+    if (lPtrParams->map[lPtrParams->mapOffset+iValue] == gImpossibleValue) {
+      lPtrParams->map[lPtrParams->mapOffset+iValue] = lValue2;
+    } else if (lPtrParams->map[lPtrParams->mapOffset+iValue] != lValue2) {
+      char lMessage[256];
+      sprintf(lMessage, "Distortion for input value %d was found both %d and %d", iValue, lPtrParams->map[lPtrParams->mapOffset+iValue], lValue2);
+      rb_funcall(lPtrParams->self, gID_logWarn, 1, rb_str_new2(lMessage));
+    }
+  }
+  *oPtrValue = (tSampleValue)(((long double)(lValue2-iValue))*lPtrParams->coeffDiff);
+  mpz_add_ui(lPtrParams->cumulativeErrors, lPtrParams->cumulativeErrors, abs(lValue2-iValue));
+  ++lPtrParams->buffer2_16bits;
+
+  return 0;
+}
+
+/**
+ * Process a value read from an input buffer for the compare function.
+ * Optimized for 8 bits samples.
+ *
+ * Parameters:
+ * * *iValue* (<em>const tSampleValue</em>): The value being read
+ * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
+ * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
+ * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tMixStruct*</em>.
+ * Return:
+ * * _int_: The return code:
+ * ** 0: Continue iteration
+ * ** 1: Break all iterations
+ * ** 2: Skip directly to the next sample (don't call us for other channels of this sample)
+ */
+int arithmutils_processValue_compare_24bits(
+  const tSampleValue iValue,
+  tSampleValue* oPtrValue,
+  const tSampleIndex iIdxSample,
+  const int iIdxChannel,
+  void* iPtrArgs) {
+  tCompareStruct* lPtrParams = (tCompareStruct*)iPtrArgs;
+
+  tSampleValue lValue2 = lPtrParams->buffer2_24bits->value;
+  if (lPtrParams->map != NULL) {
+    // Complete the map
+    if (lPtrParams->map[lPtrParams->mapOffset+iValue] == gImpossibleValue) {
+      lPtrParams->map[lPtrParams->mapOffset+iValue] = lValue2;
+    } else if (lPtrParams->map[lPtrParams->mapOffset+iValue] != lValue2) {
+      char lMessage[256];
+      sprintf(lMessage, "Distortion for input value %d was found both %d and %d", iValue, lPtrParams->map[lPtrParams->mapOffset+iValue], lValue2);
+      rb_funcall(lPtrParams->self, gID_logWarn, 1, rb_str_new2(lMessage));
+    }
+  }
+  *oPtrValue = (tSampleValue)(((long double)(lValue2-iValue))*lPtrParams->coeffDiff);
+  mpz_add_ui(lPtrParams->cumulativeErrors, lPtrParams->cumulativeErrors, abs(lValue2-iValue));
+  lPtrParams->buffer2_24bits = (t24bits*)(((int)lPtrParams->buffer2_24bits)+3);
+
+  return 0;
+}
+
+/**
+ * Get a Ruby integer based on an MPZ storing an integer value.
+ *
+ * Parameters:
+ * * *iMPZ* (<em>mpz_t</em>): The mpz to read
+ * Return:
+ * * _Integer_: The Ruby integer
+ */
+#define MAX_NUMBER_DIGITS 256
+VALUE mpz2RubyInt(
+  mpz_t iMPZ) {
+  // The buffer where it will be written
+  char lStrNumber[MAX_NUMBER_DIGITS];
+  mpz_get_str(lStrNumber, 16, iMPZ);
+
+  return rb_cstr2inum(lStrNumber, 16);
+}
+
+/**
+ * Compare 2 buffers.
+ * Write the difference in an output buffer (Buffer2 - Buffer1).
+ * Buffers must have the same size.
+ *
+ * Parameters:
+ * * *iSelf* (_FFT_): Self
+ * * *iValBuffer1* (<em>_String_</em>): First buffer
+ * * *iValBuffer2* (<em>_String_</em>): Second buffer
+ * * *iValNbrBitsPerSample* (_Integer_): Number of bits per sample
+ * * *iValNbrChannels* (_Integer_): Number of channels
+ * * *iValNbrSamples* (_Integer_): Number of samples in buffers
+ * * *iValCoeffDiff* (_Float_): The coefficient to apply on the differences written to the output
+ * * *ioValMap* (</em>list<Integer></em>): Map of differences in sample values (can be nil if we don't want to compute it)
+ * Return:
+ * * _String_: Output buffer
+ * * _Integer_: Cumulative errors in this buffer
+ **/
+static VALUE arithmutils_compareBuffers(
+  VALUE iSelf,
+  VALUE iValBuffer1,
+  VALUE iValBuffer2,
+  VALUE iValNbrBitsPerSample,
+  VALUE iValNbrChannels,
+  VALUE iValNbrSamples,
+  VALUE iValCoeffDiff,
+  VALUE ioValMap) {
+  // Translate Ruby objects
+  int iNbrBitsPerSample = FIX2INT(iValNbrBitsPerSample);
+  int iNbrChannels = FIX2INT(iValNbrChannels);
+  int iNbrSamples = FIX2INT(iValNbrSamples);
+  long double iCoeffDiff = NUM2DBL(iValCoeffDiff);
+  char* lPtrBuffer1 = RSTRING(iValBuffer1)->ptr;
+  char* lPtrBuffer2 = RSTRING(iValBuffer2)->ptr;
+  int lBufferCharSize = RSTRING(iValBuffer1)->len;
+  int lNbrSampleValues = 0;
+  // Allocate the output buffer
+  char* lPtrOutputBuffer = ALLOC_N(char, lBufferCharSize);
+
+  // Create variables to give to the iteration
+  tCompareStruct lProcessParams;
+  lProcessParams.coeffDiff = iCoeffDiff;
+  lProcessParams.self = iSelf;
+  if (ioValMap == Qnil) {
+    lProcessParams.map = NULL;
+  } else {
+    // Create the internal map
+    // Define the impossible value
+    gImpossibleValue = pow(2, iNbrBitsPerSample-1) + 1;
+    lNbrSampleValues = RARRAY(ioValMap)->len;
+    tSampleValue lMap[lNbrSampleValues];
+    VALUE lValMapValue;
+    int lIdxSampleValue;
+    for (lIdxSampleValue = 0; lIdxSampleValue < lNbrSampleValues; ++lIdxSampleValue) {
+      lValMapValue = rb_ary_entry(ioValMap, lIdxSampleValue);
+      if (lValMapValue == Qnil) {
+        lMap[lIdxSampleValue] = gImpossibleValue;
+      } else {
+        lMap[lIdxSampleValue] = FIX2LONG(lValMapValue);
+      }
+    }
+    lProcessParams.map = lMap;
+    lProcessParams.mapOffset = pow(2, iNbrBitsPerSample-1);
+  }
+  lProcessParams.buffer2_8bits = (unsigned char*)lPtrBuffer2;
+  lProcessParams.buffer2_16bits = (signed short int*)lPtrBuffer2;
+  lProcessParams.buffer2_24bits = (t24bits*)lPtrBuffer2;
+  mpz_init(lProcessParams.cumulativeErrors);
+
+  // Iterate through the raw buffer
+  if (iNbrBitsPerSample == 8) {
+    commonutils_iterateThroughRawBufferOutput(
+      iSelf,
+      lPtrBuffer1,
+      lPtrOutputBuffer,
+      iNbrBitsPerSample,
+      iNbrChannels,
+      iNbrSamples,
+      0,
+      1,
+      &arithmutils_processValue_compare_8bits,
+      &lProcessParams
+    );
+  } else if (iNbrBitsPerSample == 16) {
+    commonutils_iterateThroughRawBufferOutput(
+      iSelf,
+      lPtrBuffer1,
+      lPtrOutputBuffer,
+      iNbrBitsPerSample,
+      iNbrChannels,
+      iNbrSamples,
+      0,
+      1,
+      &arithmutils_processValue_compare_16bits,
+      &lProcessParams
+    );
+  } else {
+    // If it is not 24 bits, the method will throw an exception. So we are safe.
+    commonutils_iterateThroughRawBufferOutput(
+      iSelf,
+      lPtrBuffer1,
+      lPtrOutputBuffer,
+      iNbrBitsPerSample,
+      iNbrChannels,
+      iNbrSamples,
+      0,
+      1,
+      &arithmutils_processValue_compare_24bits,
+      &lProcessParams
+    );
+  }
+
+  if (lProcessParams.map != NULL) {
+    // Modify the array in parameter
+    int lIdxSampleValue;
+    for (lIdxSampleValue = 0; lIdxSampleValue < lNbrSampleValues; ++lIdxSampleValue) {
+      if (lProcessParams.map[lIdxSampleValue] == gImpossibleValue) {
+        rb_ary_store(ioValMap, lIdxSampleValue, Qnil);
+      } else {
+        rb_ary_store(ioValMap, lIdxSampleValue, LONG2FIX(lProcessParams.map[lIdxSampleValue]));
+      }
+    }
+  }
+  VALUE rValCumulativeErrors = mpz2RubyInt(lProcessParams.cumulativeErrors);
+  mpz_clear(lProcessParams.cumulativeErrors);
+
+  VALUE rValOutputBuffer = rb_str_new(lPtrOutputBuffer, lBufferCharSize);
+
+  free(lPtrOutputBuffer);
+
+  return rb_ary_new3(2, rValOutputBuffer, rValCumulativeErrors);
+}
+
 // Initialize the module
 void Init_ArithmUtils() {
   VALUE lWSKModule = rb_define_module("WSK");
@@ -561,4 +852,6 @@ void Init_ArithmUtils() {
   rb_define_method(lArithmUtilsClass, "createMapFromFunctions", arithmutils_createMapFromFunctions, 2);
   rb_define_method(lArithmUtilsClass, "applyMap", arithmutils_applyMap, 4);
   rb_define_method(lArithmUtilsClass, "mixBuffers", arithmutils_mixBuffers, 3);
+  rb_define_method(lArithmUtilsClass, "compareBuffers", arithmutils_compareBuffers, 7);
+  gID_logWarn = rb_intern("logWarn");
 }

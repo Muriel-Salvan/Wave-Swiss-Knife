@@ -8,6 +8,7 @@ module WSK
     class Compare
 
       include WSK::Common
+      include WSK::Maps
 
       # Get the number of samples that will be written.
       # This is called before execute, as it is needed to write the output file.
@@ -53,85 +54,104 @@ module WSK
       # Return:
       # * _Exception_: An error, or nil if success
       def execute(iInputData, oOutputData)
+        @NbrBitsPerSample = iInputData.Header.NbrBitsPerSample
+        @NbrChannels = iInputData.Header.NbrChannels
         if (@GenMap == 1)
           # We want to generate the map
-          @DistortionMap = [nil]*(2**(iInputData.Header.NbrBitsPerSample))
+          @DistortionMap = [nil]*(2**@NbrBitsPerSample)
         else
           @DistortionMap = nil
         end
         # Measure the cumulative errors
         @CumulativeErrors = 0
-        @MaxValue = 2**(iInputData.Header.NbrBitsPerSample-1)-1
-        @MinValue = -2**(iInputData.Header.NbrBitsPerSample-1)
+        @MaxValue = 2**(@NbrBitsPerSample-1)-1
+        @MinValue = -2**(@NbrBitsPerSample-1)
         # Get the second input file
         rError = accessInputWaveFile(@InputFileName2) do |iInputHeader2, iInputData2|
           # Loop on both files.
           # !!! We count on the same buffer size for both files.
+          require 'WSK/ArithmUtils/ArithmUtils'
+          @ArithmUtils = WSK::ArithmUtils::ArithmUtils.new
           # Initialize buffers
           lNbrSamplesProcessed = 0
-          iInputData.getSampleData(0)
-          iInputData2.getSampleData(0)
-          lBuffer1, lNbrSamples1, lNbrChannels = iInputData.getCurrentBuffer
-          lBuffer2, lNbrSamples2, lNbrChannels = iInputData2.getCurrentBuffer
-          while ((lBuffer1 != nil) or
-                 (lBuffer2 != nil))
-            # Compute the differing buffer
-            lDiffBuffer = nil
-            if (lBuffer2 == nil)
-              # Just write the first file
-              lDiffBuffer = lBuffer1.map do |iValue|
-                next processDiff(iValue, 0)
-              end
-              lNbrSamplesProcessed += lNbrSamples1
-            elsif (lBuffer1 == nil)
-              # Just write the second file, opposite
-              lDiffBuffer = lBuffer2.map do |iValue|
-                next processDiff(0, iValue)
-              end
+          iInputData.eachRawBuffer do |iRawBuffer, iNbrSamples, iNbrChannels|
+            break
+          end
+          lRawBuffer1, lNbrSamples1, lNbrChannels = iInputData.getCurrentRawBuffer
+          iInputData2.eachRawBuffer do |iRawBuffer, iNbrSamples, iNbrChannels|
+            break
+          end
+          lRawBuffer2, lNbrSamples2, lNbrChannels = iInputData2.getCurrentRawBuffer
+          while ((lRawBuffer1 != nil) or
+                 (lRawBuffer2 != nil))
+            if (lRawBuffer1 == nil)
+              oOutputData.pushRawBuffer(lRawBuffer2)
               lNbrSamplesProcessed += lNbrSamples2
+            elsif (lRawBuffer2 == nil)
+              computeInverseMap
+              oOutputData.pushRawBuffer(@ArithmUtils.applyMap(@InverseMap, lRawBuffer1, @NbrBitsPerSample, lNbrSamples1))
+              lNbrSamplesProcessed += lNbrSamples1
             elsif (lNbrSamples1 == lNbrSamples2)
-              lDiffBuffer = []
-              lBuffer1.each_with_index do |iValue, iIdx|
-                lDiffBuffer << processDiff(iValue, lBuffer2[iIdx])
-              end
+              lOutputBuffer, lCumulativeErrors = @ArithmUtils.compareBuffers(
+                lRawBuffer1,
+                lRawBuffer2,
+                @NbrBitsPerSample,
+                @NbrChannels,
+                lNbrSamples1,
+                @Coeff,
+                @DistortionMap
+              )
+              oOutputData.pushRawBuffer(lOutputBuffer)
+              @CumulativeErrors += lCumulativeErrors
               lNbrSamplesProcessed += lNbrSamples1
-            elsif (lNbrSamples1 < lNbrSamples2)
-              # Up to lNbrSamples1, write the difference
-              lDiffBuffer = []
-              lBuffer1.each_with_index do |iValue, iIdx|
-                lDiffBuffer << processDiff(iValue, lBuffer2[iIdx])
-              end
-              # Then write input2 opposite
-              lDiffBuffer += lBuffer2[lBuffer1.size..-1].map do |iValue|
-                next processDiff(0, iValue)
-              end
+            elsif (lNbrSamples1 > lNbrSamples2)
+              lOutputBuffer, lCumulativeErrors = @ArithmUtils.compareBuffers(
+                lRawBuffer1[0..lRawBuffer2.size-1],
+                lRawBuffer2,
+                @NbrBitsPerSample,
+                @NbrChannels,
+                lNbrSamples1,
+                @Coeff,
+                @DistortionMap
+              )
+              oOutputData.pushRawBuffer(lOutputBuffer)
+              @CumulativeErrors += lCumulativeErrors
+              # Write remaining buffer (-Buffer1)
+              computeInverseMap
+              oOutputData.pushRawBuffer(@ArithmUtils.applyMap(@InverseMap, lRawBuffer1[lRawBuffer2.size..-1], @NbrBitsPerSample, lNbrSamples2 - lNbrSamples1))
+              # Buffer2 is finished
+              lRawBuffer2 = nil
+              lNbrSamplesProcessed += lNbrSamples1
+            else
+              lOutputBuffer, lCumulativeErrors = @ArithmUtils.compareBuffers(
+                lRawBuffer1,
+                lRawBuffer2[0..lRawBuffer1.size-1],
+                @NbrBitsPerSample,
+                @NbrChannels,
+                lNbrSamples1,
+                @Coeff,
+                @DistortionMap
+              )
+              oOutputData.pushRawBuffer(lOutputBuffer)
+              @CumulativeErrors += lCumulativeErrors
+              # Write remaining buffer (Buffer2)
+              oOutputData.pushRawBuffer(lRawBuffer2[lRawBuffer1.size..-1])
+              # Buffer1 is finished
+              lRawBuffer1 = nil
               lNbrSamplesProcessed += lNbrSamples2
-            else
-              # Up to lNbrSamples2, write the difference
-              lDiffBuffer = []
-              lBuffer2.each_with_index do |iValue, iIdx|
-                lDiffBuffer << processDiff(lBuffer1[iIdx], iValue)
-              end
-              # Then write input1
-              lDiffBuffer += lBuffer1[lBuffer2.size..-1].map do |iValue|
-                next processDiff(iValue, 0)
-              end
-              lNbrSamplesProcessed += lNbrSamples1
             end
-            oOutputData.pushBuffer(lDiffBuffer)
-            if (lNbrSamplesProcessed >= iInputData.NbrSamples)
-              lBuffer1 = nil
-            else
-              # Read next Buffer1
-              iInputData.getSampleData(lNbrSamplesProcessed)
-              lBuffer1, lNbrSamples1, lNbrChannels = iInputData.getCurrentBuffer
+            # Read next buffers if they are not finished
+            if (lRawBuffer1 != nil)
+              iInputData.eachRawBuffer(lNbrSamplesProcessed) do |iRawBuffer, iNbrSamples, iNbrChannels|
+                break
+              end
+              lRawBuffer1, lNbrSamples1, lNbrChannels = iInputData.getCurrentRawBuffer
             end
-            if (lNbrSamplesProcessed >= iInputData2.NbrSamples)
-              lBuffer2 = nil
-            else
-              # Read next Buffer2
-              iInputData2.getSampleData(lNbrSamplesProcessed)
-              lBuffer2, lNbrSamples2, lNbrChannels = iInputData2.getCurrentBuffer
+            if (lRawBuffer2 != nil)
+              iInputData2.eachRawBuffer(lNbrSamplesProcessed) do |iRawBuffer, iNbrSamples, iNbrChannels|
+                break
+              end
+              lRawBuffer2, lNbrSamples2, lNbrChannels = iInputData2.getCurrentRawBuffer
             end
           end
         end
@@ -143,7 +163,7 @@ module WSK
           end
           logInfo 'Generate invert map in invert.map'
           # We want to spot the values that are missing, and the duplicate values
-          lInvertMap = [nil]*(2**(iInputData.Header.NbrBitsPerSample))
+          lInvertMap = [nil]*(2**@NbrBitsPerSample)
           (@MinValue .. @MaxValue).each do |iValue|
             if (@DistortionMap[iValue] == nil)
               logWarn "Value #{iValue} was not part of the input file"
@@ -170,43 +190,32 @@ module WSK
             oFile.write(Marshal.dump(lInvertMap))
           end
         end
-        lNormalizedErrors = @CumulativeErrors/@Coeff
-        puts "Cumulative errors: #{lNormalizedErrors} (#{Float(lNormalizedErrors*100)/Float(iInputData.NbrSamples*(2**iInputData.Header.NbrBitsPerSample))} %)"
+        puts "Cumulative errors: #{@CumulativeErrors} (#{Float(@CumulativeErrors*100)/Float(iInputData.NbrSamples*(2**@NbrBitsPerSample))} %)"
 
         return rError
       end
 
       private
 
-      # Process a difference value, and return the difference to consider for real (in the bounds with the coefficient)
-      #
-      # Parameters:
-      # * *iValue1* (_Integer_): The first value
-      # * *iValue2* (_Integer_): The second value
-      # Return:
-      # * _Integer_: The value to consider
-      def processDiff(iValue1, iValue2)
-        rNewDiff = (iValue1-iValue2)*@Coeff
-
-        if (rNewDiff > @MaxValue)
-          logWarn "Exceeding maximal value: #{rNewDiff}, set to #{@MaxValue}"
-          rNewDiff = @MaxValue
-        elsif (rNewDiff < @MinValue)
-          logWarn "Exceeding minimal value: #{rNewDiff}, set to #{@MinValue}"
-          rNewDiff = @MinValue
+      # Compute the inverse map
+      def computeInverseMap
+        if (defined?(@InverseMap) == nil)
+          # Compute the function that will perform inversion
+          lMaxValue = 2**(@NbrBitsPerSample-1) - 1
+          lMinValue = -2**(@NbrBitsPerSample-1)
+          @InverseMap = @ArithmUtils.createMapFromFunctions(
+            @NbrBitsPerSample,
+            [ {
+              :FunctionType => WSK::Functions::FCTTYPE_PIECEWISE_LINEAR,
+              :MinValue => lMinValue,
+              :MaxValue => lMaxValue,
+              :Points => {
+                lMinValue => -lMinValue,
+                lMaxValue => -lMaxValue
+              }
+            } ] * @NbrChannels
+          )
         end
-        if (rNewDiff != 0)
-          @CumulativeErrors += rNewDiff.abs
-        end
-        if (@DistortionMap != nil)
-          if (@DistortionMap[iValue2] == nil)
-            @DistortionMap[iValue2] = rNewDiff
-          elsif (@DistortionMap[iValue2] != rNewDiff)
-            logWarn "Distortion for input value #{iValue2} was found both #{@DistortionMap[iValue2]} and #{rNewDiff}"
-          end
-        end
-
-        return rNewDiff
       end
 
     end
