@@ -42,6 +42,7 @@ module WSK
         if (lError != nil)
           raise lError
         end
+        @TotalNbrSamples = rNbrSamples
 
         return rNbrSamples
       end
@@ -87,10 +88,16 @@ module WSK
             if (lRawBuffer1 == nil)
               oOutputData.pushRawBuffer(lRawBuffer2)
               lNbrSamplesProcessed += lNbrSamples2
+              if (lNbrSamplesProcessed == @TotalNbrSamples)
+                lRawBuffer2 = nil
+              end
             elsif (lRawBuffer2 == nil)
               computeInverseMap
               oOutputData.pushRawBuffer(@ArithmUtils.applyMap(@InverseMap, lRawBuffer1, @NbrBitsPerSample, lNbrSamples1))
               lNbrSamplesProcessed += lNbrSamples1
+              if (lNbrSamplesProcessed == @TotalNbrSamples)
+                lRawBuffer1 = nil
+              end
             elsif (lNbrSamples1 == lNbrSamples2)
               lOutputBuffer, lCumulativeErrors = @ArithmUtils.compareBuffers(
                 lRawBuffer1,
@@ -104,6 +111,10 @@ module WSK
               oOutputData.pushRawBuffer(lOutputBuffer)
               @CumulativeErrors += lCumulativeErrors
               lNbrSamplesProcessed += lNbrSamples1
+              if (lNbrSamplesProcessed == @TotalNbrSamples)
+                lRawBuffer1 = nil
+                lRawBuffer2 = nil
+              end
             elsif (lNbrSamples1 > lNbrSamples2)
               lOutputBuffer, lCumulativeErrors = @ArithmUtils.compareBuffers(
                 lRawBuffer1[0..lRawBuffer2.size-1],

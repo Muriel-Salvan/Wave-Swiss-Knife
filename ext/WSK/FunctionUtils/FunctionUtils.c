@@ -54,6 +54,7 @@ inline long double value2ld(
   mpf_t lDivResult;
   mpf_init_set_str(lDivResult, RSTRING(rb_funcall(rb_funcall(iValBD, gID_numerator, 0), gID_to_s, 0))->ptr, 10);
   mpf_div(lDivResult, lDivResult, lDenominator);
+  // TODO: Find a way to round correctly lDivResult. It is currently truncated.
   rResult = mpf_get_d(lDivResult);
   mpf_clear(lDivResult);
   mpf_clear(lDenominator);
@@ -96,13 +97,28 @@ static int functionutils_fillCFunction_PiecewiseLinear(
 
   // Loop on each points pair
   VALUE lValPoint;
-  int lIdxPoint;
-  for (lIdxPoint = 0; lIdxPoint < lNbrPoints; ++lIdxPoint) {
-    lValPoint = rb_ary_entry(lValSortedPoints, lIdxPoint);
-    lPtrFctData->pointsX[lIdxPoint] = iIdxBeginSample+((tSampleIndex)((lDistSample*(value2ld(rb_ary_entry(lValPoint, 0))-lMinX))/lDistX));
-    lPtrFctData->pointsY[lIdxPoint] = value2ld(rb_ary_entry(lValPoint, 1));
+  tSampleIndex lPointX;
+  // Set the first point alone, as no check is performed about duplicates.
+  lValPoint = rb_ary_entry(lValSortedPoints, 0);
+  lPtrFctData->pointsX[0] = iIdxBeginSample+((tSampleIndex)((lDistSample*(value2ld(rb_ary_entry(lValPoint, 0))-lMinX))/lDistX));
+  lPtrFctData->pointsY[0] = value2ld(rb_ary_entry(lValPoint, 1));
 /*
-    printf("Function point n.%d: %lld,%LF\n", lIdxPoint, lPtrFctData->pointsX[lIdxPoint], lPtrFctData->pointsY[lIdxPoint]);
+  printf("Function point n.0: %lld,%LF\n", lPtrFctData->pointsX[0], lPtrFctData->pointsY[0]);
+*/
+  // Loop on other points
+  int lIdxPoint;
+  int lIdxLastCPoint = 0;
+  for (lIdxPoint = 1; lIdxPoint < lNbrPoints; ++lIdxPoint) {
+    lValPoint = rb_ary_entry(lValSortedPoints, lIdxPoint);
+    lPointX = iIdxBeginSample+((tSampleIndex)((lDistSample*(value2ld(rb_ary_entry(lValPoint, 0))-lMinX))/lDistX));
+    // If this abscisse is already set, change the already set one
+    if (lPtrFctData->pointsX[lIdxLastCPoint] != lPointX) {
+      ++lIdxLastCPoint;
+      lPtrFctData->pointsX[lIdxLastCPoint] = lPointX;
+    }
+    lPtrFctData->pointsY[lIdxLastCPoint] = value2ld(rb_ary_entry(lValPoint, 1));
+/*
+    printf("Function point n.%d: %lld,%LF\n", lIdxLastCPoint, lPtrFctData->pointsX[lIdxLastCPoint], lPtrFctData->pointsY[lIdxLastCPoint]);
 */
   }
 

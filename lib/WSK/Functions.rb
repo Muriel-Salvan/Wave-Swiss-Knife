@@ -104,25 +104,31 @@ module WSK
             lRawBuffer += iInputRawBuffer
           end
           # Profile this buffer
-          lRMSValues = @VolumeUtils.measureLevel(lRawBuffer, iInputData.Header.NbrBitsPerSample, iInputData.Header.NbrChannels, lIdxCurrentEndSample - lIdxCurrentSample + 1, iRMSRatio)
-          lRMSMoyValue = Rational(0, 1)
-          lRMSValues.each do |iRMSValue|
-            lRMSMoyValue += iRMSValue
+          lChannelLevelValues = @VolumeUtils.measureLevel(lRawBuffer, iInputData.Header.NbrBitsPerSample, iInputData.Header.NbrChannels, lIdxCurrentEndSample - lIdxCurrentSample + 1, iRMSRatio)
+          # Combine the channel levels based on the RMS ratio also
+          lMaxValue = Rational(0, 1)
+          lRMSValue = Rational(0, 1)
+          lChannelLevelValues.each do |iLevelValue|
+            if (iLevelValue > lMaxValue)
+              lMaxValue = iLevelValue
+            end
+            lRMSValue += iLevelValue*iLevelValue
           end
-          lRMSMoyValue /= lRMSValues.size
+          lRMSValue = Math.sqrt(lRMSValue/lChannelLevelValues.size).to_r
+          lLevelValue = lRMSValue*(iRMSRatio.to_r) + lMaxValue*(Rational(1)-iRMSRatio.to_r)
           # Complete the function
           if (@Function[:Points].empty?)
             # First points: add also the point 0
-            @Function[:Points] = [ [ Rational(0, 1), lRMSMoyValue] ]
+            @Function[:Points] = [ [ Rational(0, 1), lLevelValue] ]
           end
           # Add a point to the function in the middle of this interval
           lPointX = lIdxCurrentSample - iIdxBeginSample + Rational(lIdxCurrentEndSample - lIdxCurrentSample + 1, 2)
-          @Function[:Points] << [lPointX, lRMSMoyValue]
+          @Function[:Points] << [lPointX, lLevelValue]
           # Increment the cursor
           lIdxCurrentSample = lIdxCurrentEndSample + 1
           if (lIdxCurrentSample == iIdxEndSample + 1)
             # The last point: add the ending one
-            @Function[:Points] << [Rational(iIdxEndSample - iIdxBeginSample, 1), lRMSMoyValue]
+            @Function[:Points] << [Rational(iIdxEndSample - iIdxBeginSample, 1), lLevelValue]
           end
           $stdout.write("#{(lIdxCurrentSample*100)/(iIdxEndSample - iIdxBeginSample + 1)} %\015")
           $stdout.flush
@@ -249,7 +255,9 @@ module WSK
             lIdxSegment = 0
             while (lIdxSegment < @Function[:Points].size - 1)
               # Compute the slope of this segment
+              #puts "lIdxSegment=#{lIdxSegment}/#{@Function[:Points].size} Points=[ [ #{sprintf('%.2f',@Function[:Points][lIdxSegment][0])}, #{sprintf('%.2f',@Function[:Points][lIdxSegment][1])} ], [ #{sprintf('%.2f',@Function[:Points][lIdxSegment+1][0])}, #{sprintf('%.2f',@Function[:Points][lIdxSegment+1][1])} ] ]"
               lSegmentSlope = (@Function[:Points][lIdxSegment+1][1]-@Function[:Points][lIdxSegment][1])/(@Function[:Points][lIdxSegment+1][0]-@Function[:Points][lIdxSegment][0])
+              #puts "lIdxSegment=#{lIdxSegment}/#{@Function[:Points].size} Slope=#{sprintf('%.2f',lSegmentSlope)} (#{lSegmentSlope.precs.inspect})"
               if (((lSegmentSlope > 0) and
                    (iSlopeUp != nil) and
                    (lSegmentSlope > iSlopeUp)) or
@@ -370,12 +378,25 @@ module WSK
       #
       # Parameters:
       # * *iFileName* (_String_): File name to write
-      def writeToFile(iFileName)
+      # * *iParams* (<em>map<Symbol,Object></em>): Additional parameters [optional = {}]:
+      # ** *:Floats* (_Boolean_): Do we write Float values ? [optional = false]
+      def writeToFile(iFileName, iParams = {})
+        lParams = {
+          # Default value
+          :Floats => false
+        }.merge(iParams)
         case @Function[:FunctionType]
         when FCTTYPE_PIECEWISE_LINEAR
           require 'pp'
+          lData = @Function
+          if (lParams[:Floats])
+            # Convert to Floats
+            lData[:Points].map! do |iPoint|
+              next [ iPoint[0].to_f, iPoint[1].to_f ]
+            end
+          end
           File.open(iFileName, 'w') do |oFile|
-            oFile.write(@Function.pretty_inspect)
+            oFile.write(lData.pretty_inspect)
           end
         else
           logErr "Unknown function type: #{@Function[:FunctionType]}"
@@ -416,8 +437,12 @@ module WSK
               end
               # Find the map function's segment containing the beginning of our segment
               lIdxMapSegment = 0
-              while (lBeginY >= lMapPoints[lIdxMapSegment+1][0])
-                lIdxMapSegment += 1
+              if (lBeginY == lMapPoints[-1][0])
+                lIdxMapSegment = lMapPoints.size - 2
+              else
+                while (lBeginY >= lMapPoints[lIdxMapSegment+1][0])
+                  lIdxMapSegment += 1
+                end
               end
               # Compute the new value of our segment beginning
               lNewBeginY = lMapPoints[lIdxMapSegment][1] + ((lMapPoints[lIdxMapSegment+1][1]-lMapPoints[lIdxMapSegment][1])*(lBeginY-lMapPoints[lIdxMapSegment][0]))/(lMapPoints[lIdxMapSegment+1][0]-lMapPoints[lIdxMapSegment][0])
