@@ -10,6 +10,7 @@ typedef struct {
   int unitDB;
   int idxPreviousPoint;
   int idxNextPoint;
+  int idxLastPoint;
   // Values used to cache segment computations
   // These must be refreshed each time idxPreviousPoint or idxNextPoint is set/changed.
   tSampleIndex idxPreviousPointX;
@@ -28,6 +29,7 @@ typedef struct {
   int unitDB;
   int idxPreviousPoint;
   int idxNextPoint;
+  int idxLastPoint;
   tSampleValue medianValue;
   // Values used to cache segment computations
   // These must be refreshed each time idxPreviousPoint or idxNextPoint is set/changed.
@@ -72,11 +74,12 @@ int volumeutils_processValue_applyVolumeFct_PiecewiseLinear(
 
   // Change caches if needed
   if (iIdxChannel == 0) {
-    if (iIdxSample == lPtrArgs->idxNextSegmentX) {
+    // Switch to the next segment if we arrived at the end and it is the last one
+    if ((iIdxSample == lPtrArgs->idxNextSegmentX) &&
+        (lPtrArgs->idxNextPoint != lPtrArgs->idxLastPoint)) {
 /*
       printf("[%lld] Changing segment (%lld reached) to [%d - %d] ([%lld - %lld])\n", iIdxSample, lPtrArgs->idxNextSegmentX, lPtrArgs->idxPreviousPoint+1, lPtrArgs->idxNextPoint+1, lPtrArgs->fctData->pointsX[lPtrArgs->idxPreviousPoint+1], lPtrArgs->fctData->pointsX[lPtrArgs->idxNextPoint+1]);
 */
-      // Switch to the next segment
       ++lPtrArgs->idxNextPoint;
       ++lPtrArgs->idxPreviousPoint;
       // Compute next cache values
@@ -150,12 +153,18 @@ static VALUE volumeutils_applyVolumeFct(
       // Create parameters to give the process
       tApplyVolumeFctStruct_PiecewiseLinear lProcessParams;
       lProcessParams.fctData = lPtrFct->fctData;
+      lProcessParams.idxLastPoint = lProcessParams.fctData->nbrPoints-1;
+      lProcessParams.unitDB = iUnitDB;
       // Find the segment containing iIdxBufferFirstSample
       lProcessParams.idxNextPoint = 0;
       while (lProcessParams.fctData->pointsX[lProcessParams.idxNextPoint] <= iIdxBufferFirstSample) {
         ++lProcessParams.idxNextPoint;
       }
       lProcessParams.idxPreviousPoint = lProcessParams.idxNextPoint - 1;
+      // Special case for the last segment
+      if (lProcessParams.idxNextPoint == lProcessParams.idxLastPoint + 1) {
+        --lProcessParams.idxNextPoint;
+      }
 /*
       printf("Apply on volume starts on sample %lld at segment [%d - %d] (%lld - %lld]).\n", iIdxBufferFirstSample, lProcessParams.idxPreviousPoint, lProcessParams.idxNextPoint, lProcessParams.fctData->pointsX[lProcessParams.idxPreviousPoint], lProcessParams.fctData->pointsX[lProcessParams.idxNextPoint]);
 */
@@ -165,7 +174,6 @@ static VALUE volumeutils_applyVolumeFct(
       lProcessParams.idxPreviousPointY = lProcessParams.fctData->pointsY[lProcessParams.idxPreviousPoint];
       lProcessParams.distWithNextY = lProcessParams.fctData->pointsY[lProcessParams.idxNextPoint]-lProcessParams.idxPreviousPointY;
       lProcessParams.idxNextSegmentX = lProcessParams.fctData->pointsX[lProcessParams.idxNextPoint]+1;
-      lProcessParams.unitDB = iUnitDB;
       // Iterate through the raw buffer
       commonutils_iterateThroughRawBufferOutput(
         iSelf,
@@ -198,7 +206,6 @@ static VALUE volumeutils_applyVolumeFct(
  * Process a value read from an input buffer for the drawVolumeFct function in case of piecewise linear function.
  *
  * Parameters:
- * * *iValue* (<em>const tSampleValue</em>): The value being read
  * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
  * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
  * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tApplyVolumeFctStruct_PiecewiseLinear*</em>.
@@ -209,7 +216,6 @@ static VALUE volumeutils_applyVolumeFct(
  * ** 2: Skip directly to the next sample (don't call us for other channels of this sample)
  */
 int volumeutils_processValue_drawVolumeFct_PiecewiseLinear(
-  const tSampleValue iValue,
   tSampleValue* oPtrValue,
   const tSampleIndex iIdxSample,
   const int iIdxChannel,
@@ -218,8 +224,12 @@ int volumeutils_processValue_drawVolumeFct_PiecewiseLinear(
 
   // Change caches if needed
   if (iIdxChannel == 0) {
-    if (iIdxSample == lPtrArgs->idxNextSegmentX) {
-      // Switch to the next segment
+    // Switch to the next segment if we arrived at the end and it is the last one
+    if ((iIdxSample == lPtrArgs->idxNextSegmentX) &&
+        (lPtrArgs->idxNextPoint != lPtrArgs->idxLastPoint)) {
+/*
+      printf("[%lld] Changing segment (%lld reached) to [%d - %d] ([%lld - %lld])\n", iIdxSample, lPtrArgs->idxNextSegmentX, lPtrArgs->idxPreviousPoint+1, lPtrArgs->idxNextPoint+1, lPtrArgs->fctData->pointsX[lPtrArgs->idxPreviousPoint+1], lPtrArgs->fctData->pointsX[lPtrArgs->idxNextPoint+1]);
+*/
       ++lPtrArgs->idxNextPoint;
       ++lPtrArgs->idxPreviousPoint;
       // Compute next cache values
@@ -235,7 +245,12 @@ int volumeutils_processValue_drawVolumeFct_PiecewiseLinear(
     } else {
       lPtrArgs->currentRatio = lPtrArgs->idxPreviousPointY+((iIdxSample-lPtrArgs->idxPreviousPointX)*lPtrArgs->distWithNextY)/lPtrArgs->distWithNextX;
     }
-  }
+/*
+    if ((iIdxSample > 15) && (iIdxSample < 25)) {
+      printf("[%lld] idxPreviousPoint=%d idxPreviousPointX=%lld idxPreviousPointY=%Lf idxNextPoint=%d distWithNextX=%lld distWithNextY=%Lf idxNextSegmentX=%lld idxLastPoint=%d currentRatio=%Lf\n", iIdxSample, lPtrArgs->idxPreviousPoint, lPtrArgs->idxPreviousPointX, lPtrArgs->idxPreviousPointY, lPtrArgs->idxNextPoint, lPtrArgs->distWithNextX, lPtrArgs->distWithNextY, lPtrArgs->idxNextSegmentX, lPtrArgs->idxLastPoint, lPtrArgs->currentRatio);
+    }
+*/
+}
 
   // Write the correct value
   (*oPtrValue) = (lPtrArgs->medianValue)*(lPtrArgs->currentRatio);
@@ -249,7 +264,6 @@ int volumeutils_processValue_drawVolumeFct_PiecewiseLinear(
  * Parameters:
  * * *iSelf* (_FFT_): Self
  * * *iValCFunction* (_Object_): The container of the C function (created with createCFunction)
- * * *iValInputBuffer* (_String_): The input buffer
  * * *iValNbrBitsPerSample* (_Integer_): Number of bits per sample
  * * *iValNbrChannels* (_Integer_): Number of channels
  * * *iValNbrSamples* (_Integer_): Number of samples
@@ -262,7 +276,6 @@ int volumeutils_processValue_drawVolumeFct_PiecewiseLinear(
 static VALUE volumeutils_drawVolumeFct(
   VALUE iSelf,
   VALUE iValCFunction,
-  VALUE iValInputBuffer,
   VALUE iValNbrBitsPerSample,
   VALUE iValNbrChannels,
   VALUE iValNbrSamples,
@@ -279,9 +292,7 @@ static VALUE volumeutils_drawVolumeFct(
   // Get the C function
   tFunction* lPtrFct;
   Data_Get_Struct(iValCFunction, tFunction, lPtrFct);
-  // Get the input buffer
-  char* lPtrRawBuffer = RSTRING(iValInputBuffer)->ptr;
-  int lBufferCharSize = RSTRING(iValInputBuffer)->len;
+  int lBufferCharSize = (iNbrSamples*iNbrChannels*iNbrBitsPerSample)/8;
   // Allocate the output buffer
   char* lPtrOutputBuffer = ALLOC_N(char, lBufferCharSize);
 
@@ -292,10 +303,16 @@ static VALUE volumeutils_drawVolumeFct(
       tDrawVolumeFctStruct_PiecewiseLinear lProcessParams;
       lProcessParams.fctData = lPtrFct->fctData;
       lProcessParams.medianValue = iMedianValue;
+      lProcessParams.idxLastPoint = lProcessParams.fctData->nbrPoints-1;
+      lProcessParams.unitDB = iUnitDB;
       // Find the segment containing iIdxBufferFirstSample
       lProcessParams.idxNextPoint = 0;
       while (lProcessParams.fctData->pointsX[lProcessParams.idxNextPoint] <= iIdxBufferFirstSample) {
         ++lProcessParams.idxNextPoint;
+      }
+      // Special case for the last segment
+      if (lProcessParams.idxNextPoint == lProcessParams.idxLastPoint + 1) {
+        --lProcessParams.idxNextPoint;
       }
       lProcessParams.idxPreviousPoint = lProcessParams.idxNextPoint - 1;
       // Compute first cache values
@@ -304,11 +321,9 @@ static VALUE volumeutils_drawVolumeFct(
       lProcessParams.idxPreviousPointY = lProcessParams.fctData->pointsY[lProcessParams.idxPreviousPoint];
       lProcessParams.distWithNextY = lProcessParams.fctData->pointsY[lProcessParams.idxNextPoint]-lProcessParams.idxPreviousPointY;
       lProcessParams.idxNextSegmentX = lProcessParams.fctData->pointsX[lProcessParams.idxNextPoint]+1;
-      lProcessParams.unitDB = iUnitDB;
       // Iterate through the raw buffer
-      commonutils_iterateThroughRawBufferOutput(
+      commonutils_iterateThroughRawBufferOutputOnly(
         iSelf,
-        lPtrRawBuffer,
         lPtrOutputBuffer,
         iNbrBitsPerSample,
         iNbrChannels,
@@ -469,6 +484,6 @@ void Init_VolumeUtils() {
   VALUE lVolumeUtilsClass = rb_define_class_under(lVolumeUtilsModule, "VolumeUtils", rb_cObject);
 
   rb_define_method(lVolumeUtilsClass, "applyVolumeFct", volumeutils_applyVolumeFct, 7);
-  rb_define_method(lVolumeUtilsClass, "drawVolumeFct", volumeutils_drawVolumeFct, 8);
+  rb_define_method(lVolumeUtilsClass, "drawVolumeFct", volumeutils_drawVolumeFct, 7);
   rb_define_method(lVolumeUtilsClass, "measureLevel", volumeutils_measureLevel, 5);
 }

@@ -19,7 +19,12 @@ module WSK
       # Return:
       # * _Integer_: The number of samples to be written
       def getNbrSamples(iInputData)
-        return iInputData.NbrSamples
+        @Function = WSK::Functions::Function.new
+        @Function.readFromFile(@FctFileName)
+        lMinX, lMinY, lMaxX, lMaxY = @Function.getBounds
+        @NbrSamplesOut = lMaxX.to_i-lMinX.to_i+1
+
+        return @NbrSamplesOut
       end
 
       # Execute
@@ -32,23 +37,15 @@ module WSK
       def execute(iInputData, oOutputData)
         rError = nil
 
-        lFunction = WSK::Functions::Function.new
-        begin
-          lFunction.readFromFile(@FctFileName)
-        rescue Exception
-          rError = $!
+        # Then draw it
+        lMaxY = @Function.getBounds[3]
+        if (@UnitDB == 1)
+          lMaxY = (2**(lMaxY.to_f/6)).to_r
         end
-        if (rError == nil)
-          # Then draw it
-          lMaxY = lFunction.getBounds[3]
-          if (@UnitDB == 1)
-            lMaxY = (2**(lMaxY.to_f/6)).to_r
-          end
-          lMedianValue = ((2**(iInputData.Header.NbrBitsPerSample-1)-1)/lMaxY).to_i
-          logInfo "Draw function with maximal ratio #{lMaxY.to_f}, using median value #{lMedianValue}"
-          # Take the median value as a fraction of the maximal value
-          lFunction.draw(iInputData, oOutputData, 0, iInputData.NbrSamples-1, (@UnitDB == 1), lMedianValue)
-        end
+        lMedianValue = ((2**(iInputData.Header.NbrBitsPerSample-1)-1)/lMaxY).to_i
+        logInfo "Draw function with maximal ratio #{lMaxY.to_f}, using median value #{lMedianValue}"
+        # Take the median value as a fraction of the maximal value
+        @Function.draw(iInputData, oOutputData, 0, @NbrSamplesOut-1, (@UnitDB == 1), lMedianValue)
 
         return rError
       end

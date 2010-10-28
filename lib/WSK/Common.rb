@@ -5,9 +5,15 @@ module WSK
 
     # Parse plugins
     def parsePlugins
-      lLibDir = File.expand_path(File.dirname(__FILE__))
-      parsePluginsFromDir('Actions', "#{lLibDir}/Actions", 'WSK::Actions')
-      parsePluginsFromDir('OutputInterfaces', "#{lLibDir}/OutputInterfaces", 'WSK::OutputInterfaces')
+      # Protect from re-entrance to avoid useless error messages in regression
+      if (defined?($WSK_PluginsParsed) == nil)
+        lLibDir = File.expand_path(File.dirname(__FILE__))
+        require 'rUtilAnts/Plugins'
+        RUtilAnts::Plugins::initializePlugins
+        parsePluginsFromDir('Actions', "#{lLibDir}/Actions", 'WSK::Actions')
+        parsePluginsFromDir('OutputInterfaces', "#{lLibDir}/OutputInterfaces", 'WSK::OutputInterfaces')
+        $WSK_PluginsParsed = true
+      end
     end
 
     # Access a WAVE file for read access.

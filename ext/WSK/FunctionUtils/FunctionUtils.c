@@ -86,13 +86,13 @@ static int functionutils_fillCFunction_PiecewiseLinear(
   // Fill it
   // Read points in a sorted list of couples [x,y]
   VALUE lValSortedPoints = rb_funcall(rb_funcall(rb_hash_aref(iValFunction, ID2SYM(rb_intern("Points"))), rb_intern("to_a"), 0), rb_intern("sort"), 0);
-  int lNbrPoints = RARRAY(lValSortedPoints)->len;
-  lPtrFctData->pointsX = ALLOC_N(tSampleIndex, lNbrPoints);
-  lPtrFctData->pointsY = ALLOC_N(long double, lNbrPoints);
+  lPtrFctData->nbrPoints = RARRAY(lValSortedPoints)->len;
+  lPtrFctData->pointsX = ALLOC_N(tSampleIndex, lPtrFctData->nbrPoints);
+  lPtrFctData->pointsY = ALLOC_N(long double, lPtrFctData->nbrPoints);
 
   // Get the X bounds
   long double lMinX = value2ld(rb_ary_entry(rb_ary_entry(lValSortedPoints, 0), 0));
-  long double lDistX = value2ld(rb_ary_entry(rb_ary_entry(lValSortedPoints, lNbrPoints-1), 0))-lMinX;
+  long double lDistX = value2ld(rb_ary_entry(rb_ary_entry(lValSortedPoints, lPtrFctData->nbrPoints-1), 0))-lMinX;
   long double lDistSample = iIdxEndSample-iIdxBeginSample;
 
   // Loop on each points pair
@@ -108,7 +108,7 @@ static int functionutils_fillCFunction_PiecewiseLinear(
   // Loop on other points
   int lIdxPoint;
   int lIdxLastCPoint = 0;
-  for (lIdxPoint = 1; lIdxPoint < lNbrPoints; ++lIdxPoint) {
+  for (lIdxPoint = 1; lIdxPoint < lPtrFctData->nbrPoints; ++lIdxPoint) {
     lValPoint = rb_ary_entry(lValSortedPoints, lIdxPoint);
     lPointX = iIdxBeginSample+((tSampleIndex)((lDistSample*(value2ld(rb_ary_entry(lValPoint, 0))-lMinX))/lDistX));
     // If this abscisse is already set, change the already set one
@@ -121,6 +121,8 @@ static int functionutils_fillCFunction_PiecewiseLinear(
     printf("Function point n.%d: %lld,%LF\n", lIdxLastCPoint, lPtrFctData->pointsX[lIdxLastCPoint], lPtrFctData->pointsY[lIdxLastCPoint]);
 */
   }
+  // It is possible that the count differs
+  lPtrFctData->nbrPoints = lIdxLastCPoint + 1;
 
   return rResultCode;
 }

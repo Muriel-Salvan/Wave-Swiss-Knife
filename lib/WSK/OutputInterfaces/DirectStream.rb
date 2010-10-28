@@ -96,6 +96,26 @@ module WSK
         updateProgress(iRawBuffer.size/@SampleSize)
       end
 
+      # Loop on a range of samples split into buffers
+      #
+      # Parameters:
+      # * *iIdxBeginSample* (_Integer_): The beginning sample
+      # * *iIdxEndSample* (_Integer_): The ending sample
+      # * _CodeBlock_: The code called for each buffer:
+      # ** *iIdxBeginBufferSample* (_Integer_): The beginning of this buffer's sample
+      # ** *iIdxEndBufferSample* (_Integer_): The ending of this buffer's sample
+      def eachBuffer(iIdxBeginSample, iIdxEndSample)
+        lIdxBeginBufferSample = iIdxBeginSample
+        while (lIdxBeginBufferSample <= iIdxEndSample)
+          lIdxEndBufferSample = lIdxBeginBufferSample + @NbrSamplesPerBuffer - 1
+          if (lIdxEndBufferSample > iIdxEndSample)
+            lIdxEndBufferSample = iIdxEndSample
+          end
+          yield(lIdxBeginBufferSample, lIdxEndBufferSample)
+          lIdxBeginBufferSample = lIdxEndBufferSample + 1
+        end
+      end
+
       private
 
       # Write the buffer to the disk

@@ -116,19 +116,26 @@ module WSK
           end
           lRMSValue = Math.sqrt(lRMSValue/lChannelLevelValues.size).to_r
           lLevelValue = lRMSValue*(iRMSRatio.to_r) + lMaxValue*(Rational(1)-iRMSRatio.to_r)
-          # Complete the function
-          if (@Function[:Points].empty?)
-            # First points: add also the point 0
-            @Function[:Points] = [ [ Rational(0, 1), lLevelValue] ]
-          end
-          # Add a point to the function in the middle of this interval
-          lPointX = lIdxCurrentSample - iIdxBeginSample + Rational(lIdxCurrentEndSample - lIdxCurrentSample + 1, 2)
-          @Function[:Points] << [lPointX, lLevelValue]
-          # Increment the cursor
-          lIdxCurrentSample = lIdxCurrentEndSample + 1
-          if (lIdxCurrentSample == iIdxEndSample + 1)
-            # The last point: add the ending one
-            @Function[:Points] << [Rational(iIdxEndSample - iIdxBeginSample, 1), lLevelValue]
+          #logDebug "[#{lIdxCurrentSample} - #{lIdxCurrentEndSample}] - Level: #{lLevelValue}"
+          # If intervals are of length 1, the function is exactly the profile: no need to make intermediate points
+          if (lIdxCurrentEndSample == lIdxCurrentSample)
+            @Function[:Points] << [ Rational(lIdxCurrentSample), lLevelValue]
+            lIdxCurrentSample += 1
+          else
+            # Complete the function
+            if (@Function[:Points].empty?)
+              # First points: add also the point 0
+              @Function[:Points] = [ [ Rational(0, 1), lLevelValue] ]
+            end
+            # Add a point to the function in the middle of this interval
+            lPointX = lIdxCurrentSample - iIdxBeginSample + Rational(lIdxCurrentEndSample - lIdxCurrentSample + 1, 2)
+            @Function[:Points] << [lPointX, lLevelValue]
+            # Increment the cursor
+            lIdxCurrentSample = lIdxCurrentEndSample + 1
+            if (lIdxCurrentSample == iIdxEndSample + 1)
+              # The last point: add the ending one
+              @Function[:Points] << [Rational(iIdxEndSample - iIdxBeginSample, 1), lLevelValue]
+            end
           end
           $stdout.write("#{(lIdxCurrentSample*100)/(iIdxEndSample - iIdxBeginSample + 1)} %\015")
           $stdout.flush
@@ -177,11 +184,9 @@ module WSK
       def draw(iInputData, oOutputData, iIdxBeginSample, iIdxEndSample, iUnitDB, iMedianValue)
         prepareFunctionUtils
         lCFunction = @FunctionUtils.createCFunction(@Function, iIdxBeginSample, iIdxEndSample)
-        lIdxBufferSample = iIdxBeginSample
-        iInputData.eachRawBuffer(iIdxBeginSample, iIdxEndSample) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
+        oOutputData.eachBuffer(iIdxBeginSample, iIdxEndSample) do |iIdxBeginBufferSample, iIdxEndBufferSample|
           prepareVolumeUtils
-          oOutputData.pushRawBuffer(@VolumeUtils.drawVolumeFct(lCFunction, iInputRawBuffer, iInputData.Header.NbrBitsPerSample, iInputData.Header.NbrChannels, iNbrSamples, lIdxBufferSample, iUnitDB, iMedianValue))
-          lIdxBufferSample += iNbrSamples
+          oOutputData.pushRawBuffer(@VolumeUtils.drawVolumeFct(lCFunction, iInputData.Header.NbrBitsPerSample, iInputData.Header.NbrChannels, iIdxEndBufferSample-iIdxBeginBufferSample+1, iIdxBeginBufferSample, iUnitDB, iMedianValue))
         end
       end
 

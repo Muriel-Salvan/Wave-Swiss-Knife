@@ -18,6 +18,8 @@ typedef long long int tSampleIndex;
 typedef int(*tPtrFctProcess)(const tSampleValue, const tSampleIndex, const int, void*);
 // Pointer to a function that can be called when parsing a raw buffer and writing another raw buffer
 typedef int(*tPtrFctProcessOutput)(const tSampleValue, tSampleValue*, const tSampleIndex, const int, void*);
+// Pointer to a function that can be called when writing a raw buffer
+typedef int(*tPtrFctProcessOutputOnly)(tSampleValue*, const tSampleIndex, const int, void*);
 
 // Struct containing data for a threshold information
 typedef struct {
@@ -33,6 +35,7 @@ typedef void(*tPtrFctFree)(void*);
 
 // Struct used to store piecewise linear function data
 typedef struct {
+  int nbrPoints;
   // The array of points coordinates, sorted by X value
   tSampleIndex* pointsX;
   long double* pointsY;
@@ -118,6 +121,31 @@ void commonutils_iterateThroughRawBufferOutput(
   const tSampleIndex iIdxOffsetSample,
   const int iNeedCheck,
   const tPtrFctProcessOutput iPtrProcessMethod,
+  void* iPtrArgs);
+
+/**
+ * Iterate through an output raw buffer only, without input raw buffer.
+ *
+ * Parameters:
+ * * *iSelf* (_Object_): Object used to call log methods
+ * * *oPtrRawBufferOut* (<em>char*</em>): The raw buffer to write
+ * * *iNbrBitsPerSample* (<em>const int</em>): The number of bits per sample
+ * * *iNbrChannels* (<em>const int</em>): The number of channels
+ * * *iNbrSamples* (<em>const tSampleIndex</em>): The number of samples
+ * * *iIdxOffsetSample* (<em>const tSampleIndex</em>): The base offset of samples to be counted and given to the processing method
+ * * *iNeedCheck* (<em>const int</em>): Do we need checking output value ranges ? 0 = no, 1 = yes
+ * * *iPtrProcessMethod* (<em>const tPtrFctProcessOutputOnly</em>): Pointer to the method to call for processing
+ * * *iPtrArgs* (<em>void*</em>): Pointer to a user specific struct that will be given to the processing function
+ */
+void commonutils_iterateThroughRawBufferOutputOnly(
+  VALUE iSelf,
+  char* oPtrRawBufferOut,
+  const int iNbrBitsPerSample,
+  const int iNbrChannels,
+  const tSampleIndex iNbrSamples,
+  const tSampleIndex iIdxOffsetSample,
+  const int iNeedCheck,
+  const tPtrFctProcessOutputOnly iPtrProcessMethod,
   void* iPtrArgs);
 
 /**
