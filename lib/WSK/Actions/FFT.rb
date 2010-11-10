@@ -1,5 +1,7 @@
-# To change this template, choose Tools | Templates
-# and open the template in the editor.
+#--
+# Copyright (c) 2009-2010 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Licensed under the terms specified in LICENSE file. No warranty is provided.
+#++
 
 module WSK
 
@@ -73,7 +75,7 @@ module WSK
           # Compute its FFT profile
           lFFTComputing2.resetData
           lFFTComputing2.completeFFT(lFFTBuffer, lNbrSamplesFFT)
-          lSumDist += distFFTProfiles(lFFTReferenceProfile, lFFTUtils.createCFFTProfile(lFFTComputing2.getFFTProfile), FFTDIST_MAX).abs
+          lSumDist += lFFTUtils.distFFTProfiles(lFFTReferenceProfile, lFFTUtils.createCFFTProfile(lFFTComputing2.getFFTProfile), FFTDIST_MAX).abs
           lNbrTimes += 1
           lIdxSample = lIdxEndFFTSample+1
           $stdout.write("#{(lIdxSample*100)/iInputData.NbrSamples} %\015")
