@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2009-2010 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2009 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -278,19 +278,19 @@ module WSK
       end
 
       case rResultCode
-      when 0:
+      when 0
         if (iBackwardsSearch)
           logDebug "== Previous sample matching FFT before #{iIdxFirstSample} was found at #{rCurrentSample}."
         else
           logDebug "== Next sample matching FFT after #{iIdxFirstSample} was found at #{rCurrentSample}."
         end
-      when 1:
+      when 1
         if (iBackwardsSearch)
           logDebug "== Previous sample matching FFT before #{iIdxFirstSample} could not be found because a sample exceeded thresholds meanwhile: #{rCurrentSample}."
         else
           logDebug "== Next sample matching FFT after #{iIdxFirstSample} could not be found because a sample exceeded thresholds meanwhile: #{rCurrentSample}."
         end
-      when 2:
+      when 2
         if (iBackwardsSearch)
           logDebug "== Previous sample matching FFT before #{iIdxFirstSample} could not be found before hitting limit of #{iIdxLastPossibleSample}."
         else
