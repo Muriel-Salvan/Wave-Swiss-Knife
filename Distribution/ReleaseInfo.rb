@@ -22,7 +22,7 @@ RubyPackager::ReleaseInfo.new.
   addCoreFiles( [
     '{lib,bin,ext}/**/*'
     # Add external directory for releases that have to compile.
-    # TODO: Make RubyPackager handle compilable packages.
+    # TODO (RubyPackager): Make RubyPackager handle compilable packages.
   ] ).
   addTestFiles( [
     'test/**/*'
@@ -32,7 +32,6 @@ RubyPackager::ReleaseInfo.new.
     'LICENSE',
     'AUTHORS',
     'Credits',
-    'TODO',
     'ChangeLog'
   ] ).
   gem(

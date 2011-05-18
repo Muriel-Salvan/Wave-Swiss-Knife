@@ -1,2 +1,0 @@
-* Make regression.
-* Implement Functions methods in C as they can become costly (use mpq_t from GMP).
