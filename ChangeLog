@@ -1,5 +1,14 @@
 = WaveSwissKnife Release History
 
+== 0.1.0.20110830 (Beta)
+
+* Migrated repository to git.
+* Updated copyright information
+* Made regression 100% successful.
+* Migrated TODO list to Trackers.
+* Made building extensions report errors correctly.
+* Bug correction: Reading FFT samples could not be performed.
+
 == 0.0.1.20101110 (Alpha)
 
 * Initial public release.

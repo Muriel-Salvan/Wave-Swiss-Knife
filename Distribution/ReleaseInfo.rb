@@ -16,8 +16,8 @@ RubyPackager::ReleaseInfo.new.
     :Description => 'WSK is a command-line utility that processes WAV audio PCM files to apply audio filters, analysis tools or signals generation plugins: Test audio hardware bit-perfect fidelity, by providing many ways to compare and analyze WAV files ; Process audio files for mastering engineers (noise gates, mixers...).',
     :ImageURL => 'http://waveswissknife.sourceforge.net/wiki/images/c/c9/Logo.png',
     :FaviconURL => 'http://waveswissknife.sourceforge.net/wiki/images/2/26/Favicon.png',
-    :SVNBrowseURL => 'http://waveswissknife.svn.sourceforge.net/viewvc/waveswissknife/',
-    :DevStatus => 'Alpha'
+    :SVNBrowseURL => 'http://waveswissknife.git.sourceforge.net/',
+    :DevStatus => 'Beta'
   ).
   addCoreFiles( [
     '{lib,bin,ext}/**/*'
