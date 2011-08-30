@@ -11,7 +11,9 @@ require 'fileutils'
 $static = true
 $CFLAGS += ' -Wall -Iinclude'
 create_makefile(lLibName, 'src')
-system('make static')
+if (!system('make static'))
+  raise RuntimeError.new("Error while running 'make static': #{$?}")
+end
 FileUtils::mkdir_p('lib')
 FileUtils::mkdir_p('obj')
 Dir.glob('*.o').each do |iObjectFile|

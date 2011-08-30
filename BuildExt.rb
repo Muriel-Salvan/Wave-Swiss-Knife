@@ -15,7 +15,9 @@ lRootDir = File.expand_path(Dir.getwd)
 ].each do |iExtPath|
   puts "===== Building #{iExtPath} ..."
   Dir.chdir("#{lRootDir}/#{iExtPath}")
-  system('ruby -w build.rb')
+  if (!system('ruby -w build.rb'))
+    raise RuntimeError.new("Error while building #{iExtPath}: #{$?}")
+  end
   Dir.chdir(lRootDir)
   puts "===== #{iExtPath} built ok."
   puts ''

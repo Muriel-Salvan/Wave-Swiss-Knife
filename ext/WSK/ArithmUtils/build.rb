@@ -17,4 +17,6 @@ lAdditionalLocalLibs.each do |iLibName|
   $LDFLAGS += " -L#{lLibDir}/lib -l#{iLibName} "
 end
 create_makefile('ArithmUtils')
-system('make')
+if (!system('make'))
+  raise RuntimeError.new("Error while running 'make': #{$?}")
+end
