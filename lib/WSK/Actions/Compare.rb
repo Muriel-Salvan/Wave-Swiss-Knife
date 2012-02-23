@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2009 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2009 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -16,9 +16,9 @@ module WSK
       # This is called before execute, as it is needed to write the output file.
       # It is possible to give a majoration: it will be padded with silence.
       #
-      # Parameters:
+      # Parameters::
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
-      # Return:
+      # Return::
       # * _Integer_: The number of samples to be written
       def getNbrSamples(iInputData)
         rNbrSamples = iInputData.NbrSamples
@@ -32,12 +32,12 @@ module WSK
           end
           # Then we will return the maximal samples
           if (iInputData2.NbrSamples > iInputData.NbrSamples)
-            logWarn "Second file has more samples (#{iInputData2.NbrSamples} > #{iInputData.NbrSamples})."
+            log_warn "Second file has more samples (#{iInputData2.NbrSamples} > #{iInputData.NbrSamples})."
             rNbrSamples = iInputData2.NbrSamples
           elsif (iInputData2.NbrSamples < iInputData.NbrSamples)
-            logWarn "Second file has less samples (#{iInputData2.NbrSamples} < #{iInputData.NbrSamples})."
+            log_warn "Second file has less samples (#{iInputData2.NbrSamples} < #{iInputData.NbrSamples})."
           else
-            logInfo 'Files have the same number of samples.'
+            log_info 'Files have the same number of samples.'
           end
           next rSubError
         end
@@ -51,10 +51,10 @@ module WSK
 
       # Execute
       #
-      # Parameters:
+      # Parameters::
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
       # * *oOutputData* (_Object_): The output data to fill
-      # Return:
+      # Return::
       # * _Exception_: An error, or nil if success
       def execute(iInputData, oOutputData)
         @NbrBitsPerSample = iInputData.Header.NbrBitsPerSample
@@ -170,33 +170,33 @@ module WSK
         end
         if (@DistortionMap != nil)
           # Write the distortion map
-          logInfo 'Generate distortion map in distortion.diffmap'
+          log_info 'Generate distortion map in distortion.diffmap'
           File.open('distortion.diffmap', 'wb') do |oFile|
             oFile.write(Marshal.dump(@DistortionMap))
           end
-          logInfo 'Generate invert map in invert.map'
+          log_info 'Generate invert map in invert.map'
           # We want to spot the values that are missing, and the duplicate values
           lInvertMap = [nil]*(2**@NbrBitsPerSample)
           (@MinValue .. @MaxValue).each do |iValue|
             if (@DistortionMap[iValue] == nil)
-              logWarn "Value #{iValue} was not part of the input file"
+              log_warn "Value #{iValue} was not part of the input file"
             else
               lRecordedValue = iValue + @DistortionMap[iValue]
               if (lInvertMap[lRecordedValue] == nil)
                 lInvertMap[lRecordedValue] = iValue
               else
                 if (iValue.abs < lInvertMap[lRecordedValue].abs)
-                  logWarn "Recorded value #{lRecordedValue} is used for both input values #{iValue} and #{lInvertMap[lRecordedValue]}. Setting it to #{iValue}."
+                  log_warn "Recorded value #{lRecordedValue} is used for both input values #{iValue} and #{lInvertMap[lRecordedValue]}. Setting it to #{iValue}."
                   lInvertMap[lRecordedValue] = iValue
                 else
-                  logWarn "Recorded value #{lRecordedValue} is used for both input values #{iValue} and #{lInvertMap[lRecordedValue]}. Keeping it to #{lInvertMap[lRecordedValue]}."
+                  log_warn "Recorded value #{lRecordedValue} is used for both input values #{iValue} and #{lInvertMap[lRecordedValue]}. Keeping it to #{lInvertMap[lRecordedValue]}."
                 end
               end
             end
           end
           (@MinValue .. @MaxValue).each do |iValue|
             if (lInvertMap[iValue] == nil)
-              logWarn "Missing value that has never been recorded: #{iValue}"
+              log_warn "Missing value that has never been recorded: #{iValue}"
             end
           end
           File.open('invert.map', 'wb') do |oFile|

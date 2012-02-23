@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2009 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2009 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -15,9 +15,9 @@ module WSK
       # This is called before execute, as it is needed to write the output file.
       # It is possible to give a majoration: it will be padded with silence.
       #
-      # Parameters:
+      # Parameters::
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
-      # Return:
+      # Return::
       # * _Integer_: The number of samples to be written
       def getNbrSamples(iInputData)
         return iInputData.NbrSamples
@@ -25,10 +25,10 @@ module WSK
 
       # Execute
       #
-      # Parameters:
+      # Parameters::
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
       # * *oOutputData* (_Object_): The output data to fill
-      # Return:
+      # Return::
       # * _Exception_: An error, or nil if success
       def execute(iInputData, oOutputData)
         rError = nil
@@ -38,7 +38,7 @@ module WSK
         if (lMatch == nil)
           lMatch = @Coeff.match(/^(\d*)\/(\d*)$/)
           if (lMatch == nil)
-            logErr "Incorrect coefficient: #{@Coeff} is not in the form X/Y or in the form Xdb"
+            log_err "Incorrect coefficient: #{@Coeff} is not in the form X/Y or in the form Xdb"
             rError = RuntimeError.new("Incorrect coefficient: #{@Coeff} is not in the form X/Y or in the form Xdb")
           else
             lNum, lDenom = lMatch[1..2].map { |iStrValue| iStrValue.to_i }

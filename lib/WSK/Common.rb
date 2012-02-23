@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2009 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2009 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -14,9 +14,9 @@ module WSK
       if (defined?($WSK_PluginsParsed) == nil)
         lLibDir = File.expand_path(File.dirname(__FILE__))
         require 'rUtilAnts/Plugins'
-        RUtilAnts::Plugins::initializePlugins
-        parsePluginsFromDir('Actions', "#{lLibDir}/Actions", 'WSK::Actions')
-        parsePluginsFromDir('OutputInterfaces', "#{lLibDir}/OutputInterfaces", 'WSK::OutputInterfaces')
+        RUtilAnts::Plugins::install_plugins_on_object
+        parse_plugins_from_dir('Actions', "#{lLibDir}/Actions", 'WSK::Actions')
+        parse_plugins_from_dir('OutputInterfaces', "#{lLibDir}/OutputInterfaces", 'WSK::OutputInterfaces')
         $WSK_PluginsParsed = true
       end
     end
@@ -25,20 +25,20 @@ module WSK
     # Give its header information as well as a proxy to access its data.
     # Proxies are used to cache accesses as they might be time consuming.
     #
-    # Parameters:
+    # Parameters::
     # * *iFileName* (_String_): The file name to open
     # * *CodeBlock*: The code block called when accessing the file:
-    # ** *iHeader* (<em>WSK::Model::Header</em>): The file header information
-    # ** *iInputData* (<em>WSK::Model::InputData</em>): The file data proxy
-    # ** Return:
-    # ** _Exception_: Error, or nil in case of success
-    # Return:
+    #   * *iHeader* (<em>WSK::Model::Header</em>): The file header information
+    #   * *iInputData* (<em>WSK::Model::InputData</em>): The file data proxy
+    #   * Return::
+    #   * _Exception_: Error, or nil in case of success
+    # Return::
     # * _Exception_: Error, or nil in case of success
     def accessInputWaveFile(iFileName)
       rError = nil
 
       File.open(iFileName, 'rb') do |iFile|
-        logInfo "Access #{iFileName}"
+        log_info "Access #{iFileName}"
         rError, lHeader, lInputData = getWaveFileAccesses(iFile)
         if (rError == nil)
           rError = yield(lHeader, lInputData)
@@ -50,9 +50,9 @@ module WSK
     
     # Give Header and Data access from an opened Wave file
     #
-    # Parameters:
+    # Parameters::
     # * *iFile* (_IO_): The IO handler
-    # Return:
+    # Return::
     # * _Exception_: An error, or nil in case of success
     # * <em>WSK::Model::Header</em>: The header
     # * <em>WSK::Model::InputData</em>: The input data
@@ -63,7 +63,7 @@ module WSK
       
       # Read header
       rError, rHeader = readHeader(iFile)
-      logDebug "Header: #{rHeader.inspect}"
+      log_debug "Header: #{rHeader.inspect}"
       if (rError == nil)
         # Get a data handle
         rInputData = WSK::Model::InputData.new(iFile, rHeader)
@@ -77,15 +77,15 @@ module WSK
     # Give its header information as well as a proxy to access its data.
     # Proxies are used to cache accesses as they might be time consuming.
     #
-    # Parameters:
+    # Parameters::
     # * *iFileName* (_String_): The file name to write
     # * *iHeader* (<em>WSK::Model::Header</em>): The file header information to write
     # * *iOutputInterface* (_Object_): The output interface
     # * *iNbrOutputDataSamples* (_Integer_): The number of output data samples
     # * *CodeBlock*: The code block called when accessing the file
-    # ** Return:
-    # ** _Exception_: Error, or nil in case of success
-    # Return:
+    #   * Return::
+    #   * _Exception_: Error, or nil in case of success
+    # Return::
     # * _Exception_: Error, or nil in case of success
     def accessOutputWaveFile(iFileName, iHeader, iOutputInterface, iNbrOutputDataSamples)
       rError = nil
@@ -95,7 +95,7 @@ module WSK
         rError = iOutputInterface.initInterface(oFile, iHeader, iNbrOutputDataSamples)
         if (rError == nil)
           # Write header
-          logInfo "Write header in #{iFileName}"
+          log_info "Write header in #{iFileName}"
           rError = writeHeader(oFile, iHeader, iNbrOutputDataSamples)
           if (rError == nil)
             # Call client code
@@ -105,10 +105,10 @@ module WSK
               lNbrSamplesWritten = iOutputInterface.finalize
               # Pad with \x00 if lNbrSamplesWritten is below iNbrOutputDataSamples
               if (lNbrSamplesWritten < iNbrOutputDataSamples)
-                logWarn "#{lNbrSamplesWritten} samples written out of #{iNbrOutputDataSamples}: padding with silence."
+                log_warn "#{lNbrSamplesWritten} samples written out of #{iNbrOutputDataSamples}: padding with silence."
                 oFile.write(iHeader.getEncodedString([0]*(iNbrOutputDataSamples-lNbrSamplesWritten)*iHeader.NbrChannels))
               elsif (lNbrSamplesWritten > iNbrOutputDataSamples)
-                logWarn "#{lNbrSamplesWritten} samples written, but #{iNbrOutputDataSamples} only were expected. #{lNbrSamplesWritten - iNbrOutputDataSamples} samples more."
+                log_warn "#{lNbrSamplesWritten} samples written, but #{iNbrOutputDataSamples} only were expected. #{lNbrSamplesWritten - iNbrOutputDataSamples} samples more."
               end
             end
           end
@@ -121,10 +121,10 @@ module WSK
     # Read a duration and give its corresponding value in samples
     # Throws an exception in case of bad format.
     #
-    # Parameters:
+    # Parameters::
     # * *iStrDuration* (_String_): The duration to read
     # * *iSampleRate* (_Integer_): Sample rate of the file for which this duration applies
-    # Return:
+    # Return::
     # * _Integer_: The number of samples corresponding to this duration
     def readDuration(iStrDuration, iSampleRate)
       rNbrSamples = nil
@@ -140,11 +140,11 @@ module WSK
 
     # Read a given threshold indication on the command line.
     #
-    # Parameters:
+    # Parameters::
     # * *iStrThresholds* (_String_): The thresholds to read
     # * *iNbrChannels* (_Integer_): Number of channels for the file being decoded
-    # Return:
-    # * <em>list<[Integer,Integer]></em>: The list of min and max values, per channel
+    # Return::
+    # * <em>list< [Integer,Integer] ></em>: The list of min and max values, per channel
     def readThresholds(iStrThresholds, iNbrChannels)
       rThresholds = nil
 
@@ -170,9 +170,9 @@ module WSK
 
     # Read an FFT profile file
     #
-    # Parameters:
+    # Parameters::
     # * *iFileName* (_String_): Name of the FFT profile file, or 'none' if none.
-    # Return:
+    # Return::
     # * _Integer_: Maximal FFT distance beyond which we consider being too far from the FFT profile
     # * <em>[Integer,Integer,list<list<Integer>>]</em>: The FFT profile
     def readFFTProfile(iFileName)
@@ -188,7 +188,7 @@ module WSK
           # We add an arbitrary percentage to the average distance.
           rFFTMaxDistance = (rFFTMaxDistance*1.01).to_i
         else
-          logErr "Missing file #{iFileName}. Ignoring FFT."
+          log_err "Missing file #{iFileName}. Ignoring FFT."
         end
       end
 
@@ -197,10 +197,10 @@ module WSK
 
     # Convert a value to its db notation and % notation
     #
-    # Parameters:
+    # Parameters::
     # * *iValue* (_Integer_): The value
     # * *iMaxValue* (_Integer_): The maximal possible value
-    # Return:
+    # Return::
     # * _Float_: Its corresponding db
     # * _Float_: Its corresponding percentage
     def val2db(iValue, iMaxValue)
@@ -218,11 +218,11 @@ module WSK
 
     # Write the header to a file.
     #
-    # Parameters:
+    # Parameters::
     # * *oFile* (_IO_): File to write
     # * *iHeader* (<em>WSK::Model::Header</em>): The header to write
     # * *iNbrOutputDataSamples* (_Integer_): The number of output data samples
-    # Return:
+    # Return::
     # * _Exception_: The exception, or nil in case of success
     def writeHeader(oFile, iHeader, iNbrOutputDataSamples)
       rError = nil
@@ -237,9 +237,9 @@ module WSK
     # Get the header from a file.
     # This also checks for unsupported types.
     #
-    # Parameters:
+    # Parameters::
     # * *iFile* (_IO_): File to read
-    # Return:
+    # Return::
     # * _Exception_: The exception, or nil in case of success
     # * <em>WSK::Model::Header</em>: The corresponding header, or nil in case of failure
     def readHeader(iFile)

@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2009 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2009 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -16,9 +16,9 @@ module WSK
       # This is called before execute, as it is needed to write the output file.
       # It is possible to give a majoration: it will be padded with silence.
       #
-      # Parameters:
+      # Parameters::
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
-      # Return:
+      # Return::
       # * _Integer_: The number of samples to be written
       def getNbrSamples(iInputData)
         return iInputData.NbrSamples
@@ -26,10 +26,10 @@ module WSK
 
       # Execute
       #
-      # Parameters:
+      # Parameters::
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
       # * *oOutputData* (_Object_): The output data to fill
-      # Return:
+      # Return::
       # * _Exception_: An error, or nil if success
       def execute(iInputData, oOutputData)
         lSilenceThresholds = readThresholds(@SilenceThreshold, iInputData.Header.NbrChannels)
@@ -52,9 +52,9 @@ module WSK
           lIdxSample = lIdxNextBeyondThresholds
         end
         lStrNonSilentParts = lNonSilentParts.map { |iNonSilentInfo| "[#{iNonSilentInfo[0]/iInputData.Header.SampleRate}s - #{iNonSilentInfo[1]/iInputData.Header.SampleRate}s]" }
-        logInfo "#{lNonSilentParts.size} non silent parts: #{lStrNonSilentParts[0..9].join(', ')}"
+        log_info "#{lNonSilentParts.size} non silent parts: #{lStrNonSilentParts[0..9].join(', ')}"
         lStrDbgNonSilentParts = lNonSilentParts.map { |iNonSilentInfo| "[#{iNonSilentInfo[0]} - #{iNonSilentInfo[1]}]" }
-        logDebug "#{lNonSilentParts.size} non silent parts: #{lStrDbgNonSilentParts[0..9].join(', ')}"
+        log_debug "#{lNonSilentParts.size} non silent parts: #{lStrDbgNonSilentParts[0..9].join(', ')}"
         # Now we write the non-silent parts, spaced with nulled parts, with fadeins and fadeouts around.
         lNextSampleToWrite = 0
         lNonSilentParts.each do |iNonSilentInfo|
@@ -66,7 +66,7 @@ module WSK
           end
           # Write a blank buffer if needed
           if (lIdxBeginFadeIn > lNextSampleToWrite)
-            logDebug "Write #{lIdxBeginFadeIn - lNextSampleToWrite} samples of silence"
+            log_debug "Write #{lIdxBeginFadeIn - lNextSampleToWrite} samples of silence"
             oOutputData.pushRawBuffer("\000" * (((lIdxBeginFadeIn - lNextSampleToWrite)*iInputData.Header.NbrChannels*iInputData.Header.NbrBitsPerSample)/8))
           end
           lFadeInSize = iIdxBegin-lIdxBeginFadeIn
@@ -80,13 +80,13 @@ module WSK
               lBuffer.concat(iChannelValues.map { |iValue| (iValue*lIdxFadeSample)/lFadeInSize })
               lIdxFadeSample += 1
             end
-            logDebug "Write #{lBuffer.size/iInputData.Header.NbrChannels} samples of fadein."
+            log_debug "Write #{lBuffer.size/iInputData.Header.NbrChannels} samples of fadein."
             oOutputData.pushBuffer(lBuffer)
           else
-            logDebug 'Ignore empty fadein.'
+            log_debug 'Ignore empty fadein.'
           end
           # Write the file
-          logDebug "Write #{iIdxEnd-iIdxBegin+1} samples of audio."
+          log_debug "Write #{iIdxEnd-iIdxBegin+1} samples of audio."
           iInputData.eachRawBuffer(iIdxBegin, iIdxEnd) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
             oOutputData.pushRawBuffer(iInputRawBuffer)
           end
@@ -106,16 +106,16 @@ module WSK
               lBuffer.concat(iChannelValues.map { |iValue| (iValue*(lFadeOutSize-lIdxFadeSample))/lFadeOutSize })
               lIdxFadeSample += 1
             end
-            logDebug "Write #{lBuffer.size/iInputData.Header.NbrChannels} samples of fadeout."
+            log_debug "Write #{lBuffer.size/iInputData.Header.NbrChannels} samples of fadeout."
             oOutputData.pushBuffer(lBuffer)
           else
-            logDebug 'Ignore empty fadeout.'
+            log_debug 'Ignore empty fadeout.'
           end
           lNextSampleToWrite = lIdxEndFadeOut + 1
         end
         # If there is remaining silence, write it
         if (lNextSampleToWrite < iInputData.NbrSamples)
-          logDebug "Write #{iInputData.NbrSamples - lNextSampleToWrite} samples of last silence"
+          log_debug "Write #{iInputData.NbrSamples - lNextSampleToWrite} samples of last silence"
           oOutputData.pushRawBuffer("\000" * (((iInputData.NbrSamples - lNextSampleToWrite)*iInputData.Header.NbrChannels*iInputData.Header.NbrBitsPerSample)/8))
         end
 

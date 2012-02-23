@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2009 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+ * Copyright (c) 2009 - 2012 Muriel Salvan (muriel@x-aeon.com)
  * Licensed under the terms specified in LICENSE file. No warranty is provided.
  **/
 
@@ -13,7 +13,7 @@
  * Free a C function.
  * This method is called by Ruby GC.
  *
- * Parameters:
+ * Parameters::
  * * *iPtrCFct* (<em>void*</em>): The C function to free (in fact a <em>tFunction*</em>)
  */
 static void volumeutils_freeCFct(void* iPtrCFct) {
@@ -28,7 +28,7 @@ static void volumeutils_freeCFct(void* iPtrCFct) {
 /**
  * Free a C function of type Piecewiese Linear.
  *
- * Parameters:
+ * Parameters::
  * * *iPtrCFct* (<em>void*</em>): The C function to free (in fact a <em>tFunction_PiecewiseLinear*</em>)
  */
 static void functionutils_freeCFct_PiecewiseLinear(void* iPtrCFct) {
@@ -45,9 +45,9 @@ static int gID_denominator;
 /**
  * Convert a Ruby function value into a long double
  *
- * Parameters:
+ * Parameters::
  * * *iValBD* (_Rational_): The value to convert
- * Return:
+ * Return::
  * * <em>long double</em>: The equivalent long double
  */
 inline long double value2ld(
@@ -70,7 +70,7 @@ inline long double value2ld(
 /**
  * Fill a C function with a given function of type Piecewise Linear
  *
- * Parameters:
+ * Parameters::
  * * *oPtrCFunction* (<em>tFunction*</em>): The C function to fill
  * * *iValFunction* (<em>map<Symbol,Object></em>): The function to apply
  * * *iIdxBeginSample* (<em>tSampleIndex</em>): First sample beginning the function
@@ -135,12 +135,12 @@ static int functionutils_fillCFunction_PiecewiseLinear(
 /**
  * Create a C function based on a given function to be applied on a given discrete range.
  *
- * Parameters:
+ * Parameters::
  * * *iSelf* (_Object_): Calling object
  * * *iValFunction* (<em>map<Symbol,Object></em>): The function
  * * *iValIdxBeginSample* (<em>map<Symbol,Object></em>): The first sample for this function
  * * *iValIdxEndSample* (<em>map<Symbol,Object></em>): The last sample for this function
- * Return:
+ * Return::
  * * _Object_: The Ruby object containing the C function
  */
 static VALUE functionutils_createCFunction(
@@ -162,7 +162,7 @@ static VALUE functionutils_createCFunction(
     default: ; // The ; is here to make gcc compile: variables declarations are forbidden after a label.
       char lLogMessage[256];
       sprintf(lLogMessage, "Unknown function type %d", lPtrCFunction->fctType);
-      rb_funcall(iSelf, rb_intern("logErr"), 1, rb_str_new2(lLogMessage));
+      rb_funcall(iSelf, rb_intern("log_err"), 1, rb_str_new2(lLogMessage));
       break;
   }
 

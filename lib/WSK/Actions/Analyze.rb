@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2009 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2009 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -15,9 +15,9 @@ module WSK
       # This is called before execute, as it is needed to write the output file.
       # It is possible to give a majoration: it will be padded with silence.
       #
-      # Parameters:
+      # Parameters::
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
-      # Return:
+      # Return::
       # * _Integer_: The number of samples to be written
       def getNbrSamples(iInputData)
         return 0
@@ -25,10 +25,10 @@ module WSK
       
       # Execute
       #
-      # Parameters:
+      # Parameters::
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
       # * *oOutputData* (_Object_): The output data to fill
-      # Return:
+      # Return::
       # * _Exception_: An error, or nil if success
       def execute(iInputData, oOutputData)
         lMaxValue = 2**(iInputData.Header.NbrBitsPerSample-1)-1
@@ -138,29 +138,29 @@ module WSK
           :DBRMSValues => lDBRMSValues
         }
         # Display
-        logInfo "Min values: #{lResult[:MinValues].join(', ')}"
-        logInfo "Min values (db): #{lResult[:DBMinValues].join(', ')}"
-        logInfo "Max values: #{lResult[:MaxValues].join(', ')}"
-        logInfo "Max values (db): #{lResult[:DBMaxValues].join(', ')}"
-        logInfo "Moy values (DC offset): #{lResult[:MoyValues].join(', ')}"
-        logInfo "Moy values (DC offset) (db): #{lResult[:DBMoyValues].join(', ')}"
-        logInfo "RMS values: #{lResult[:RMSValues].join(', ')}"
-        logInfo "RMS values (db): #{lResult[:DBRMSValues].join(', ')}"
-        logInfo "Abs Max values: #{lResult[:AbsMaxValues].join(', ')}"
-        logInfo "Abs Max values (db): #{lResult[:DBAbsMaxValues].join(', ')}"
-        logInfo "Abs Moy values: #{lResult[:AbsMoyValues].join(', ')}"
-        logInfo "Abs Moy values (db): #{lResult[:DBAbsMoyValues].join(', ')}"
-        logInfo ''
-        logInfo 'Header:'
-        logInfo "Sample rate: #{lResult[:SampleRate]}"
-        logInfo "Sample size (bits): #{lResult[:SampleSize]}"
-        logInfo "Number of channels: #{lResult[:NbrChannels]}"
-        logInfo "Data rate: #{lResult[:DataRate]} bytes/sec"
-        logInfo ''
-        logInfo 'Data:'
-        logInfo "Number of data samples: #{lResult[:NbrDataSamples]} (#{lResult[:DataLength]} secs)"
-        logInfo "Maximal absolute value: #{lResult[:AbsMaxValue]} (#{lResult[:DBAbsMaxValue]} db) (#{lResult[:PCAbsMaxValue]} %)"
-        logInfo "Mean absolute value: #{lResult[:AbsMoyValue]} (#{lResult[:DBAbsMoyValue]} db) (#{lResult[:PCAbsMoyValue]} %)"
+        log_info "Min values: #{lResult[:MinValues].join(', ')}"
+        log_info "Min values (db): #{lResult[:DBMinValues].join(', ')}"
+        log_info "Max values: #{lResult[:MaxValues].join(', ')}"
+        log_info "Max values (db): #{lResult[:DBMaxValues].join(', ')}"
+        log_info "Moy values (DC offset): #{lResult[:MoyValues].join(', ')}"
+        log_info "Moy values (DC offset) (db): #{lResult[:DBMoyValues].join(', ')}"
+        log_info "RMS values: #{lResult[:RMSValues].join(', ')}"
+        log_info "RMS values (db): #{lResult[:DBRMSValues].join(', ')}"
+        log_info "Abs Max values: #{lResult[:AbsMaxValues].join(', ')}"
+        log_info "Abs Max values (db): #{lResult[:DBAbsMaxValues].join(', ')}"
+        log_info "Abs Moy values: #{lResult[:AbsMoyValues].join(', ')}"
+        log_info "Abs Moy values (db): #{lResult[:DBAbsMoyValues].join(', ')}"
+        log_info ''
+        log_info 'Header:'
+        log_info "Sample rate: #{lResult[:SampleRate]}"
+        log_info "Sample size (bits): #{lResult[:SampleSize]}"
+        log_info "Number of channels: #{lResult[:NbrChannels]}"
+        log_info "Data rate: #{lResult[:DataRate]} bytes/sec"
+        log_info ''
+        log_info 'Data:'
+        log_info "Number of data samples: #{lResult[:NbrDataSamples]} (#{lResult[:DataLength]} secs)"
+        log_info "Maximal absolute value: #{lResult[:AbsMaxValue]} (#{lResult[:DBAbsMaxValue]} db) (#{lResult[:PCAbsMaxValue]} %)"
+        log_info "Mean absolute value: #{lResult[:AbsMoyValue]} (#{lResult[:DBAbsMoyValue]} db) (#{lResult[:PCAbsMoyValue]} %)"
         # Write a result file
         File.open('analyze.result', 'wb') do |oFile|
           oFile.write(Marshal.dump(lResult))

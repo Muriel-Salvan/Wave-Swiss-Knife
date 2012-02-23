@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2009 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+ * Copyright (c) 2009 - 2012 Muriel Salvan (muriel@x-aeon.com)
  * Licensed under the terms specified in LICENSE file. No warranty is provided.
  **/
 
@@ -25,7 +25,7 @@ typedef struct {
 
 /** Add a 64 bits unsigned integer to a 128 bits unsigned integer
  *
- * Parameters:
+ * Parameters::
  * * *ioPtrVal* (<em>t128bits*</em>): The 128 bits integer to modify
  * * *iAddValue* (<em>const unsigned long long int</em>): The value to add
  **/
@@ -40,11 +40,11 @@ inline void add128bits(t128bits* ioPtrVal, const unsigned long long int iAddValu
 
 /** Create empty arrays of long long integers to be used for various sums
  *
- * Parameters:
+ * Parameters::
  * * *iSelf* (_FFT_): Self
  * * *iValNbrChannels* (_Integer_): Number of channels
  * * *iValInitialValue* (_Integer_): Initial value
- * Return:
+ * Return::
  * * _Object_: An encapsulated array for computation
  **/
 static VALUE analyzeutils_init64bitsArray(
@@ -69,10 +69,10 @@ static VALUE analyzeutils_init64bitsArray(
 
 /** Create empty arrays of 128 bits integers to be used for various sums
  *
- * Parameters:
+ * Parameters::
  * * *iSelf* (_FFT_): Self
  * * *iValNbrChannels* (_Integer_): Number of channels
- * Return:
+ * Return::
  * * _Object_: An encapsulated array for computation
  **/
 static VALUE analyzeutils_init128bitsArray(
@@ -95,12 +95,12 @@ static VALUE analyzeutils_init128bitsArray(
  * Process a value read from an input buffer for the Analyze function.
  * Use the trigo cache.
  *
- * Parameters:
+ * Parameters::
  * * *iValue* (<em>const tSampleValue</em>): The value being read
  * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
  * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
  * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tAnalyzeStruct*</em>.
- * Return:
+ * Return::
  * * _int_: The return code:
  * ** 0: Continue iteration
  * ** 1: Break all iterations
@@ -129,7 +129,7 @@ int analyzeutils_processValue_Analyze(
 
 /** Complete the arrays of sums for analyzis
  * 
- * Parameters:
+ * Parameters::
  * * *iSelf* (_FFT_): Self
  * * *iValInputRawBuffer* (_String_): The input raw buffer
  * * *iValNbrBitsPerSample* (_Integer_): The number of bits per sample
@@ -181,11 +181,11 @@ static VALUE analyzeutils_completeAnalyze(
 
 /** Get a Bignum Ruby arrays out of a 64bits C integers array
  *
- * Parameters:
+ * Parameters::
  * * *iSelf* (_FFT_): Self
  * * *iValArray* (_Object_): Container of the array (should be initialized with init64bitsArray)
  * * *iValNbrItems* (_Integer_): The number of items in the array
- * Return:
+ * Return::
  * * <em>list<Integer></em>: Corresponding Ruby array
  **/
 static VALUE analyzeutils_getRuby64bitsArray(
@@ -213,11 +213,11 @@ static VALUE analyzeutils_getRuby64bitsArray(
 
 /** Get a Bignum Ruby arrays out of a 128bits C integers array
  *
- * Parameters:
+ * Parameters::
  * * *iSelf* (_FFT_): Self
  * * *iValArray* (_Object_): Container of the array (should be initialized with init128bitsArray)
  * * *iValNbrItems* (_Integer_): The number of items in the array
- * Return:
+ * Return::
  * * <em>list<Integer></em>: Corresponding Ruby array
  **/
 static VALUE analyzeutils_getRuby128bitsArray(

@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2009 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2009 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -15,9 +15,9 @@ module WSK
       # This is called before execute, as it is needed to write the output file.
       # It is possible to give a majoration: it will be padded with silence.
       #
-      # Parameters:
+      # Parameters::
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
-      # Return:
+      # Return::
       # * _Integer_: The number of samples to be written
       def getNbrSamples(iInputData)
         return 0
@@ -25,10 +25,10 @@ module WSK
 
       # Execute
       #
-      # Parameters:
+      # Parameters::
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
       # * *oOutputData* (_Object_): The output data to fill
-      # Return:
+      # Return::
       # * _Exception_: An error, or nil if success
       def execute(iInputData, oOutputData)
         rError = nil
@@ -49,7 +49,7 @@ module WSK
           lMinX, lMinY, lMaxX, lMaxY = lFunction.getBounds
           lDBMinY = lFunction.valueVal2db(lMinY, Rational(1))
           lDBMaxY = lFunction.valueVal2db(lMaxY, Rational(1))
-          logInfo "Dynamic range: [#{sprintf('%.2f',lMinY)} - #{sprintf('%.2f',lMaxY)}] ([#{sprintf('%.2f',lDBMinY)}db - #{sprintf('%.2f',lDBMaxY)}db] = #{sprintf('%.2f',lDBMaxY-lDBMinY)}db)"
+          log_info "Dynamic range: [#{sprintf('%.2f',lMinY)} - #{sprintf('%.2f',lMaxY)}] ([#{sprintf('%.2f',lDBMinY)}db - #{sprintf('%.2f',lDBMaxY)}db] = #{sprintf('%.2f',lDBMaxY-lDBMinY)}db)"
           lFunction.writeToFile(@FctFileName)
         end
 

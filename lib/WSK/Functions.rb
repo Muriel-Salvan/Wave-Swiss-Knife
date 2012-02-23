@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2009 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2009 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -10,7 +10,7 @@ class Float
 
   # Convert to a Rational
   #
-  # Return:
+  # Return::
   # * _Rational_: Corresponding Rational
   def to_r
     rResult = nil
@@ -63,7 +63,7 @@ module WSK
 
       # Read from a file
       #
-      # Parameters:
+      # Parameters::
       # * *iFileName* (_String_): File name
       def readFromFile(iFileName)
         lStrFunction = nil
@@ -85,7 +85,7 @@ module WSK
 
       # Read a function from the volume of an input data
       #
-      # Parameters:
+      # Parameters::
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
       # * *iIdxBeginSample* (_Integer_): Index of the first sample beginning the volume reading
       # * *iIdxEndSample* (_Integer_): Index of the last sample ending the volume reading
@@ -121,7 +121,7 @@ module WSK
           end
           lRMSValue = Math.sqrt(lRMSValue/lChannelLevelValues.size).to_r
           lLevelValue = lRMSValue*(iRMSRatio.to_r) + lMaxValue*(Rational(1)-iRMSRatio.to_r)
-          #logDebug "[#{lIdxCurrentSample} - #{lIdxCurrentEndSample}] - Level: #{lLevelValue}"
+          #log_debug "[#{lIdxCurrentSample} - #{lIdxCurrentEndSample}] - Level: #{lLevelValue}"
           # If intervals are of length 1, the function is exactly the profile: no need to make intermediate points
           if (lIdxCurrentEndSample == lIdxCurrentSample)
             @Function[:Points] << [ Rational(lIdxCurrentSample), lLevelValue]
@@ -150,7 +150,7 @@ module WSK
 
       # Set directly a function from a hash
       #
-      # Parameters:
+      # Parameters::
       # * *iHashFunction* (<em>map<Symbol,Object></em>): The hashed function
       def set(iHashFunction)
         @Function = iHashFunction
@@ -160,7 +160,7 @@ module WSK
 
       # Apply the function on the volume of a raw buffer
       #
-      # Parameters:
+      # Parameters::
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
       # * *oOutputData* (<em>WSK::Model::DirectStream</em>): The output data
       # * *iIdxBeginSample* (_Integer_): Index of the first sample beginning the volume transformation
@@ -179,7 +179,7 @@ module WSK
 
       # Draw the function into a raw buffer
       #
-      # Parameters:
+      # Parameters::
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
       # * *oOutputData* (<em>WSK::Model::DirectStream</em>): The output data
       # * *iIdxBeginSample* (_Integer_): Index of the first sample beginning the volume transformation
@@ -197,7 +197,7 @@ module WSK
 
       # Divide values by a given factor
       #
-      # Parameters:
+      # Parameters::
       # * *iFactor* (_Rational_): Factor to divide by
       def divideBy(iFactor)
         case @Function[:FunctionType]
@@ -206,13 +206,13 @@ module WSK
             ioPoint[1] /= iFactor
           end
         else
-          logErr "Unknown function type: #{@Function[:FunctionType]}"
+          log_err "Unknown function type: #{@Function[:FunctionType]}"
         end
       end
 
       # Convert the Y units in DB equivalent
       #
-      # Parameters:
+      # Parameters::
       # * *iMaxYValue* (_Rational_): Maximal Y value
       def convertToDB(iMaxYValue)
         case @Function[:FunctionType]
@@ -224,13 +224,13 @@ module WSK
             ioPoint[1] = valueVal2db_Internal(ioPoint[1])
           end
         else
-          logErr "Unknown function type: #{@Function[:FunctionType]}"
+          log_err "Unknown function type: #{@Function[:FunctionType]}"
         end
       end
       
       # Round values to a given precision
       #
-      # Parameters:
+      # Parameters::
       # * *iPrecisionX* (_Rational_): The desired precision for X values (1000 will round to E-3)
       # * *iPrecisionY* (_Rational_): The desired precision for Y values (1000 will round to E-3)
       def roundToPrecision(iPrecisionX, iPrecisionY)
@@ -240,23 +240,23 @@ module WSK
             next [ (Rational((iPoint[0]*iPrecisionX).round, 1))/iPrecisionX, (Rational((iPoint[1]*iPrecisionY).round, 1))/iPrecisionY ]
           end
         else
-          logErr "Unknown function type: #{@Function[:FunctionType]}"
+          log_err "Unknown function type: #{@Function[:FunctionType]}"
         end
         optimize
       end
       
       # Apply damping.
       #
-      # Parameters:
+      # Parameters::
       # * *iSlopeUp* (_Rational_): The maximal value of slope when increasing (should be > 0), or nil if none
       # * *iSlopeDown* (_Rational_): The minimal value of slope when decreasing (should be < 0), or nil if none
       def applyDamping(iSlopeUp, iSlopeDown)
         if ((iSlopeUp != nil) and
             (iSlopeUp <= 0))
-          logErr "Upward slope (#{iSlopeUp}) has to be > 0"
+          log_err "Upward slope (#{iSlopeUp}) has to be > 0"
         elsif ((iSlopeDown != nil) and
                (iSlopeDown >= 0))
-          logErr "Downward slope (#{iSlopeDown}) has to be < 0"
+          log_err "Downward slope (#{iSlopeDown}) has to be < 0"
         else
           case @Function[:FunctionType]
           when FCTTYPE_PIECEWISE_LINEAR
@@ -326,7 +326,7 @@ module WSK
             # Replace our points with new ones
             @Function[:Points] = lNewPoints
           else
-            logErr "Unknown function type: #{@Function[:FunctionType]}"
+            log_err "Unknown function type: #{@Function[:FunctionType]}"
           end
         end
         optimize
@@ -343,13 +343,13 @@ module WSK
           end
           @Function[:Points] = lNewPoints
         else
-          logErr "Unknown function type: #{@Function[:FunctionType]}"
+          log_err "Unknown function type: #{@Function[:FunctionType]}"
         end
       end
 
       # Get the function bounds
       #
-      # Return:
+      # Return::
       # * _Rational_: Minimal X
       # * _Rational_: Minimal Y
       # * _Rational_: Maximal X
@@ -378,7 +378,7 @@ module WSK
             end
           end
         else
-          logErr "Unknown function type: #{@Function[:FunctionType]}"
+          log_err "Unknown function type: #{@Function[:FunctionType]}"
         end
 
         return rMinX, rMinY, rMaxX, rMaxY
@@ -386,10 +386,10 @@ module WSK
 
       # Write the function to a file
       #
-      # Parameters:
+      # Parameters::
       # * *iFileName* (_String_): File name to write
       # * *iParams* (<em>map<Symbol,Object></em>): Additional parameters [optional = {}]:
-      # ** *:Floats* (_Boolean_): Do we write Float values ? [optional = false]
+      #   * *:Floats* (_Boolean_): Do we write Float values ? [optional = false]
       def writeToFile(iFileName, iParams = {})
         lParams = {
           # Default value
@@ -409,13 +409,13 @@ module WSK
             oFile.write(lData.pretty_inspect)
           end
         else
-          logErr "Unknown function type: #{@Function[:FunctionType]}"
+          log_err "Unknown function type: #{@Function[:FunctionType]}"
         end
       end
 
       # Apply a mapping function to this function.
       #
-      # Parameters:
+      # Parameters::
       # * *iMapFunction* (_Function_): The mapping function
       def applyMapFunction(iMapFunction)
         case @Function[:FunctionType]
@@ -425,8 +425,8 @@ module WSK
             # Both functions are piecewise linear
             # Algorithm:
             # * For each segment of our function:
-            # ** We look at the segments from the map function.
-            # ** For each found segment:
+            #   * We look at the segments from the map function.
+            #   * For each found segment:
             # *** We find at which abscisses this segment will change values
             # *** We change the sub-segment between those abscisses
             lPoints = @Function[:Points]
@@ -488,17 +488,17 @@ module WSK
             # Replace with new points
             @Function[:Points] = lNewPoints
           else
-            logErr "Unknown function type: #{@Function[:FunctionType]}"
+            log_err "Unknown function type: #{@Function[:FunctionType]}"
           end
         else
-          logErr "Unknown function type: #{@Function[:FunctionType]}"
+          log_err "Unknown function type: #{@Function[:FunctionType]}"
         end
         optimize
       end
 
       # Remove intermediate abscisses that are too close to each other
       #
-      # Parameters:
+      # Parameters::
       # * *iMinDistance* (_Rational_): Minimal distance for abscisses triplets to have
       def removeNoiseAbscisses(iMinDistance)
         case @Function[:FunctionType]
@@ -527,14 +527,14 @@ module WSK
           end
           @Function[:Points] = lNewPoints
         else
-          logErr "Unknown function type: #{@Function[:FunctionType]}"
+          log_err "Unknown function type: #{@Function[:FunctionType]}"
         end
         optimize
       end
 
       # Substract a function to this function
       #
-      # Parameters:
+      # Parameters::
       # * *iSubFunction* (_Function_): The function to substract
       def substractFunction(iSubFunction)
         case @Function[:FunctionType]
@@ -554,17 +554,17 @@ module WSK
             # Replace with new points
             @Function[:Points] = lNewPoints
           else
-            logErr "Unknown function type: #{@Function[:FunctionType]}"
+            log_err "Unknown function type: #{@Function[:FunctionType]}"
           end
         else
-          logErr "Unknown function type: #{@Function[:FunctionType]}"
+          log_err "Unknown function type: #{@Function[:FunctionType]}"
         end
         optimize
       end
 
       # Divide this function by another function
       #
-      # Parameters:
+      # Parameters::
       # * *iDivFunction* (_Function_): The function that divides
       def divideByFunction(iDivFunction)
         case @Function[:FunctionType]
@@ -584,17 +584,17 @@ module WSK
             # Replace with new points
             @Function[:Points] = lNewPoints
           else
-            logErr "Unknown function type: #{@Function[:FunctionType]}"
+            log_err "Unknown function type: #{@Function[:FunctionType]}"
           end
         else
-          logErr "Unknown function type: #{@Function[:FunctionType]}"
+          log_err "Unknown function type: #{@Function[:FunctionType]}"
         end
         optimize
       end
 
       # Get the internal function data
       #
-      # Return:
+      # Return::
       # * <em>map<Symbol,Object></em>: The internal function data
       def functionData
         return @Function
@@ -602,7 +602,7 @@ module WSK
 
       # Compute the log of a function value.
       #
-      # Parameters:
+      # Parameters::
       # * *iValue* (_Rational_): The value
       def valueLog(iValue)
         return Math::log(iValue).to_r
@@ -610,10 +610,10 @@ module WSK
       
       # Compute a DB value out of a ratio using function values
       #
-      # Parameters:
+      # Parameters::
       # * *iValue* (_Rational_): The value
       # * *iMaxValue* (_Rational_): The maximal value
-      # Return:
+      # Return::
       # * _Rational_: Its corresponding db
       def valueVal2db(iValue, iMaxValue)
         @Log2 = Math::log(2).to_r
@@ -647,7 +647,7 @@ module WSK
           # Change points
           @Function[:Points] = lNewPoints
         else
-          logErr "Unknown function type: #{@Function[:FunctionType]}"
+          log_err "Unknown function type: #{@Function[:FunctionType]}"
         end
       end
 
@@ -675,7 +675,7 @@ module WSK
             next [ lNewPointX, lNewPointY ]
           end
         else
-          logErr "Unknown function type: #{@Function[:FunctionType]}"
+          log_err "Unknown function type: #{@Function[:FunctionType]}"
         end
       end
 
@@ -699,12 +699,12 @@ module WSK
 
       # Find abscisses of both functions and the corresponding Y values
       #
-      # Parameters:
+      # Parameters::
       # * *iOtherFunction* (_Function_): The other function
       # * *CodeBlock*: Code called for each point found:
-      # ** *iX* (_Rational_): The corresponding abscisse (can be nil if none)
-      # ** *iY* (_Rational_): The corresponding Y value for this function (can be nil if none)
-      # ** *iOtherY* (_Rational_): The corresponding Y value for the other function
+      #   * *iX* (_Rational_): The corresponding abscisse (can be nil if none)
+      #   * *iY* (_Rational_): The corresponding Y value for this function (can be nil if none)
+      #   * *iOtherY* (_Rational_): The corresponding Y value for the other function
       def unionXWithFunction_PiecewiseLinear(iOtherFunction)
         lPoints = @Function[:Points]
         lOtherPoints = iOtherFunction.functionData[:Points]
@@ -750,9 +750,9 @@ module WSK
       # * @Log2: Contains log(2)
       # * @LogMax: Contains log(MaximalValue)
       #
-      # Parameters:
+      # Parameters::
       # * *iValue* (_Rational_): The value
-      # Return:
+      # Return::
       # * _Rational_: Its corresponding db
       def valueVal2db_Internal(iValue)
         if (iValue == 0)

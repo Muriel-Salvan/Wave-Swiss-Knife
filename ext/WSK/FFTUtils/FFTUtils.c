@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2009 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+ * Copyright (c) 2009 - 2012 Muriel Salvan (muriel@x-aeon.com)
  * Licensed under the terms specified in LICENSE file. No warranty is provided.
  **/
 
@@ -42,12 +42,12 @@ typedef struct {
 
 /** Create a ruby object storing the Wi coefficients used to compute the sin and cos sums
  *
- * Parameters:
+ * Parameters::
  * * *iSelf* (_FFTUtils_): The object containing this method
  * * *iValIdxFirstFreq* (_Integer_): First frequency index to generate the array of Wi
  * * *iValIdxLastFreq* (_Integer_): Last frequency index to generate the array of Wi
  * * *iValSampleRate* (_Integer_): The sample rate
- * Return:
+ * Return::
  * * _Object_: The container of Wi series
  **/
 static VALUE fftutils_createWi(
@@ -78,11 +78,11 @@ static VALUE fftutils_createWi(
 
 /** Create empty arrays of tFFTValues to be used for sin and cos sums
  *
- * Parameters:
+ * Parameters::
  * * *iSelf* (_FFTUtils_): Self
  * * *iValNbrFreq* (_Integer_): Number of frequencies to store
  * * *iValNbrChannels* (_Integer_): Number of channels
- * Return:
+ * Return::
  * * _Object_: An encapsulated array for computation
  **/
 static VALUE fftutils_initSumArray(
@@ -106,12 +106,12 @@ static VALUE fftutils_initSumArray(
 /**
  * Process a value read from an input buffer for the CompleteSumCosSin function.
  *
- * Parameters:
+ * Parameters::
  * * *iValue* (<em>const tSampleValue</em>): The value being read
  * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
  * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
  * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tNextSilentStruct*</em>.
- * Return:
+ * Return::
  * * _int_: The return code:
  * ** 0: Continue iteration
  * ** 1: Break all iterations
@@ -144,12 +144,12 @@ int fftutils_processValue_CompleteSumCosSin(
  * Process a value read from an input buffer for the CompleteSumCosSin function.
  * Use the trigo cache.
  *
- * Parameters:
+ * Parameters::
  * * *iValue* (<em>const tSampleValue</em>): The value being read
  * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
  * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
  * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tNextSilentStruct*</em>.
- * Return:
+ * Return::
  * * _int_: The return code:
  * ** 0: Continue iteration
  * ** 1: Break all iterations
@@ -178,7 +178,7 @@ int fftutils_processValue_CompleteSumCosSinWithCache(
 
 /** Complete the cosinus et sinus sums to compute the FFT
  * 
- * Parameters:
+ * Parameters::
  * * *iSelf* (_FFTUtils_): Self
  * * *iValInputRawBuffer* (_String_): The input raw buffer
  * * *iValIdxSample* (_Integer_): The current sample index (to be used when several buffers are used for the same FFT)
@@ -270,13 +270,13 @@ static VALUE fftutils_completeSumCosSin(
 /** Compute the final FFT coefficients in Ruby integers, per channel and per frequency.
  * Use previously computed cos and sin sum arrays.
  *
- * Parameters:
+ * Parameters::
  * * *iSelf* (_FFTUtils_): Self
  * * *iValNbrChannels* (_Integer_): The number of channels
  * * *iValNbrFreq* (_Integer_): The number of frequencies to compute (size of array contained in iValW)
  * * *iValSumCos* (_Object_): Container of the cos sums (should be initialized with initSumArray)
  * * *iValSumSin* (_Object_): Container of the sin sums (should be initialized with initSumArray)
- * Return:
+ * Return::
  * * <em>list<list<Integer>></em>: List of FFT coefficients, per channel, per frequency
  **/
 static VALUE fftutils_computeFFT(
@@ -386,7 +386,7 @@ static VALUE fftutils_computeFFT(
  * Free a trigonometric cache.
  * This method is called by Ruby GC.
  *
- * Parameters:
+ * Parameters::
  * * *iPtrTrigoCache* (<em>void*</em>): The trigo cache to free (in fact a <em>tTrigoCache*</em>)
  */
 static void fftutils_freeTrigoCache(void* iPtrTrigoCache) {
@@ -405,12 +405,12 @@ static void fftutils_freeTrigoCache(void* iPtrTrigoCache) {
 /**
  * Create a cache of trigonometric values that will be then used in completeSumCosSin method
  *
- * Parameters:
+ * Parameters::
  * * *iSelf* (_FFTUtils_): Self
  * * *iValW* (_Object_): Container of the W coefficients (initialized using createWi)
  * * *iValNbrFreq* (_Integer_): The number of frequencies in the W coefficients
  * * *iValNbrSamples* (_Integer_): Number of samples for which we create the cache
- * Return:
+ * Return::
  * * _Object_: Container of the trigonometric cache
  */
 static VALUE fftutils_initTrigoCache(
@@ -457,10 +457,10 @@ static VALUE fftutils_initTrigoCache(
 /**
  * Initialize an MPF number based on a Ruby's fixnum.
  *
- * Parameters:
+ * Parameters::
  * * *ioMPF* (<em>mpf_t</em>): The mpf to initialize
  * * *iValInt* (_Integer_): The Ruby integer
- * Return:
+ * Return::
  * * _int_: The result code of the set
  */
 inline int initMPF(
@@ -473,9 +473,9 @@ inline int initMPF(
  * Get a Ruby integer based on an MPF storing an integer value.
  * Prerequisite: The MPF value must be truncated before calling this function.
  *
- * Parameters:
+ * Parameters::
  * * *iMPF* (<em>mpf_t</em>): The mpf to read
- * Return:
+ * Return::
  * * _Integer_: The Ruby integer
  */
 #define MAX_NUMBER_DIGITS 256
@@ -502,7 +502,7 @@ VALUE mpf2RubyInt(
  * Free an FFT profile.
  * This method is called by Ruby GC.
  *
- * Parameters:
+ * Parameters::
  * * *iPtrFFTProfile* (<em>void*</em>): The FFT profile to free (in fact a <em>tFFTProfile*</em>)
  */
 static void fftutils_freeFFTProfile(void* iPtrFFTProfile) {
@@ -526,10 +526,10 @@ static void fftutils_freeFFTProfile(void* iPtrFFTProfile) {
 /**
  * Initialize a C object storing a profile
  *
- * Parameters:
+ * Parameters::
  * * *iSelf* (_FFTUtils_): Self
  * * *iValFFTProfile* (<em>[Integer,Integer,list<list<Integer>>]</em>): FFT Profile
- * Return:
+ * Return::
  * * _Object_: Object storing a C FFT Profile, to be used with other C functions
  */
 static VALUE fftutils_createCFFTProfile(
@@ -568,7 +568,7 @@ static VALUE fftutils_createCFFTProfile(
     // Errors occured
     char lLogMessage[256];
     sprintf(lLogMessage, "%d errors occurred while creating the C FFT profile.", -lConvertResult);
-    rb_funcall(iSelf, rb_intern("logErr"), 1, rb_str_new2(lLogMessage));
+    rb_funcall(iSelf, rb_intern("log_err"), 1, rb_str_new2(lLogMessage));
   }
 
   // Encapsulate it in a Ruby object
@@ -583,12 +583,12 @@ static VALUE fftutils_createCFFTProfile(
  * FFTValues are declined per channel, per frequency index.
  * Bits per sample and number of samples are taken into account to relatively compare the profiles.
  *
- * Parameters:
+ * Parameters::
  * * *iSelf* (_FFTUtils_): Self
  * * *iValProfile1* (_Object_): Profile 1, initialized by createCFFTProfile.
  * * *iValProfile2* (_Object_): Profile 2, initialized by createCFFTProfile.
  * * *iValScale* (_Integer_): The scale used to compute values
- * Return:
+ * Return::
  * * _Integer_: Distance (Profile 2 - Profile 1).
  */
 static VALUE fftutils_distFFTProfiles(

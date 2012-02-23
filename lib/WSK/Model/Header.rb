@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2009 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2009 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -23,13 +23,13 @@ module WSK
       #   Integer
       attr_reader :SampleRate
 
-      # Bits per sample
+      # Bits per sample (per channel)
       #   Integer
       attr_reader :NbrBitsPerSample
 
       # Constructor
       #
-      # Parameters:
+      # Parameters::
       # * *iAudioFormat* (_Integer_): Audio format
       # * *iNbrChannels* (_Integer_): Number of channels
       # * *iSampleRate* (_Integer_): Sample rate
@@ -55,10 +55,10 @@ module WSK
 
       # Get decoded samples from an encoded PCM string.
       #
-      # Parameters:
+      # Parameters::
       # * *iEncodedString* (_String_): The encoded string
       # * *iNbrSamplesToDecode* (_String_): Number of samples to decode
-      # Return:
+      # Return::
       # * <em>list<Integer></em>: The list of samples (there will be iNbrSamplesToDecode*@NbrChannels values)
       def getDecodedSamples(iEncodedString, iNbrSamplesToDecode)
         rSamples = iEncodedString.unpack(@StrSamplePackFormula*iNbrSamplesToDecode)
@@ -83,9 +83,9 @@ module WSK
 
       # Get encoded PCM string from decoded samples
       #
-      # Parameters:
+      # Parameters::
       # * *iChannelSamples* (<em>list<Integer></em>): The list of samples to encode
-      # Return:
+      # Return::
       # * _String_: Encoded PCM samples
       def getEncodedString(iChannelSamples)
         lRealChannelSamples = nil
@@ -112,9 +112,9 @@ module WSK
 
       # Compare with a different object
       #
-      # Parameters:
+      # Parameters::
       # * *iOther* (_Object_): Another object
-      # Return:
+      # Return::
       # * _Boolean_: Are the objects equal ?
       def ==(iOther)
         return ((iOther.object_id == self.object_id) or

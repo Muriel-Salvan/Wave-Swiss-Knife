@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2009 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2009 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -15,7 +15,7 @@ module WSKTest
 
     # Return the directory containing test files
     #
-    # Return:
+    # Return::
     # * _String_: The directory containing files
     def getFilesDir
       return File.expand_path("#{File.dirname(__FILE__)}/../WSKFiles")
@@ -23,12 +23,12 @@ module WSKTest
 
     # Generate a Wave file based on a function
     #
-    # Parameters:
+    # Parameters::
     # * *iFunction* (<em>map<Symbol,Object></em>): The function (in a map) used to generate the Wave file
     # * *iParams* (<em>map<Symbol,Object></em>): Additional parameters [optional = {}]:
-    # ** *:UnitDB* (_Boolean_): Are function units in db scale ? [optional = false]
+    #   * *:UnitDB* (_Boolean_): Are function units in db scale ? [optional = false]
     # * _CodeBlock_: The code called once the Wave file is generated:
-    # ** *iWaveFileName* (_String_): The name of the generated Wave file
+    #   * *iWaveFileName* (_String_): The name of the generated Wave file
     def genWave(iFunction, iParams = {})
       lParams = {
         :UnitDB => false
@@ -55,19 +55,19 @@ module WSKTest
           '--function', lTempFctFileName,
           '--unitdb', lParams[:UnitDB] ? '1' : '0'
         ]
-        if (debugActivated?)
+        if (debug_activated?)
           lWSKCmdLineArgs = [ '--debug' ] + lWSKCmdLineArgs
         end
         # Remove output to stdout, and put it in a log file
-        setLogFile("#{lTmpDir}/#{lBaseWaveName}.log.txt")
+        set_log_file("#{lTmpDir}/#{lBaseWaveName}.log.txt")
         WSK::Launcher.new.execute(lWSKCmdLineArgs)
-        setLogFile(nil)
+        set_log_file(nil)
       end
       # Launch the test
       begin
         yield(lTempWaveFileName)
       rescue Exception
-        logErr "Files \"#{lTempFctFileName}\" and \"#{lTempWaveFileName}\" can be used to investigate the error."
+        log_err "Error: #{$!}\n#{$!.backtrace.join("\n")}\nFiles \"#{lTempFctFileName}\" and \"#{lTempWaveFileName}\" can be used to investigate the error."
         raise
       end
     end

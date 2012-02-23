@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2009 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2009 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -22,7 +22,7 @@ module WSK
 
       # Constructor
       #
-      # Parameters:
+      # Parameters::
       # * *iFile* (_IO_): The file descriptor. Don't use it externally as long as it is used by this class.
       # * *iHeader* (<em>WSK::Model::Header</em>): Corresponding file header
       def initialize(iFile, iHeader)
@@ -32,7 +32,7 @@ module WSK
 
       # Check that data seems coherent, and initialize the cursor
       #
-      # Return:
+      # Return::
       # * _Exception_: Error, or nil in case of success
       def initCursor
         rError = nil
@@ -48,7 +48,7 @@ module WSK
             @NbrSamples = lDataSize / lSampleSize
             @RawReader = RawReader.new(@File, @File.pos, lSampleSize, @NbrSamples)
             @WaveReader = WaveReader.new(@RawReader, @Header)
-            logDebug "Number of samples: #{@NbrSamples}"
+            log_debug "Number of samples: #{@NbrSamples}"
           else
             rError = RuntimeError.new("Data size (#{lDataSize} should be a multiple of #{lSampleSize} according to header.")
           end
@@ -59,10 +59,10 @@ module WSK
 
       # Iterate through the samples
       #
-      # Parameters:
+      # Parameters::
       # * *iIdxBeginSample* (_Integer_): Index of the first sample to begin with [optional = 0]
       # * *CodeBlock*: The code called for each iteration:
-      # ** *iInputSampleData* (<em>list<Integer></em>): The list of values (1 per channel)
+      #   * *iInputSampleData* (<em>list<Integer></em>): The list of values (1 per channel)
       def each(iIdxBeginSample = 0)
         eachBuffer(iIdxBeginSample) do |iBuffer, iNbrSamples|
           iBuffer.size.times do |iIdxSample|
@@ -73,12 +73,12 @@ module WSK
 
       # Iterate through the buffers. This is far more efficient than iterating over samples.
       #
-      # Parameters:
+      # Parameters::
       # * *iIdxBeginSample* (_Integer_): Index of the first sample to begin with [optional = 0]
       # * *CodeBlock*: The code called for each iteration:
-      # ** *iInputBuffer* (<em>list<Integer></em>): The list of channel values
-      # ** *iNbrSamples* (_Integer_): The number of samples in this buffer
-      # ** *iNbrChannels* (_Integer_): The number of channels in this buffer
+      #   * *iInputBuffer* (<em>list<Integer></em>): The list of channel values
+      #   * *iNbrSamples* (_Integer_): The number of samples in this buffer
+      #   * *iNbrChannels* (_Integer_): The number of channels in this buffer
       def eachBuffer(iIdxBeginSample = 0)
         @WaveReader.eachBuffer(iIdxBeginSample) do |iBuffer, iNbrSamples|
           yield(iBuffer, iNbrSamples, @Header.NbrChannels)
@@ -88,7 +88,7 @@ module WSK
       # Get the current buffer.
       # !!! This must be called only if the buffer was previously initialized (call getSampleSata to do so).
       #
-      # Return:
+      # Return::
       # * <em>list<Integer></em>: The list of channel values
       # * _Integer_: The number of samples in this buffer
       # * _Integer_: The number of channels in this buffer
@@ -101,7 +101,7 @@ module WSK
       # Get the current raw buffer.
       # !!! This must be called only if the buffer was previously initialized (call eachRawBuffer to do so).
       #
-      # Return:
+      # Return::
       # * _String_: The raw buffer
       # * _Integer_: The number of samples in this buffer
       # * _Integer_: The number of channels in this buffer
@@ -113,12 +113,12 @@ module WSK
 
       # Iterate through the buffers in the reverse order. This is far more efficient than iterating over samples.
       #
-      # Parameters:
+      # Parameters::
       # * *iIdxEndSample* (_Integer_): Index of the first sample to begin with [optional = @NbrSamples-1]
       # * *CodeBlock*: The code called for each iteration:
-      # ** *iInputBuffer* (<em>list<Integer></em>): The list of channel values
-      # ** *iNbrSamples* (_Integer_): The number of samples in this buffer
-      # ** *iNbrChannels* (_Integer_): The number of channels in this buffer
+      #   * *iInputBuffer* (<em>list<Integer></em>): The list of channel values
+      #   * *iNbrSamples* (_Integer_): The number of samples in this buffer
+      #   * *iNbrChannels* (_Integer_): The number of channels in this buffer
       def eachReverseBuffer(iIdxEndSample = @NbrSamples-1)
         @WaveReader.eachReverseBuffer(0, iIdxEndSample) do |iBuffer, iNbrSamples|
           yield(iBuffer, iNbrSamples, @Header.NbrChannels)
@@ -128,14 +128,14 @@ module WSK
       # Iterate through the buffers in raw mode (strings read directly without unpacking).
       # This is far more efficient than iterating over samples or unpacked buffers.
       #
-      # Parameters:
+      # Parameters::
       # * *iIdxBeginSample* (_Integer_): Index of the first sample to begin with [optional = 0]
       # * *iIdxLastSample* (_Integer_): Index of the last sample to end with [optional = @NbrSamples-1]
       # * *iOptions* (<em>map<Symbol,Object></em>): Additional options. See CachedBufferReader for documentation. [optional = {}]
       # * *CodeBlock*: The code called for each iteration:
-      # ** *iInputRawBuffer* (_String_): The raw buffer
-      # ** *iNbrSamples* (_Integer_): The number of samples in this buffer
-      # ** *iNbrChannels* (_Integer_): The number of channels in this buffer
+      #   * *iInputRawBuffer* (_String_): The raw buffer
+      #   * *iNbrSamples* (_Integer_): The number of samples in this buffer
+      #   * *iNbrChannels* (_Integer_): The number of channels in this buffer
       def eachRawBuffer(iIdxBeginSample = 0, iIdxLastSample = @NbrSamples-1, iOptions = {})
         @RawReader.eachBuffer(iIdxBeginSample, iIdxLastSample, iOptions) do |iBuffer, iNbrSamples|
           yield(iBuffer, iNbrSamples, @Header.NbrChannels)
@@ -145,14 +145,14 @@ module WSK
       # Iterate through the buffers in the reverse order in raw mode (strings read directly without unpacking).
       # This is far more efficient than iterating over samples or unpacked buffers.
       #
-      # Parameters:
+      # Parameters::
       # * *iIdxBeginSample* (_Integer_): Index of the first sample to begin with [optional = 0]
       # * *iIdxLastSample* (_Integer_): Index of the last sample to end with [optional = @NbrSamples-1]
       # * *iOptions* (<em>map<Symbol,Object></em>): Additional options. See CachedBufferReader for documentation. [optional = {}]
       # * *CodeBlock*: The code called for each iteration:
-      # ** *iInputRawBuffer* (_String_): The raw buffer
-      # ** *iNbrSamples* (_Integer_): The number of samples in this buffer
-      # ** *iNbrChannels* (_Integer_): The number of channels in this buffer
+      #   * *iInputRawBuffer* (_String_): The raw buffer
+      #   * *iNbrSamples* (_Integer_): The number of samples in this buffer
+      #   * *iNbrChannels* (_Integer_): The number of channels in this buffer
       def eachReverseRawBuffer(iIdxBeginSample = 0, iIdxLastSample = @NbrSamples-1, iOptions = {})
         @RawReader.eachReverseBuffer(iIdxBeginSample, iIdxLastSample, iOptions) do |iBuffer, iNbrSamples|
           yield(iBuffer, iNbrSamples, @Header.NbrChannels)
@@ -161,11 +161,11 @@ module WSK
 
       # Get a sample's data
       #
-      # Parameters:
+      # Parameters::
       # * *iIdxSample* (_Integer_): Index of the sample to retrieve
       # * *iOptions* (<em>map<Symbol,Object></em>): Additional options [optional = {}]
-      # ** *:ReverseBuffer* (_Boolean_): Do we load the previous buffer containing this sample if needed ? [optional = false]
-      # Return:
+      #   * *:ReverseBuffer* (_Boolean_): Do we load the previous buffer containing this sample if needed ? [optional = false]
+      # Return::
       # * <em>list<Integer></em>: The list of values (1 per channel), or nil in case of error
       def getSampleData(iIdxSample, iOptions = {})
         rSampleData = nil

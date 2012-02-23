@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2009 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2009 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -18,11 +18,11 @@ module WSK
 
       # Initialize the plugin
       #
-      # Parameters:
+      # Parameters::
       # * *oFile* (_IO_): The file descriptor. Don't use it externally as long as it is used by this class.
       # * *iHeader* (<em>WSK::Model::Header</em>): Corresponding file header
       # * *iNbrOutputDataSamples* (_Integer_): The number of output data samples
-      # Return:
+      # Return::
       # * _Exception_: An error, or nil in case of success
       def initInterface(oFile, iHeader, iNbrOutputDataSamples)
         rError = nil
@@ -46,7 +46,7 @@ module WSK
 
       # Finalize writing
       #
-      # Return:
+      # Return::
       # * _Integer_: The number of samples written
       def finalize
         if (!@Buffer.empty?)
@@ -58,7 +58,7 @@ module WSK
 
       # Add a sample data
       #
-      # Parameters:
+      # Parameters::
       # * *iSampleData* (<em>list<Integer></em>): The list of channel values for this sample
       def pushSample(iSampleData)
         # Write data in the buffer
@@ -72,7 +72,7 @@ module WSK
 
       # Add a buffer
       #
-      # Parameters:
+      # Parameters::
       # * *iBuffer* (<em>list<Integer></em>): The list of channel values for this buffer
       def pushBuffer(iBuffer)
         # Write data in the current buffer
@@ -86,7 +86,7 @@ module WSK
 
       # Add a raw buffer
       #
-      # Parameters:
+      # Parameters::
       # * *iRawBuffer* (_String_): The raw buffer
       def pushRawBuffer(iRawBuffer)
         # First, flush eventually remaining buffer to encode
@@ -100,12 +100,12 @@ module WSK
 
       # Loop on a range of samples split into buffers
       #
-      # Parameters:
+      # Parameters::
       # * *iIdxBeginSample* (_Integer_): The beginning sample
       # * *iIdxEndSample* (_Integer_): The ending sample
       # * _CodeBlock_: The code called for each buffer:
-      # ** *iIdxBeginBufferSample* (_Integer_): The beginning of this buffer's sample
-      # ** *iIdxEndBufferSample* (_Integer_): The ending of this buffer's sample
+      #   * *iIdxBeginBufferSample* (_Integer_): The beginning of this buffer's sample
+      #   * *iIdxEndBufferSample* (_Integer_): The ending of this buffer's sample
       def eachBuffer(iIdxBeginSample, iIdxEndSample)
         lIdxBeginBufferSample = iIdxBeginSample
         while (lIdxBeginBufferSample <= iIdxEndSample)
@@ -131,7 +131,7 @@ module WSK
 
       # Add a samples' number to the progression
       #
-      # Parameters:
+      # Parameters::
       # * *iNbrSamples* (_Integer_): Number of samples
       def updateProgress(iNbrSamples)
         @NbrSamplesWritten += iNbrSamples

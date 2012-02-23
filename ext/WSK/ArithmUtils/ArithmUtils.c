@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2009 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+ * Copyright (c) 2009 - 2012 Muriel Salvan (muriel@x-aeon.com)
  * Licensed under the terms specified in LICENSE file. No warranty is provided.
  **/
 
@@ -61,7 +61,7 @@ typedef struct {
  * Free a map.
  * This method is called by Ruby GC.
  *
- * Parameters:
+ * Parameters::
  * * *iPtrMap* (<em>void*</em>): The trigo cache to free (in fact a <em>tMap*</em>)
  */
 static void arithmutils_freeMap(void* iPtrMap) {
@@ -78,11 +78,11 @@ static void arithmutils_freeMap(void* iPtrMap) {
 /**
  * Fill a channel map with a given function of type Piecewise Linear
  *
- * Parameters:
+ * Parameters::
  * * *iNbrBitsPerSample* (<em>const int</em>): Number of bits per sample
  * * *oPtrChannelMap* (<em>int*</em>): The channel map to fill
  * * *iValFunction* (<em>map<Symbol,Object></em>): The function to apply
- * Return:
+ * Return::
  * * _int_: Result code:
  * ** *0*: The map never exceeds limits
  * ** *1*: The map can exceed limits
@@ -160,12 +160,12 @@ static int arithmutils_fillMap_PiecewiseLinear(
 /**
  * Fill a channel map with a given function
  *
- * Parameters:
+ * Parameters::
  * * *iSelf* (_Object_): Calling object
  * * *iNbrBitsPerSample* (<em>const int</em>): Number of bits per sample
  * * *oPtrChannelMap* (<em>int*</em>): The channel map to fill
  * * *iValFunction* (<em>map<Symbol,Object></em>): The function to apply
- * Return:
+ * Return::
  * * _int_: Result code:
  * ** *0*: The map never exceeds limits
  * ** *1*: The map can exceed limits
@@ -188,7 +188,7 @@ static int arithmutils_fillMapWithFunction(
     default: ; // The ; is here to make gcc compile: variables declarations are forbidden after a label.
       char lLogMessage[256];
       sprintf(lLogMessage, "Unknown function type %d", lFunctionType);
-      rb_funcall(iSelf, rb_intern("logWarn"), 1, rb_str_new2(lLogMessage));
+      rb_funcall(iSelf, rb_intern("log_warn"), 1, rb_str_new2(lLogMessage));
       rResultCode = 2;
       break;
   }
@@ -199,11 +199,11 @@ static int arithmutils_fillMapWithFunction(
 /**
  * Create a map from a list of functions.
  *
- * Parameters:
+ * Parameters::
  * * *iSelf* (_FFT_): Self
  * * *iValNbrBitsPerSample* (_Integer_): Number of bits per sample
  * * *iValFunctions* (<em>list<map<Symbol,Object>></em>): List of functions, per channel
- * Return:
+ * Return::
  * * _Object_: Container of the map
  **/
 static VALUE arithmutils_createMapFromFunctions(
@@ -236,12 +236,12 @@ static VALUE arithmutils_createMapFromFunctions(
 /**
  * Process a value read from an input buffer for the applyMap function.
  *
- * Parameters:
+ * Parameters::
  * * *iValue* (<em>const tSampleValue</em>): The value being read
  * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
  * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
  * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tApplyMapStruct*</em>.
- * Return:
+ * Return::
  * * _int_: The return code:
  * ** 0: Continue iteration
  * ** 1: Break all iterations
@@ -262,12 +262,12 @@ int arithmutils_processValue_applyMap(
 /**
  * Apply a map on an input buffer, and outputs a result buffer.
  *
- * Parameters:
+ * Parameters::
  * * *iSelf* (_FFT_): Self
  * * *iValMap* (_Object_): The container of the map
  * * *iValInputBuffer* (_String_): The input buffer
  * * *iValNbrSamples* (_Integer_): Number of samples from the buffer
- * Return:
+ * Return::
  * * _String_: Output buffer
  **/
 static VALUE arithmutils_applyMap(
@@ -319,12 +319,12 @@ static VALUE arithmutils_applyMap(
  * Process a value read from an input buffer for the mix function.
  * Optimized for 8 bits samples.
  *
- * Parameters:
+ * Parameters::
  * * *iValue* (<em>const tSampleValue</em>): The value being read
  * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
  * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
  * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tMixStruct*</em>.
- * Return:
+ * Return::
  * * _int_: The return code:
  * ** 0: Continue iteration
  * ** 1: Break all iterations
@@ -369,12 +369,12 @@ int arithmutils_processValue_mix_8bits(
  * Process a value read from an input buffer for the mix function.
  * Optimized for 16 bits samples.
  *
- * Parameters:
+ * Parameters::
  * * *iValue* (<em>const tSampleValue</em>): The value being read
  * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
  * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
  * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tMixStruct*</em>.
- * Return:
+ * Return::
  * * _int_: The return code:
  * ** 0: Continue iteration
  * ** 1: Break all iterations
@@ -419,12 +419,12 @@ int arithmutils_processValue_mix_16bits(
  * Process a value read from an input buffer for the mix function.
  * Optimized for 8 bits samples.
  *
- * Parameters:
+ * Parameters::
  * * *iValue* (<em>const tSampleValue</em>): The value being read
  * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
  * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
  * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tMixStruct*</em>.
- * Return:
+ * Return::
  * * _int_: The return code:
  * ** 0: Continue iteration
  * ** 1: Break all iterations
@@ -469,12 +469,12 @@ int arithmutils_processValue_mix_24bits(
  * Mix a list of buffers.
  * Prerequisite: The list of buffers have to be sorted, from the one having the more samples to the one having the less.
  *
- * Parameters:
+ * Parameters::
  * * *iSelf* (_FFT_): Self
  * * *iValBuffers* (<em>list<list<Object>></em>): The list of buffers and their associated info (see Mix.rb for details)
  * * *iValNbrBitsPerSample* (_Integer_): Number of bits per sample
  * * *iValNbrChannels* (_Integer_): Number of channels
- * Return:
+ * Return::
  * * _String_: Output buffer
  * * _Integer_: Number of samples written
  **/
@@ -572,18 +572,18 @@ static VALUE arithmutils_mixBuffers(
 
 // The value that represents nil in the maps
 static tSampleValue gImpossibleValue;
-static ID gID_logWarn;
+static ID gID_log_warn;
 
 /**
  * Process a value read from an input buffer for the compare function.
  * Optimized for 8 bits samples.
  *
- * Parameters:
+ * Parameters::
  * * *iValue* (<em>const tSampleValue</em>): The value being read
  * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
  * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
  * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tMixStruct*</em>.
- * Return:
+ * Return::
  * * _int_: The return code:
  * ** 0: Continue iteration
  * ** 1: Break all iterations
@@ -605,7 +605,7 @@ int arithmutils_processValue_compare_8bits(
     } else if (lPtrParams->map[lPtrParams->mapOffset+iValue] != lValue2) {
       char lMessage[256];
       sprintf(lMessage, "Distortion for input value %d was found both %d and %d", iValue, lPtrParams->map[lPtrParams->mapOffset+iValue], lValue2);
-      rb_funcall(lPtrParams->self, gID_logWarn, 1, rb_str_new2(lMessage));
+      rb_funcall(lPtrParams->self, gID_log_warn, 1, rb_str_new2(lMessage));
     }
   }
   *oPtrValue = (tSampleValue)(((long double)(lValue2-iValue))*lPtrParams->coeffDiff);
@@ -619,12 +619,12 @@ int arithmutils_processValue_compare_8bits(
  * Process a value read from an input buffer for the compare function.
  * Optimized for 16 bits samples.
  *
- * Parameters:
+ * Parameters::
  * * *iValue* (<em>const tSampleValue</em>): The value being read
  * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
  * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
  * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tMixStruct*</em>.
- * Return:
+ * Return::
  * * _int_: The return code:
  * ** 0: Continue iteration
  * ** 1: Break all iterations
@@ -646,7 +646,7 @@ int arithmutils_processValue_compare_16bits(
     } else if (lPtrParams->map[lPtrParams->mapOffset+iValue] != lValue2) {
       char lMessage[256];
       sprintf(lMessage, "Distortion for input value %d was found both %d and %d", iValue, lPtrParams->map[lPtrParams->mapOffset+iValue], lValue2);
-      rb_funcall(lPtrParams->self, gID_logWarn, 1, rb_str_new2(lMessage));
+      rb_funcall(lPtrParams->self, gID_log_warn, 1, rb_str_new2(lMessage));
     }
   }
   *oPtrValue = (tSampleValue)(((long double)(lValue2-iValue))*lPtrParams->coeffDiff);
@@ -660,12 +660,12 @@ int arithmutils_processValue_compare_16bits(
  * Process a value read from an input buffer for the compare function.
  * Optimized for 8 bits samples.
  *
- * Parameters:
+ * Parameters::
  * * *iValue* (<em>const tSampleValue</em>): The value being read
  * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
  * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
  * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tMixStruct*</em>.
- * Return:
+ * Return::
  * * _int_: The return code:
  * ** 0: Continue iteration
  * ** 1: Break all iterations
@@ -687,7 +687,7 @@ int arithmutils_processValue_compare_24bits(
     } else if (lPtrParams->map[lPtrParams->mapOffset+iValue] != lValue2) {
       char lMessage[256];
       sprintf(lMessage, "Distortion for input value %d was found both %d and %d", iValue, lPtrParams->map[lPtrParams->mapOffset+iValue], lValue2);
-      rb_funcall(lPtrParams->self, gID_logWarn, 1, rb_str_new2(lMessage));
+      rb_funcall(lPtrParams->self, gID_log_warn, 1, rb_str_new2(lMessage));
     }
   }
   *oPtrValue = (tSampleValue)(((long double)(lValue2-iValue))*lPtrParams->coeffDiff);
@@ -700,9 +700,9 @@ int arithmutils_processValue_compare_24bits(
 /**
  * Get a Ruby integer based on an MPZ storing an integer value.
  *
- * Parameters:
+ * Parameters::
  * * *iMPZ* (<em>mpz_t</em>): The mpz to read
- * Return:
+ * Return::
  * * _Integer_: The Ruby integer
  */
 #define MAX_NUMBER_DIGITS 256
@@ -720,7 +720,7 @@ VALUE mpz2RubyInt(
  * Write the difference in an output buffer (Buffer2 - Buffer1).
  * Buffers must have the same size.
  *
- * Parameters:
+ * Parameters::
  * * *iSelf* (_FFT_): Self
  * * *iValBuffer1* (<em>_String_</em>): First buffer
  * * *iValBuffer2* (<em>_String_</em>): Second buffer
@@ -729,7 +729,7 @@ VALUE mpz2RubyInt(
  * * *iValNbrSamples* (_Integer_): Number of samples in buffers
  * * *iValCoeffDiff* (_Float_): The coefficient to apply on the differences written to the output
  * * *ioValMap* (</em>list<Integer></em>): Map of differences in sample values (can be nil if we don't want to compute it)
- * Return:
+ * Return::
  * * _String_: Output buffer
  * * _Integer_: Cumulative errors in this buffer
  **/
@@ -858,5 +858,5 @@ void Init_ArithmUtils() {
   rb_define_method(lArithmUtilsClass, "applyMap", arithmutils_applyMap, 4);
   rb_define_method(lArithmUtilsClass, "mixBuffers", arithmutils_mixBuffers, 3);
   rb_define_method(lArithmUtilsClass, "compareBuffers", arithmutils_compareBuffers, 7);
-  gID_logWarn = rb_intern("logWarn");
+  gID_log_warn = rb_intern("log_warn");
 }

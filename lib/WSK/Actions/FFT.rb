@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2009 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2009 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -16,9 +16,9 @@ module WSK
       # This is called before execute, as it is needed to write the output file.
       # It is possible to give a majoration: it will be padded with silence.
       #
-      # Parameters:
+      # Parameters::
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
-      # Return:
+      # Return::
       # * _Integer_: The number of samples to be written
       def getNbrSamples(iInputData)
         return 0
@@ -26,15 +26,15 @@ module WSK
       
       # Execute
       #
-      # Parameters:
+      # Parameters::
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
       # * *oOutputData* (_Object_): The output data to fill
-      # Return:
+      # Return::
       # * _Exception_: An error, or nil if success
       def execute(iInputData, oOutputData)
 
         # 1. Create the whole FFT profile
-        logInfo 'Creating FFT profile ...'
+        log_info 'Creating FFT profile ...'
         # Object that will create the FFT
         lFFTComputing = FFTComputing.new(false, iInputData.Header)
         # Parse the data
@@ -52,7 +52,7 @@ module WSK
         lFFTReferenceProfile = lFFTUtils.createCFFTProfile(lFFTProfile)
 
         # 2. Compute the distance obtained by comparing this profile with a normal file pass
-        logInfo 'Computing average distance ...'
+        log_info 'Computing average distance ...'
         lFFTComputing2 = FFTComputing.new(true, iInputData.Header)
         lIdxSample = 0
         lNbrTimes = 0
@@ -82,11 +82,11 @@ module WSK
           $stdout.flush
         end
         lAverageDist = lSumDist/lNbrTimes
-        logDebug "Average distance with silence: #{lAverageDist}"
+        log_debug "Average distance with silence: #{lAverageDist}"
 
         # Display results
         (FREQINDEX_FIRST..FREQINDEX_LAST).each_with_index do |iIdx, iIdxFreq|
-          logDebug "[#{(440*(2**(iIdx/12.0))).round} Hz]: #{lFFTProfile[2][iIdxFreq].join(', ')}"
+          log_debug "[#{(440*(2**(iIdx/12.0))).round} Hz]: #{lFFTProfile[2][iIdxFreq].join(', ')}"
         end
 
         # Write the result in a file

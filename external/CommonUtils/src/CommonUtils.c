@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2009 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+ * Copyright (c) 2009 - 2012 Muriel Salvan (muriel@x-aeon.com)
  * Licensed under the terms specified in LICENSE file. No warranty is provided.
  **/
 
@@ -11,7 +11,7 @@
  * Invoke eachRawBuffer on an input data.
  * This is meant to be used with rb_iterate.
  *
- * Parameters:
+ * Parameters::
  * * *iValArgs* (<em>list<Object></em>): List of arguments:
  * ** *iValInputData* (<em>WSK::Model::InputData</em>): The input data
  * ** *iValIdxBeginSample* (_Integer_): Index of the first sample to search from
@@ -29,7 +29,7 @@ VALUE commonutils_callEachRawBuffer(
  * Invoke eachReverseRawBuffer on an input data.
  * This is meant to be used with rb_iterate.
  *
- * Parameters:
+ * Parameters::
  * * *iValArgs* (<em>list<Object></em>): List of arguments:
  * ** *iValInputData* (<em>WSK::Model::InputData</em>): The input data
  * ** *iValIdxBeginSample* (_Integer_): Index of the first sample to search from
@@ -46,7 +46,7 @@ VALUE commonutils_callEachReverseRawBuffer(
 /**
  * Iterate through a raw buffer.
  *
- * Parameters:
+ * Parameters::
  * * *iPtrRawBuffer* (<em>const char*</em>): The raw buffer
  * * *iNbrBitsPerSample* (<em>const int</em>): The number of bits per sample
  * * *iNbrChannels* (<em>const int</em>): The number of channels
@@ -135,7 +135,7 @@ void commonutils_iterateThroughRawBuffer(
 /**
  * Iterate through a raw buffer, and writes another raw buffer.
  *
- * Parameters:
+ * Parameters::
  * * *iSelf* (_Object_): Object used to call log methods
  * * *iPtrRawBuffer* (<em>const char*</em>): The raw buffer
  * * *oPtrRawBufferOut* (<em>char*</em>): The raw buffer to write
@@ -171,7 +171,7 @@ void commonutils_iterateThroughRawBufferOutput(
   // Compute max and min values if needed only
   if (iNeedCheck != 0) {
     char lLogMessage[256];
-    ID lIDLogWarn = rb_intern("logWarn");
+    ID lIDLogWarn = rb_intern("log_warn");
     int lMaxValue = (1 << (iNbrBitsPerSample-1)) - 1;
     int lMinValue = -(1 << (iNbrBitsPerSample-1));
     if (iNbrBitsPerSample == 8) {
@@ -349,7 +349,7 @@ void commonutils_iterateThroughRawBufferOutput(
 /**
  * Iterate through an output raw buffer only, without input raw buffer.
  *
- * Parameters:
+ * Parameters::
  * * *iSelf* (_Object_): Object used to call log methods
  * * *oPtrRawBufferOut* (<em>char*</em>): The raw buffer to write
  * * *iNbrBitsPerSample* (<em>const int</em>): The number of bits per sample
@@ -383,7 +383,7 @@ void commonutils_iterateThroughRawBufferOutputOnly(
   // Compute max and min values if needed only
   if (iNeedCheck != 0) {
     char lLogMessage[256];
-    ID lIDLogWarn = rb_intern("logWarn");
+    ID lIDLogWarn = rb_intern("log_warn");
     int lMaxValue = (1 << (iNbrBitsPerSample-1)) - 1;
     int lMinValue = -(1 << (iNbrBitsPerSample-1));
     if (iNbrBitsPerSample == 8) {
@@ -549,7 +549,7 @@ void commonutils_iterateThroughRawBufferOutputOnly(
 /**
  * Iterate through a raw buffer in reverse mode.
  *
- * Parameters:
+ * Parameters::
  * * *iPtrRawBuffer* (<em>const char*</em>): The raw buffer
  * * *iNbrBitsPerSample* (<em>const int</em>): The number of bits per sample
  * * *iNbrChannels* (<em>const int</em>): The number of channels

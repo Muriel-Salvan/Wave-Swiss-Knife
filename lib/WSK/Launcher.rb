@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2009 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2009 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -36,7 +36,7 @@ module WSK
         @OutputFileName = iArg
       end
       @Options.on( '--action <ActionName>', String,
-        "<ActionName>: Name of the action to process. Available Actions: #{getPluginNames('Actions').join(', ')}",
+        "<ActionName>: Name of the action to process. Available Actions: #{get_plugins_names('Actions').join(', ')}",
         'Specify the Action to execute') do |iArg|
         @Action = iArg
       end
@@ -52,9 +52,9 @@ module WSK
 
     # Execute command line arguments
     #
-    # Parameters:
+    # Parameters::
     # * *iArgs* (<em>list<String></em>): Command line arguments
-    # Return:
+    # Return::
     # * _Integer_: The error code to return to the terminal
     def execute(iArgs)
       rResult = 0
@@ -77,7 +77,7 @@ module WSK
           puts @Options
         else
           if (@Debug)
-            activateLogDebug(true)
+            activate_log_debug(true)
           end
           # Check mandatory arguments were given
           if (@InputFileName == nil)
@@ -92,7 +92,7 @@ module WSK
             lError = RuntimeError.new("Output file #{@OutputFileName} already exists.")
           else
             # Access the Action
-            accessPlugin('Actions', @Action) do |ioActionPlugin|
+            access_plugin('Actions', @Action) do |ioActionPlugin|
               lDesc = ioActionPlugin.pluginDescription
               # Check the output interface required by this plugin
               lOutputInterfaceName = lDesc[:OutputInterface]
@@ -136,19 +136,19 @@ module WSK
               # Plugin is initialized
               if (lError == nil)
                 # Access the output interface plugin
-                accessPlugin('OutputInterfaces', lOutputInterfaceName) do |ioOutputPlugin|
+                access_plugin('OutputInterfaces', lOutputInterfaceName) do |ioOutputPlugin|
                   # Access the input file
                   lError = accessInputWaveFile(@InputFileName) do |iInputHeader, iInputData|
                     lInputSubError = nil
 
                     # Get the maximal output data samples
                     lNbrOutputDataSamples = ioActionPlugin.getNbrSamples(iInputData)
-                    logDebug "Number of samples to be written: #{lNbrOutputDataSamples}"
+                    log_debug "Number of samples to be written: #{lNbrOutputDataSamples}"
 
                     # Access the output file
                     lInputSubError = accessOutputWaveFile(@OutputFileName, iInputHeader, ioOutputPlugin, lNbrOutputDataSamples) do
                       # Execute
-                      logInfo "Execute Action #{@Action}, reading #{@InputFileName} and writing #{@OutputFileName} using #{lOutputInterfaceName} output interface."
+                      log_info "Execute Action #{@Action}, reading #{@InputFileName} and writing #{@OutputFileName} using #{lOutputInterfaceName} output interface."
                       next ioActionPlugin.execute(iInputData, ioOutputPlugin)
                     end
 
@@ -162,10 +162,10 @@ module WSK
       end
 
       if (lError != nil)
-        logErr "Error encountered: #{lError}"
+        log_err "Error encountered: #{lError}"
         rResult = 1
       end
-      logInfo "Elapsed milliseconds: #{((DateTime.now-lBeginTime)*86400000).to_i}"
+      log_info "Elapsed milliseconds: #{((DateTime.now-lBeginTime)*86400000).to_i}"
 
       return rResult
     end
@@ -174,9 +174,9 @@ module WSK
 
     # Split parameters, before and after the first -- encountered
     #
-    # Parameters:
+    # Parameters::
     # * *iParameters* (<em>list<String></em>): The parameters
-    # Return:
+    # Return::
     # * <em>list<String></em>: The first part
     # * <em>list<String></em>: The second part
     def splitParameters(iParameters)
@@ -202,7 +202,7 @@ module WSK
 
     # Store a map of variable names and their corresponding values as instance variables of a given class
     #
-    # Parameters:
+    # Parameters::
     # * *ioObject* (_Object_): Object where we want to instantiate those variables
     # * *iVars* (<em>map<Symbol,Object></em>): The map of variables and their values
     def instantiateVars(ioObject, iVars)

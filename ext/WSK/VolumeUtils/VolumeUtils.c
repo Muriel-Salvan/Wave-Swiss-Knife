@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2009 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+ * Copyright (c) 2009 - 2012 Muriel Salvan (muriel@x-aeon.com)
  * Licensed under the terms specified in LICENSE file. No warranty is provided.
  **/
 
@@ -58,12 +58,12 @@ typedef struct {
 /**
  * Process a value read from an input buffer for the applyVolumeFct function in case of piecewise linear function.
  *
- * Parameters:
+ * Parameters::
  * * *iValue* (<em>const tSampleValue</em>): The value being read
  * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
  * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
  * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tApplyVolumeFctStruct_PiecewiseLinear*</em>.
- * Return:
+ * Return::
  * * _int_: The return code:
  * ** 0: Continue iteration
  * ** 1: Break all iterations
@@ -116,7 +116,7 @@ int volumeutils_processValue_applyVolumeFct_PiecewiseLinear(
 /**
  * Apply a function on the volume of an input buffer, and outputs a result buffer.
  *
- * Parameters:
+ * Parameters::
  * * *iSelf* (_FFT_): Self
  * * *iValCFunction* (_Object_): The container of the C function (created with createCFunction)
  * * *iValInputBuffer* (_String_): The input buffer
@@ -125,7 +125,7 @@ int volumeutils_processValue_applyVolumeFct_PiecewiseLinear(
  * * *iValNbrSamples* (_Integer_): Number of samples
  * * *iValIdxBufferFirstSample* (_Integer_): Index of the first buffer's sample in the input data
  * * *iValUnitDB* (_Boolean_): Are the units in DB scale ?
- * Return:
+ * Return::
  * * _String_: Output buffer
  **/
 static VALUE volumeutils_applyVolumeFct(
@@ -196,7 +196,7 @@ static VALUE volumeutils_applyVolumeFct(
     default: ; // The ; is here to make gcc compile: variables declarations are forbidden after a label.
       char lLogMessage[256];
       sprintf(lLogMessage, "Unknown function type %d", lPtrFct->fctType);
-      rb_funcall(iSelf, rb_intern("logErr"), 1, rb_str_new2(lLogMessage));
+      rb_funcall(iSelf, rb_intern("log_err"), 1, rb_str_new2(lLogMessage));
       break;
   }
 
@@ -210,11 +210,11 @@ static VALUE volumeutils_applyVolumeFct(
 /**
  * Process a value read from an input buffer for the drawVolumeFct function in case of piecewise linear function.
  *
- * Parameters:
+ * Parameters::
  * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
  * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
  * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tApplyVolumeFctStruct_PiecewiseLinear*</em>.
- * Return:
+ * Return::
  * * _int_: The return code:
  * ** 0: Continue iteration
  * ** 1: Break all iterations
@@ -266,7 +266,7 @@ int volumeutils_processValue_drawVolumeFct_PiecewiseLinear(
 /**
  * Draw a function on an output buffer.
  *
- * Parameters:
+ * Parameters::
  * * *iSelf* (_FFT_): Self
  * * *iValCFunction* (_Object_): The container of the C function (created with createCFunction)
  * * *iValNbrBitsPerSample* (_Integer_): Number of bits per sample
@@ -275,7 +275,7 @@ int volumeutils_processValue_drawVolumeFct_PiecewiseLinear(
  * * *iValIdxBufferFirstSample* (_Integer_): Index of the first buffer's sample in the input data
  * * *iValUnitDB* (_Boolean_): Are the units in DB scale ?
  * * *iValMedianValue* (_Integer_): Sample value to take as the reference to draw the function
- * Return:
+ * Return::
  * * _String_: Output buffer
  **/
 static VALUE volumeutils_drawVolumeFct(
@@ -342,7 +342,7 @@ static VALUE volumeutils_drawVolumeFct(
     default: ; // The ; is here to make gcc compile: variables declarations are forbidden after a label.
       char lLogMessage[256];
       sprintf(lLogMessage, "Unknown function type %d", lPtrFct->fctType);
-      rb_funcall(iSelf, rb_intern("logErr"), 1, rb_str_new2(lLogMessage));
+      rb_funcall(iSelf, rb_intern("log_err"), 1, rb_str_new2(lLogMessage));
       break;
   }
 
@@ -357,12 +357,12 @@ static VALUE volumeutils_drawVolumeFct(
  * Process a value read from an input buffer for the MeasureLevel function.
  * Use the trigo cache.
  *
- * Parameters:
+ * Parameters::
  * * *iValue* (<em>const tSampleValue</em>): The value being read
  * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
  * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
  * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tMeasureLevelStruct*</em>.
- * Return:
+ * Return::
  * * _int_: The return code:
  * ** 0: Continue iteration
  * ** 1: Break all iterations
@@ -391,14 +391,14 @@ int volumeutils_processValue_MeasureLevel(
 /**
  * Measure the Level values of a given raw buffer.
  *
- * Parameters:
+ * Parameters::
  * * *iSelf* (_FFT_): Self
  * * *iValInputRawBuffer* (_String_): The input raw buffer
  * * *iValNbrBitsPerSample* (_Integer_): Number of bits per sample
  * * *iValNbrChannels* (_Integer_): Number of channels
  * * *iValNbrSamples* (_Integer_): Number of samples
  * * *iValRMSRatio* (_Float_): Ratio of RMS measure vs Peak level measure
- * Return:
+ * Return::
  * * <em>list<Integer></em>: List of integer values
  **/
 static VALUE volumeutils_measureLevel(

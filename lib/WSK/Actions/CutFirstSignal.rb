@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2009 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2009 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -16,9 +16,9 @@ module WSK
       # This is called before execute, as it is needed to write the output file.
       # It is possible to give a majoration: it will be padded with silence.
       #
-      # Parameters:
+      # Parameters::
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
-      # Return:
+      # Return::
       # * _Integer_: The number of samples to be written
       def getNbrSamples(iInputData)
         @IdxStartSample = 0
@@ -26,13 +26,13 @@ module WSK
         # Find the first signal
         lIdxSignalSample, lIdxNextAboveThresholds = getNextNonSilentSample(iInputData, 0, lSilenceThresholds, nil, nil, false)
         if (lIdxSignalSample == nil)
-          logWarn 'No signal found. Keeping the whole file.'
+          log_warn 'No signal found. Keeping the whole file.'
         else
           lNoiseFFTMaxDistance, lNoiseFFTProfile = readFFTProfile(@NoiseFFTFileName)
           lSilenceDuration = readDuration(@SilenceMin, iInputData.Header.SampleRate)
           lIdxSilenceSample, lSilenceLength, lIdxNextAboveThresholds = getNextSilentSample(iInputData, lIdxSignalSample, lSilenceThresholds, lSilenceDuration, lNoiseFFTProfile, lNoiseFFTMaxDistance, false)
           if (lIdxSilenceSample == nil)
-            logWarn "No silence found after the signal beginning at #{lIdxSignalSample}. Keeping the whole file."
+            log_warn "No silence found after the signal beginning at #{lIdxSignalSample}. Keeping the whole file."
           elsif (lSilenceLength == nil)
             # Find the silence length by parsing following data
             lIdxNonSilentSample, lIdxNextAboveThresholds = getNextNonSilentSample(iInputData, lIdxSilenceSample+1, lSilenceThresholds, lNoiseFFTProfile, lNoiseFFTMaxDistance, false)
@@ -52,10 +52,10 @@ module WSK
 
       # Execute
       #
-      # Parameters:
+      # Parameters::
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
       # * *oOutputData* (_Object_): The output data to fill
-      # Return:
+      # Return::
       # * _Exception_: An error, or nil if success
       def execute(iInputData, oOutputData)
         iInputData.eachRawBuffer(@IdxStartSample) do |iInputRawBuffer, iNbrSamples, iNbrChannels|

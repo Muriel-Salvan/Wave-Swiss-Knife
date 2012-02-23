@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2009 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+ * Copyright (c) 2009 - 2012 Muriel Salvan (muriel@x-aeon.com)
  * Licensed under the terms specified in LICENSE file. No warranty is provided.
  **/
 
@@ -25,12 +25,12 @@ typedef struct {
 /**
  * Process a value read from an input buffer for the NextSilentSample function.
  *
- * Parameters:
+ * Parameters::
  * * *iValue* (<em>const tSampleValue</em>): The value being read
  * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
  * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
  * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tFindSilentStruct*</em>.
- * Return:
+ * Return::
  * * _int_: The return code:
  * ** 0: Continue iteration
  * ** 1: Break all iterations
@@ -75,12 +75,12 @@ int silentutils_processValue(
  * Process a value read from an input buffer for the NextSilentSample function.
  * Do it in backwards search.
  *
- * Parameters:
+ * Parameters::
  * * *iValue* (<em>const tSampleValue</em>): The value being read
  * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
  * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
  * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact a <em>tFindSilentStruct*</em>.
- * Return:
+ * Return::
  * * _int_: The return code:
  * ** 0: Continue iteration
  * ** 1: Break all iterations
@@ -125,7 +125,7 @@ int silentutils_Reverse_processValue(
  * Code block called by getNextSilentSample in the eachRawBuffer loop.
  * This is meant to be used with rb_iterate.
  *
- * Parameters:
+ * Parameters::
  * * *iValYieldArgs* (<em>list<Object></em>): The yield arguments:
  * ** *iValInputRawBuffer* (_String_): The raw buffer
  * ** *iValNbrSamples* (_Integer_): The number of samples in this buffer
@@ -215,14 +215,14 @@ static VALUE silentutils_blockEachRawBuffer(
 /**
  * Get the next silent sample from an input buffer
  *
- * Parameters:
+ * Parameters::
  * * *iSelf* (_FFTUtils_): Self
  * * *iValInputData* (<em>WSK::Model::InputData</em>): The input data
  * * *iValIdxStartSample* (_Integer_): Index of the first sample to search from
- * * *iValSilenceThresholds* (<em>list<[Integer,Integer]></em>): The silence thresholds specifications
+ * * *iValSilenceThresholds* (<em>list< [Integer,Integer] ></em>): The silence thresholds specifications
  * * *iValMinSilenceSamples* (_Integer_): Number of samples minimum to identify a silence
  * * *iValBackwardsSearch* (_Boolean_): Do we search backwards ?
- * Return:
+ * Return::
  * * _Integer_: Index of the next silent sample, or nil if none
  **/
 static VALUE silentutils_getNextSilentInThresholds(
@@ -314,12 +314,12 @@ static VALUE silentutils_getNextSilentInThresholds(
 /**
  * Process a value read from an input buffer for the NextSilentSample function.
  *
- * Parameters:
+ * Parameters::
  * * *iValue* (<em>const tSampleValue</em>): The value being read
  * * *iIdxSample* (<em>const tSampleIndex</em>): Index of this sample
  * * *iIdxChannel* (<em>const int</em>): Channel corresponding to the value being read
  * * *iPtrArgs* (<em>void*</em>): additional arguments. In fact an <em>tFirstSampleBeyondThresholdStruct*</em>.
- * Return:
+ * Return::
  * * _int_: The return code:
  * ** 0: Continue iteration
  * ** 1: Break all iterations
@@ -348,15 +348,15 @@ int silentutils_sbt_processValue(
 /**
  * Get the sample index that exceeds a threshold in a raw buffer.
  *
- * Parameters:
+ * Parameters::
  * * *iSelf* (_FFTUtils_): Self
  * * *iValRawBuffer* (_String_): The raw buffer
- * * *iValThresholds* (<em>list<[Integer,Integer]></em>): The thresholds
+ * * *iValThresholds* (<em>list< [Integer,Integer] ></em>): The thresholds
  * * *iValNbrBitsPerSample* (_Integer_): Number of bits per sample
  * * *iValNbrChannels* (_Integer_): Number of channels
  * * *iValNbrSamples* (_Integer_): Number of samples
  * * *iValLastSample* (_Boolean_): Are we looking for the last sample beyond threshold ?
- * Return:
+ * Return::
  * * _Integer_: Index of the first sample exceeding thresholds, or nil if none
  */
 static VALUE silentutils_getSampleBeyondThresholds(

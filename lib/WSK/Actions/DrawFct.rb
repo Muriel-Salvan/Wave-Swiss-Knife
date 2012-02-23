@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2009 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2009 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -16,9 +16,9 @@ module WSK
       # This is called before execute, as it is needed to write the output file.
       # It is possible to give a majoration: it will be padded with silence.
       #
-      # Parameters:
+      # Parameters::
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
-      # Return:
+      # Return::
       # * _Integer_: The number of samples to be written
       def getNbrSamples(iInputData)
         @Function = WSK::Functions::Function.new
@@ -31,10 +31,10 @@ module WSK
 
       # Execute
       #
-      # Parameters:
+      # Parameters::
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
       # * *oOutputData* (_Object_): The output data to fill
-      # Return:
+      # Return::
       # * _Exception_: An error, or nil if success
       def execute(iInputData, oOutputData)
         rError = nil
@@ -45,7 +45,7 @@ module WSK
           lMaxY = (2**(lMaxY.to_f/6)).to_r
         end
         lMedianValue = ((2**(iInputData.Header.NbrBitsPerSample-1)-1)/lMaxY).to_i
-        logInfo "Draw function with maximal ratio #{lMaxY.to_f}, using median value #{lMedianValue}"
+        log_info "Draw function with maximal ratio #{lMaxY.to_f}, using median value #{lMedianValue}"
         # Take the median value as a fraction of the maximal value
         @Function.draw(iInputData, oOutputData, 0, @NbrSamplesOut-1, (@UnitDB == 1), lMedianValue)
 

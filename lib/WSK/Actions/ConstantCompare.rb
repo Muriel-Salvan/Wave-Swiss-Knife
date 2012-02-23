@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2009 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2009 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -15,9 +15,9 @@ module WSK
       # This is called before execute, as it is needed to write the output file.
       # It is possible to give a majoration: it will be padded with silence.
       #
-      # Parameters:
+      # Parameters::
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
-      # Return:
+      # Return::
       # * _Integer_: The number of samples to be written
       def getNbrSamples(iInputData)
         return 0
@@ -25,14 +25,14 @@ module WSK
 
       # Execute
       #
-      # Parameters:
+      # Parameters::
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
       # * *oOutputData* (_Object_): The output data to fill
-      # Return:
+      # Return::
       # * _Exception_: An error, or nil if success
       def execute(iInputData, oOutputData)
         if (iInputData.NbrSamples != @NbrSamples)
-          logErr "Input data has #{iInputData.NbrSamples} samples. It should be #{@NbrSamples}"
+          log_err "Input data has #{iInputData.NbrSamples} samples. It should be #{@NbrSamples}"
         end
         lRawSample = iInputData.Header.getEncodedString([@Value]*iInputData.Header.NbrChannels)
         lCompareBuffer = nil
@@ -44,7 +44,7 @@ module WSK
             lCompareBuffer = lRawSample*iNbrSamples
           end
           if (lCompareBuffer != iRawBuffer)
-            logErr "Differences found between samples #{lNbrSamplesProcessed} and #{lNbrSamplesProcessed+iNbrSamples-1}"
+            log_err "Differences found between samples #{lNbrSamplesProcessed} and #{lNbrSamplesProcessed+iNbrSamples-1}"
           end
           lNbrSamplesProcessed += iNbrSamples
           $stdout.write("#{(lNbrSamplesProcessed*100)/iInputData.NbrSamples} %\015")

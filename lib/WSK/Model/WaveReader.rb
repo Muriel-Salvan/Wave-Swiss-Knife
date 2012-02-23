@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2009 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2009 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -19,7 +19,7 @@ module WSK
 
       # Constructor
       #
-      # Parameters:
+      # Parameters::
       # * *iRawReader* (_CachedBufferReader_): The reader that provides raw data
       # * *iHeader* (<em>WSK::Model::Header</em>): Corresponding file header
       def initialize(iRawReader, iHeader)
@@ -29,7 +29,7 @@ module WSK
 
       # Get the number of samples read per buffer
       #
-      # Return:
+      # Return::
       # * _Integer_: Nnumber of samples in 1 buffer
       def getNbrSamplesPerBuffer
         return NBR_CHANNEL_SAMPLES_PER_BUFFER/@Header.NbrChannels
@@ -37,7 +37,7 @@ module WSK
 
       # Get the total number of samples
       #
-      # Return:
+      # Return::
       # * _Integer_: Total number of samples
       def getNbrSamples
         return @RawReader.getNbrSamples
@@ -45,10 +45,10 @@ module WSK
 
       # Read a buffer
       #
-      # Parameters:
+      # Parameters::
       # * *iIdxStartSample* (_Integer_): Index of the first sample to begin with
       # * *iIdxEndSample* (_Integer_): Index of the last sample to end with
-      # Return:
+      # Return::
       # * _Object_: The corresponding buffer
       def readBuffer(iIdxStartSample, iIdxEndSample)
         lRawBuffer = nil
@@ -67,18 +67,18 @@ module WSK
             lRawBuffer.concat(iBuffer)
           end
         end
-        logDebug "Decode samples [#{iIdxStartSample} - #{iIdxEndSample}]"
+        log_debug "Decode samples [#{iIdxStartSample} - #{iIdxEndSample}]"
         
         return @Header.getDecodedSamples(lRawBuffer, lNbrSamplesToRead)
       end
 
       # Extract a sub-buffer for the given index range
       #
-      # Parameters:
+      # Parameters::
       # * *iBuffer* (_Object_): The buffer to extract from
       # * *iIdxStartSample* (_Integer_): Index of the first sample to begin with
       # * *iIdxEndSample* (_Integer_): Index of the last sample to end with
-      # Return:
+      # Return::
       # * _Object_: The sub buffer
       def extractSubBuffer(iBuffer, iIdxStartSample, iIdxEndSample)
         return iBuffer[iIdxStartSample*@Header.NbrChannels..(iIdxEndSample+1)*@Header.NbrChannels-1]

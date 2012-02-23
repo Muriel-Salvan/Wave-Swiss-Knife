@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2009 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2009 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -30,14 +30,14 @@ module WSK
 
       # Iterate through the buffers.
       #
-      # Parameters:
+      # Parameters::
       # * *iIdxStartSample* (_Integer_): Index of the first sample to begin with [optional = 0]
       # * *iIdxEndSample* (_Integer_): Index of the last sample to end with [optional = @NbrSamples-1]
       # * *iOptions* (<em>map<Symbol,Object></em>): Additional options [optional = {}]:
-      # ** *:NbrSamplesPrefetch* (_Integer_): Specify a number of samples to effectively read if the data needs to be accessed. This number will always be minored by the number of samples to read and majored by the number of samples per buffer. [optional = 0]
+      #   * *:NbrSamplesPrefetch* (_Integer_): Specify a number of samples to effectively read if the data needs to be accessed. This number will always be minored by the number of samples to read and majored by the number of samples per buffer. [optional = 0]
       # * *CodeBlock*: The code called for each iteration:
-      # ** *iBuffer* (_String_): The buffer
-      # ** *iNbrSamples* (_Integer_): The number of samples in this buffer
+      #   * *iBuffer* (_String_): The buffer
+      #   * *iNbrSamples* (_Integer_): The number of samples in this buffer
       def eachBuffer(iIdxStartSample = 0, iIdxEndSample = @NbrSamples-1, iOptions = {})
         lNbrSamplesPrefetch = iOptions[:NbrSamplesPrefetch]
         if (lNbrSamplesPrefetch == nil)
@@ -73,14 +73,14 @@ module WSK
 
       # Iterate through the buffers in reverse order.
       #
-      # Parameters:
+      # Parameters::
       # * *iIdxStartSample* (_Integer_): Index of the first sample to begin with [optional = 0]
       # * *iIdxEndSample* (_Integer_): Index of the last sample to end with [optional = @NbrSamples-1]
       # * *iOptions* (<em>map<Symbol,Object></em>): Additional options [optional = {}]:
-      # ** *:NbrSamplesPrefetch* (_Integer_): Specify a number of samples to effectively read if the data needs to be accessed. This number will always be minored by the number of samples to read and majored by the number of samples per buffer. [optional = 0]
+      #   * *:NbrSamplesPrefetch* (_Integer_): Specify a number of samples to effectively read if the data needs to be accessed. This number will always be minored by the number of samples to read and majored by the number of samples per buffer. [optional = 0]
       # * *CodeBlock*: The code called for each iteration:
-      # ** *iBuffer* (_String_): The buffer
-      # ** *iNbrSamples* (_Integer_): The number of samples in this buffer
+      #   * *iBuffer* (_String_): The buffer
+      #   * *iNbrSamples* (_Integer_): The number of samples in this buffer
       def eachReverseBuffer(iIdxStartSample = 0, iIdxEndSample = @NbrSamples-1, iOptions = {})
         lNbrSamplesPrefetch = iOptions[:NbrSamplesPrefetch]
         if (lNbrSamplesPrefetch == nil)
@@ -118,7 +118,7 @@ module WSK
       # Use the caching mechanism if needed.
       # The buffer might contain more samples than desired.
       #
-      # Parameters:
+      # Parameters::
       # * *iIdxStartSample* (_Integer_): Index of the first sample to begin with [optional = 0]
       # * *iIdxEndSample* (_Integer_): Index of the last sample to end with [optional = @NbrSamples-1]
       # * *iIdxStartSamplePrefetch* (_Integer_): Specify the first sample to effectively read if the data needs to be accessed. [optional = iIdxStartSample]
@@ -136,7 +136,7 @@ module WSK
 
       # Get the current buffer
       #
-      # Return:
+      # Return::
       # * _Object_: The current buffer
       # * _Integer_: The first sample of the buffer
       # * _Integer_: The last sample of the buffer

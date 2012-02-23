@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2009 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2009 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -37,7 +37,7 @@ module WSK
       # Constructor
       # The trigo cache is VERY useful when several FFT of the same length are computed.
       #
-      # Parameters:
+      # Parameters::
       # * *iUseTrigoCache* (_Boolean_): Do we use the trigonometric cache ?
       # * *iHeader* (<em>WSK::Model::Header</em>): Header of the data we will perform FFT on.
       def initialize(iUseTrigoCache, iHeader)
@@ -68,7 +68,7 @@ module WSK
 
       # Add FFT coefficients based on a buffer
       #
-      # Parameters:
+      # Parameters::
       # * *iRawBuffer* (_String_): The raw buffer
       # * *iNbrSamples* (_Integer_): Number of samples to take from this buffer to compute the FFT
       def completeFFT(iRawBuffer, iNbrSamples)
@@ -82,7 +82,7 @@ module WSK
 
       # Get the resulting FFT profile
       #
-      # Return:
+      # Return::
       # * <em>[Integer,Integer,list<list<Integer>></em>]: Number of bits per sample, number of samples, list of FFT coefficients, per frequency, per channel
       def getFFTProfile
         return [@Header.NbrBitsPerSample, @NbrSamples, @FFTUtils.computeFFT(@Header.NbrChannels, @NbrFreq, @SumCos, @SumSin)]
@@ -98,10 +98,10 @@ module WSK
 #    # FFTValues are declined per channel, per frequency index.
 #    # Bits per sample and number of samples are taken into account to relatively compare the profiles.
 #    #
-#    # Parameters:
+#    # Parameters::
 #    # * *iProfile1* (<em>[Integer,Integer,list<list<Integer>>]</em>): Profile 1
 #    # * *iProfile2* (<em>[Integer,Integer,list<list<Integer>>]</em>): Profile 2
-#    # Return:
+#    # Return::
 #    # * _Integer_: Distance (Profile 2 - Profile 1). The scale is given by FFTDIST_MAX.
 #    def distFFTProfiles(iProfile1, iProfile2)
 #      # Return the max of the distances of each frequency coefficient
@@ -119,7 +119,7 @@ module WSK
 #          iFFT2Value = iFFT2ChannelValues[iIdxChannel]
 #          # Compute iFFT2Value - iFFT1Value, on a scale of FFTDIST_MAX
 #          lDist = iFFT2Value/lMaxFFTValue2 - iFFT1Value/lMaxFFTValue1
-##          logDebug "[Freq #{iIdxFreq}] [Ch #{iIdxChannel}] - Distance = #{lDist}"
+##          log_debug "[Freq #{iIdxFreq}] [Ch #{iIdxChannel}] - Distance = #{lDist}"
 #          if (lDist > rMaxDist)
 #            rMaxDist = lDist
 #          end
@@ -131,28 +131,28 @@ module WSK
 
     # Get the next sample that has an FFT buffer similar to a given FFT profile
     #
-    # Parameters:
+    # Parameters::
     # * *iIdxFirstSample* (_Integer_): First sample we are trying from
     # * *iFFTProfile* (<em>[Integer,Integer,list<list<Integer>>]</em>): The FFT profile
     # * *iInputData* (_InputData_): The input data to read
     # * *iMaxFFTDistance* (_Integer_): Maximal acceptable distance with the FFT. Above this distance we don't consider averaging.
-    # * *iThresholds* (<em>list<[Integer,Integer]></em>): The thresholds that should contain the signal we are evaluating.
+    # * *iThresholds* (<em>list< [Integer,Integer] ></em>): The thresholds that should contain the signal we are evaluating.
     # * *iBackwardsSearch* (_Boolean_): Do we search backwards ?
     # * *iIdxLastPossibleSample* (_Integer_): Index of the sample marking the limit of the search
-    # Return:
+    # Return::
     # * _Integer_: Meaning of the given sample:
-    # ** *0*: The sample has been found correctly and returned
-    # ** *1*: The sample could not be found because thresholds were hit: the first sample hitting the thresholds is returned
-    # ** *2*: The sample could not be found because the limit of search was hit before. The returned sample can be ignored.
+    #   * *0*: The sample has been found correctly and returned
+    #   * *1*: The sample could not be found because thresholds were hit: the first sample hitting the thresholds is returned
+    #   * *2*: The sample could not be found because the limit of search was hit before. The returned sample can be ignored.
     # * _Integer_: Index of the sample (can be 1 after the end)
     def getNextFFTSample(iIdxFirstSample, iFFTProfile, iInputData, iMaxFFTDistance, iThresholds, iBackwardsSearch, iIdxLastPossibleSample)
       rResultCode = 0
       rCurrentSample = iIdxFirstSample
 
       if (iBackwardsSearch)
-        logDebug "== Looking for the previous sample matching FFT before #{iIdxFirstSample}, with a limit on sample #{iIdxLastPossibleSample} and a FFT distance of #{iMaxFFTDistance} ..."
+        log_debug "== Looking for the previous sample matching FFT before #{iIdxFirstSample}, with a limit on sample #{iIdxLastPossibleSample} and a FFT distance of #{iMaxFFTDistance} ..."
       else
-        logDebug "== Looking for the next sample matching FFT after #{iIdxFirstSample}, with a limit on sample #{iIdxLastPossibleSample} and a FFT distance of #{iMaxFFTDistance} ..."
+        log_debug "== Looking for the next sample matching FFT after #{iIdxFirstSample}, with a limit on sample #{iIdxLastPossibleSample} and a FFT distance of #{iMaxFFTDistance} ..."
       end
 
       # Object that will create the FFT
@@ -235,7 +235,7 @@ module WSK
           lFFTComputing.completeFFT(lFFTBuffer, lNbrSamplesFFT)
           lDist = lFFTUtils.distFFTProfiles(lReferenceFFTProfile, lFFTUtils.createCFFTProfile(lFFTComputing.getFFTProfile), FFTDIST_MAX).abs
           lHistoryMaxDistance = lHistory.sort[-1]
-          logDebug "FFT distance computed with FFT sample [#{lIdxBeginFFTSample} - #{lIdxEndFFTSample}]: #{lDist}. Sum of history: #{lSumHistory} <? #{lSumMaxFFTDistance}. Max distance of history: #{lHistoryMaxDistance} <? #{lMaxHistoryFFTDistance}"
+          log_debug "FFT distance computed with FFT sample [#{lIdxBeginFFTSample} - #{lIdxEndFFTSample}]: #{lDist}. Sum of history: #{lSumHistory} <? #{lSumMaxFFTDistance}. Max distance of history: #{lHistoryMaxDistance} <? #{lMaxHistoryFFTDistance}"
           # Detect if the Moving Average is going up and is below the maximal distance
           if ((lHistory.size == FFTNBRSAMPLES_HISTORY) and
               (lSumHistory < lSumMaxFFTDistance) and
@@ -280,24 +280,24 @@ module WSK
       case rResultCode
       when 0
         if (iBackwardsSearch)
-          logDebug "== Previous sample matching FFT before #{iIdxFirstSample} was found at #{rCurrentSample}."
+          log_debug "== Previous sample matching FFT before #{iIdxFirstSample} was found at #{rCurrentSample}."
         else
-          logDebug "== Next sample matching FFT after #{iIdxFirstSample} was found at #{rCurrentSample}."
+          log_debug "== Next sample matching FFT after #{iIdxFirstSample} was found at #{rCurrentSample}."
         end
       when 1
         if (iBackwardsSearch)
-          logDebug "== Previous sample matching FFT before #{iIdxFirstSample} could not be found because a sample exceeded thresholds meanwhile: #{rCurrentSample}."
+          log_debug "== Previous sample matching FFT before #{iIdxFirstSample} could not be found because a sample exceeded thresholds meanwhile: #{rCurrentSample}."
         else
-          logDebug "== Next sample matching FFT after #{iIdxFirstSample} could not be found because a sample exceeded thresholds meanwhile: #{rCurrentSample}."
+          log_debug "== Next sample matching FFT after #{iIdxFirstSample} could not be found because a sample exceeded thresholds meanwhile: #{rCurrentSample}."
         end
       when 2
         if (iBackwardsSearch)
-          logDebug "== Previous sample matching FFT before #{iIdxFirstSample} could not be found before hitting limit of #{iIdxLastPossibleSample}."
+          log_debug "== Previous sample matching FFT before #{iIdxFirstSample} could not be found before hitting limit of #{iIdxLastPossibleSample}."
         else
-          logDebug "== Next sample matching FFT after #{iIdxFirstSample} could not be found before hitting limit of #{iIdxLastPossibleSample}."
+          log_debug "== Next sample matching FFT after #{iIdxFirstSample} could not be found before hitting limit of #{iIdxLastPossibleSample}."
         end
       else
-        logErr "Unknown result code: #{rResultCode}"
+        log_err "Unknown result code: #{rResultCode}"
       end
 
       return rResultCode, rCurrentSample
@@ -305,15 +305,15 @@ module WSK
 
     # Get the next silent sample from an input data
     #
-    # Parameters:
+    # Parameters::
     # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
     # * *iIdxStartSample* (_Integer_): Index of the first sample to search from
-    # * *iSilenceThresholds* (<em>list<[Integer,Integer]></em>): The silence thresholds specifications
+    # * *iSilenceThresholds* (<em>list< [Integer,Integer] ></em>): The silence thresholds specifications
     # * *iMinSilenceSamples* (_Integer_): Number of samples minimum to identify a silence
     # * *iSilenceFFTProfile* (<em>[Integer,Integer,list<list<Integer>>]</em>): The silence FFT profile, or nil if none
     # * *iMaxFFTDistance* (_Integer_): Max distance to consider with the FFT (ignored and can be nil if no FFT).
     # * *iBackwardsSearch* (_Boolean_): Do we make a backwards search ?
-    # Return:
+    # Return::
     # * _Integer_: Index of the next silent sample, or nil if none
     # * _Integer_: Silence length (computed only if FFT profile was provided)
     # * _Integer_: Index of the next sample after the silence that is beyond thresholds (computed only if FFT profile was provided)
@@ -323,9 +323,9 @@ module WSK
       rNextSignalAboveThresholds = nil
 
       if (iBackwardsSearch)
-        logDebug "=== Looking for the previous silent sample before #{iIdxStartSample}, of minimal length #{iMinSilenceSamples} ..."
+        log_debug "=== Looking for the previous silent sample before #{iIdxStartSample}, of minimal length #{iMinSilenceSamples} ..."
       else
-        logDebug "=== Looking for the next silent sample after #{iIdxStartSample}, of minimal length #{iMinSilenceSamples} ..."
+        log_debug "=== Looking for the next silent sample after #{iIdxStartSample}, of minimal length #{iMinSilenceSamples} ..."
       end
       
       lIdxSearchSample = iIdxStartSample
@@ -337,9 +337,9 @@ module WSK
         require 'WSK/SilentUtils/SilentUtils'
         rNextSilentSample = SilentUtils::SilentUtils.new.getNextSilentInThresholds(iInputData, lIdxSearchSample, iSilenceThresholds, iMinSilenceSamples, iBackwardsSearch)
         if (rNextSilentSample == nil)
-          logDebug("Thresholds matching did not find any silence starting at sample #{iIdxStartSample}.")
+          log_debug("Thresholds matching did not find any silence starting at sample #{iIdxStartSample}.")
         else
-          logDebug("Thresholds matching found a silence starting at sample #{iIdxStartSample}, beginning at sample #{rNextSilentSample}.")
+          log_debug("Thresholds matching found a silence starting at sample #{iIdxStartSample}, beginning at sample #{rNextSilentSample}.")
           # If we want to use FFT to have a better result, do it here
           if (iSilenceFFTProfile != nil)
             # Check FFT
@@ -373,24 +373,24 @@ module WSK
               end
               if (lSilenceLength >= iMinSilenceSamples)
                 # We found the real one
-                logDebug("FFT matching found a silence starting at sample #{rNextSilentSample}, beginning at sample #{lIdxFFTSample}.")
+                log_debug("FFT matching found a silence starting at sample #{rNextSilentSample}, beginning at sample #{lIdxFFTSample}.")
                 rNextSilentSample = lIdxFFTSample
                 rSilenceLength = lSilenceLength
                 rNextSignalAboveThresholds = lIdxNextSignalAboveThresholds
               elsif (lIdxNextSignal == nil)
                 # We arrived at the end. The silence is not long enough.
-                logDebug("FFT matching found a silence starting at sample #{rNextSilentSample}, beginning at sample #{lIdxFFTSample}, but its length (#{lSilenceLength}) is too small (minimum required is #{iMinSilenceSamples}). End of file reached.")
+                log_debug("FFT matching found a silence starting at sample #{rNextSilentSample}, beginning at sample #{lIdxFFTSample}, but its length (#{lSilenceLength}) is too small (minimum required is #{iMinSilenceSamples}). End of file reached.")
                 rNextSilentSample = nil
               else
                 # We have to continue
-                logDebug("FFT matching found a silence starting at sample #{rNextSilentSample}, beginning at sample #{lIdxFFTSample}, but its length (#{lSilenceLength}) is too small (minimum required is #{iMinSilenceSamples}). Looking further.")
+                log_debug("FFT matching found a silence starting at sample #{rNextSilentSample}, beginning at sample #{lIdxFFTSample}, but its length (#{lSilenceLength}) is too small (minimum required is #{iMinSilenceSamples}). Looking further.")
                 lIdxSearchSample = lIdxNextSignalAboveThresholds
                 lContinueSearching = true
                 rNextSilentSample = nil
               end
             when 1
               # We have to search further, begin with thresholds matching
-              logWarn("FFT matching found a new signal beyond thresholds starting at sample #{rNextSilentSample}, beginning at sample #{lIdxFFTSample}. Maybe clip ?")
+              log_warn("FFT matching found a new signal beyond thresholds starting at sample #{rNextSilentSample}, beginning at sample #{lIdxFFTSample}. Maybe clip ?")
               if (iBackwardsSearch)
                 lIdxSearchSample = lIdxFFTSample - 1
               else
@@ -399,7 +399,7 @@ module WSK
               lContinueSearching = true
               rNextSilentSample = nil
             when 2
-              logDebug("FFT matching could not find a silence starting at sample #{rNextSilentSample}.")
+              log_debug("FFT matching could not find a silence starting at sample #{rNextSilentSample}.")
               rNextSilentSample = nil
             else
               raise RuntimeError.new("Unknown result code: #{lFFTResultCode}")
@@ -409,9 +409,9 @@ module WSK
       end
 
       if (iBackwardsSearch)
-        logDebug "=== Previous silent sample before #{iIdxStartSample} was found at #{rNextSilentSample} with a length of #{rSilenceLength}, and a signal before it above thresholds at #{rNextSignalAboveThresholds}."
+        log_debug "=== Previous silent sample before #{iIdxStartSample} was found at #{rNextSilentSample} with a length of #{rSilenceLength}, and a signal before it above thresholds at #{rNextSignalAboveThresholds}."
       else
-        logDebug "=== Next silent sample after #{iIdxStartSample} was found at #{rNextSilentSample} with a length of #{rSilenceLength}, and an signal after it above thresholds at #{rNextSignalAboveThresholds}."
+        log_debug "=== Next silent sample after #{iIdxStartSample} was found at #{rNextSilentSample} with a length of #{rSilenceLength}, and an signal after it above thresholds at #{rNextSignalAboveThresholds}."
       end
 
       return rNextSilentSample, rSilenceLength, rNextSignalAboveThresholds
@@ -419,14 +419,14 @@ module WSK
 
     # Get the next non silent sample from an input data
     #
-    # Parameters:
+    # Parameters::
     # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
     # * *iIdxStartSample* (_Integer_): Index of the first sample to search from
-    # * *iSilenceThresholds* (<em>list<[Integer,Integer]></em>): The silence thresholds specifications
+    # * *iSilenceThresholds* (<em>list< [Integer,Integer] ></em>): The silence thresholds specifications
     # * *iSilenceFFTProfile* (<em>[Integer,Integer,list<list<Integer>>]</em>): The silence FFT profile, or nil if none
     # * *iMaxFFTDistance* (_Integer_): Max distance to consider with the FFT (ignored and can be nil if no FFT).
     # * *iBackwardsSearch* (_Boolean_): Do we search backwards ?
-    # Return:
+    # Return::
     # * _Integer_: Index of the next non silent sample, or nil if none
     # * _Integer_: Index of the next sample getting above thresholds, or nil if none
     def getNextNonSilentSample(iInputData, iIdxStartSample, iSilenceThresholds, iSilenceFFTProfile, iMaxFFTDistance, iBackwardsSearch)
@@ -434,9 +434,9 @@ module WSK
       rIdxSampleOutThresholds = nil
       
       if (iBackwardsSearch)
-        logDebug "=== Looking for the previous signal sample before #{iIdxStartSample} ..."
+        log_debug "=== Looking for the previous signal sample before #{iIdxStartSample} ..."
       else
-        logDebug "=== Looking for the next signal sample after #{iIdxStartSample} ..."
+        log_debug "=== Looking for the next signal sample after #{iIdxStartSample} ..."
       end
 
       # Find the next sample getting out of the silence thresholds
@@ -463,9 +463,9 @@ module WSK
         end
       end
       if (rIdxSampleOutThresholds == nil)
-        logDebug("Thresholds matching did not find any signal starting at sample #{iIdxStartSample}.")
+        log_debug("Thresholds matching did not find any signal starting at sample #{iIdxStartSample}.")
       else
-        logDebug("Thresholds matching found a signal starting at sample #{iIdxStartSample}, beginning at sample #{rIdxSampleOutThresholds}.")
+        log_debug("Thresholds matching found a signal starting at sample #{iIdxStartSample}, beginning at sample #{rIdxSampleOutThresholds}.")
         # If we want to use FFT to have a better result, do it here
         if (iSilenceFFTProfile == nil)
           rIdxSampleOut = rIdxSampleOutThresholds
@@ -482,14 +482,14 @@ module WSK
           case lFFTResultCode
           when 0
             # We found the real one
-            logDebug("FFT matching found a silence starting at sample #{rIdxSampleOutThresholds}, beginning at sample #{lIdxFFTSample}.")
+            log_debug("FFT matching found a silence starting at sample #{rIdxSampleOutThresholds}, beginning at sample #{lIdxFFTSample}.")
             rIdxSampleOut = lIdxFFTSample
           when 1
             # Here is a bug
-            logErr("FFT matching found a new signal beyond thresholds starting at sample #{rIdxSampleOutThresholds}, beginning at sample #{lIdxFFTSample}. This should never happen here: the previous search using thresholds should have already returned this sample.")
+            log_err("FFT matching found a new signal beyond thresholds starting at sample #{rIdxSampleOutThresholds}, beginning at sample #{lIdxFFTSample}. This should never happen here: the previous search using thresholds should have already returned this sample.")
             raise RuntimeError.new("FFT matching found a new signal beyond thresholds starting at sample #{rIdxSampleOutThresholds}, beginning at sample #{lIdxFFTSample}. This should never happen here: the previous search using thresholds should have already returned this sample.")
           when 2
-            logDebug("FFT matching could not find a silence starting at sample #{rIdxSampleOutThresholds}. This means that the signal is present from the start.")
+            log_debug("FFT matching could not find a silence starting at sample #{rIdxSampleOutThresholds}. This means that the signal is present from the start.")
             rIdxSampleOut = iIdxStartSample
           else
             raise RuntimeError.new("Unknown result code: #{lFFTResultCode}")
@@ -498,9 +498,9 @@ module WSK
       end
 
       if (iBackwardsSearch)
-        logDebug "=== Previous signal sample before #{iIdxStartSample} was found at #{rIdxSampleOut}, with a sample beyond thresholds at #{rIdxSampleOutThresholds}."
+        log_debug "=== Previous signal sample before #{iIdxStartSample} was found at #{rIdxSampleOut}, with a sample beyond thresholds at #{rIdxSampleOutThresholds}."
       else
-        logDebug "=== Next signal sample after #{iIdxStartSample} was found at #{rIdxSampleOut}, with a sample beyond thresholds at #{rIdxSampleOutThresholds}."
+        log_debug "=== Next signal sample after #{iIdxStartSample} was found at #{rIdxSampleOut}, with a sample beyond thresholds at #{rIdxSampleOutThresholds}."
       end
 
       return rIdxSampleOut, rIdxSampleOutThresholds
@@ -508,14 +508,14 @@ module WSK
 
     # Get the sample index that exceeds a threshold in a raw buffer.
     #
-    # Parameters:
+    # Parameters::
     # * *iRawBuffer* (_String_): The raw buffer
-    # * *iThresholds* (<em>list<[Integer,Integer]></em>): The thresholds
+    # * *iThresholds* (<em>list< [Integer,Integer] ></em>): The thresholds
     # * *iNbrBitsPerSample* (_Integer_): Number of bits per sample
     # * *iNbrChannels* (_Integer_): Number of channels
     # * *iNbrSamples* (_Integer_): Number of samples
     # * *iLastSample* (_Boolean_): Are we looking for the last sample ?
-    # Return:
+    # Return::
     # * _Integer_: Index of the first sample exceeding thresholds, or nil if none
     def getSampleBeyondThresholds(iRawBuffer, iThresholds, iNbrBitsPerSample, iNbrChannels, iNbrSamples, iLastSample)
       require 'WSK/SilentUtils/SilentUtils'

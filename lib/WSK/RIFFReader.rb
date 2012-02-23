@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2009 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2009 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -10,7 +10,7 @@ module WSK
 
     # Constructor
     #
-    # Parameters:
+    # Parameters::
     # * *iFile* (_IO_): File to read
     def initialize(iFile)
       @File = iFile
@@ -18,9 +18,9 @@ module WSK
 
     # Position the file on the data associated to a given RIFF name
     #
-    # Parameters:
+    # Parameters::
     # * *iRIFFName* (_String_): The RIFF name
-    # Return:
+    # Return::
     # * _Exception_: An error, or nil in case of success
     # * _Integer_: The RIFF chunk size
     def setFilePos(iRIFFName)
@@ -35,9 +35,9 @@ module WSK
         if (lRIFFName == iRIFFName)
           # We are positioned correctly
           lRIFFName = nil
-          logDebug "Found RIFF chunk #{iRIFFName} of size #{rSize}"
+          log_debug "Found RIFF chunk #{iRIFFName} of size #{rSize}"
         else
-          logDebug "Skip RIFF chunk #{lRIFFName} of size #{rSize}"
+          log_debug "Skip RIFF chunk #{lRIFFName} of size #{rSize}"
           # Go to the next chunk
           @File.seek(lCurrentPos + rSize)
           lData = @File.read(8)

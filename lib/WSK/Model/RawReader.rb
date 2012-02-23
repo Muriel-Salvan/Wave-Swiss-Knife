@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2009 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2009 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -20,7 +20,7 @@ module WSK
 
       # Constructor
       #
-      # Parameters:
+      # Parameters::
       # * *iFile* (_IO_): The file descriptor. Don't use it externally as long as it is used by this class.
       # * *iFirstSampleFilePos* (_Integer_): Position in the file of the first sample
       # * *iSampleSize* (_Integer_): Size of a single sample to read
@@ -32,7 +32,7 @@ module WSK
 
       # Get the number of samples read per buffer
       #
-      # Return:
+      # Return::
       # * _Integer_: Nnumber of samples in 1 buffer
       def getNbrSamplesPerBuffer
         return BUFFER_SIZE/@SampleSize
@@ -40,7 +40,7 @@ module WSK
 
       # Get the total number of samples
       #
-      # Return:
+      # Return::
       # * _Integer_: Total number of samples
       def getNbrSamples
         return @NbrSamples
@@ -48,24 +48,24 @@ module WSK
 
       # Read a buffer
       #
-      # Parameters:
+      # Parameters::
       # * *iIdxStartSample* (_Integer_): Index of the first sample to begin with
       # * *iIdxEndSample* (_Integer_): Index of the last sample to end with
-      # Return:
+      # Return::
       # * _Object_: The corresponding buffer
       def readBuffer(iIdxStartSample, iIdxEndSample)
         @File.seek(@FirstSampleFilePos + iIdxStartSample*@SampleSize)
-        logDebug "Raw read samples [#{iIdxStartSample} - #{iIdxEndSample}]"
+        log_debug "Raw read samples [#{iIdxStartSample} - #{iIdxEndSample}]"
         return @File.read((iIdxEndSample-iIdxStartSample+1)*@SampleSize)
       end
 
       # Extract a sub-buffer for the given index range
       #
-      # Parameters:
+      # Parameters::
       # * *iBuffer* (_Object_): The buffer to extract from
       # * *iIdxStartSample* (_Integer_): Index of the first sample to begin with
       # * *iIdxEndSample* (_Integer_): Index of the last sample to end with
-      # Return:
+      # Return::
       # * _Object_: The sub buffer
       def extractSubBuffer(iBuffer, iIdxStartSample, iIdxEndSample)
         return iBuffer[iIdxStartSample*@SampleSize..(iIdxEndSample+1)*@SampleSize-1]
