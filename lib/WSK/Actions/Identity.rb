@@ -17,7 +17,7 @@ module WSK
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
       # Return::
       # * _Integer_: The number of samples to be written
-      def getNbrSamples(iInputData)
+      def get_nbr_samples(iInputData)
         return iInputData.NbrSamples
       end
 
@@ -29,7 +29,7 @@ module WSK
       # Return::
       # * _Exception_: An error, or nil if success
       def execute(iInputData, oOutputData)
-        iInputData.eachRawBuffer do |iInputRawBuffer, iNbrSamples, iNbrChannels|
+        iInputData.each_raw_buffer do |iInputRawBuffer, iNbrSamples, iNbrChannels|
           oOutputData.pushRawBuffer(iInputRawBuffer)
         end
 

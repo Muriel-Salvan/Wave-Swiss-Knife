@@ -201,7 +201,7 @@ module WSK
         lFFTBuffer = ''
         lIdxCurrentSample = rCurrentSample
         if (iBackwardsSearch)
-          iInputData.eachReverseRawBuffer(lIdxBeginFFTSample, lIdxEndFFTSample, :NbrSamplesPrefetch => lNbrSamplesFFTMax*FFT_SAMPLES_PREFETCH ) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
+          iInputData.each_reverse_raw_buffer(lIdxBeginFFTSample, lIdxEndFFTSample, :nbr_samples_prefetch => lNbrSamplesFFTMax*FFT_SAMPLES_PREFETCH ) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
             # First, check that we are still in the thresholds
             lIdxBufferSampleOut = getSampleBeyondThresholds(iInputRawBuffer, iThresholds, iInputData.Header.NbrBitsPerSample, iNbrChannels, iNbrSamples, iBackwardsSearch)
             if (lIdxBufferSampleOut != nil)
@@ -214,7 +214,7 @@ module WSK
             lIdxCurrentSample -= iNbrSamples
           end
         else
-          iInputData.eachRawBuffer(lIdxBeginFFTSample, lIdxEndFFTSample, :NbrSamplesPrefetch => lNbrSamplesFFTMax*FFT_SAMPLES_PREFETCH) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
+          iInputData.each_raw_buffer(lIdxBeginFFTSample, lIdxEndFFTSample, :nbr_samples_prefetch => lNbrSamplesFFTMax*FFT_SAMPLES_PREFETCH) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
             # First, check that we are still in the thresholds
             lIdxBufferSampleOut = getSampleBeyondThresholds(iInputRawBuffer, iThresholds, iInputData.Header.NbrBitsPerSample, iNbrChannels, iNbrSamples, iBackwardsSearch)
             if (lIdxBufferSampleOut != nil)
@@ -442,7 +442,7 @@ module WSK
       # Find the next sample getting out of the silence thresholds
       lIdxCurrentSample = iIdxStartSample
       if (iBackwardsSearch)
-        iInputData.eachReverseRawBuffer(0, iIdxStartSample) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
+        iInputData.each_reverse_raw_buffer(0, iIdxStartSample) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
           lIdxBufferSampleOut = getSampleBeyondThresholds(iInputRawBuffer, iSilenceThresholds, iInputData.Header.NbrBitsPerSample, iNbrChannels, iNbrSamples, iBackwardsSearch)
           if (lIdxBufferSampleOut != nil)
             # We found it
@@ -452,7 +452,7 @@ module WSK
           lIdxCurrentSample -= iNbrSamples
         end
       else
-        iInputData.eachRawBuffer(iIdxStartSample) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
+        iInputData.each_raw_buffer(iIdxStartSample) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
           lIdxBufferSampleOut = getSampleBeyondThresholds(iInputRawBuffer, iSilenceThresholds, iInputData.Header.NbrBitsPerSample, iNbrChannels, iNbrSamples, iBackwardsSearch)
           if (lIdxBufferSampleOut != nil)
             # We found it

@@ -20,10 +20,10 @@ module WSK
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
       # Return::
       # * _Integer_: The number of samples to be written
-      def getNbrSamples(iInputData)
+      def get_nbr_samples(iInputData)
         @Function = WSK::Functions::Function.new
-        @Function.readFromFile(@FctFileName)
-        lMinX, lMinY, lMaxX, lMaxY = @Function.getBounds
+        @Function.read_from_file(@FctFileName)
+        lMinX, lMinY, lMaxX, lMaxY = @Function.get_bounds
         @NbrSamplesOut = lMaxX.to_i-lMinX.to_i+1
 
         return @NbrSamplesOut
@@ -40,7 +40,7 @@ module WSK
         rError = nil
 
         # Then draw it
-        lMaxY = @Function.getBounds[3]
+        lMaxY = @Function.get_bounds[3]
         if (@UnitDB == 1)
           lMaxY = (2**(lMaxY.to_f/6)).to_r
         end

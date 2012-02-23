@@ -20,7 +20,7 @@ module WSK
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
       # Return::
       # * _Integer_: The number of samples to be written
-      def getNbrSamples(iInputData)
+      def get_nbr_samples(iInputData)
         return 0
       end
       
@@ -39,7 +39,7 @@ module WSK
         lFFTComputing = FFTComputing.new(false, iInputData.Header)
         # Parse the data
         lIdxSample = 0
-        iInputData.eachRawBuffer do |iInputRawBuffer, iNbrSamples, iNbrChannels|
+        iInputData.each_raw_buffer do |iInputRawBuffer, iNbrSamples, iNbrChannels|
           lFFTComputing.completeFFT(iInputRawBuffer, iNbrSamples)
           lIdxSample += iNbrSamples
           $stdout.write("#{(lIdxSample*100)/iInputData.NbrSamples} %\015")
@@ -69,7 +69,7 @@ module WSK
           lNbrSamplesFFT = lIdxEndFFTSample-lIdxBeginFFTSample+1
           # Load an FFT buffer of this
           lFFTBuffer = ''
-          iInputData.eachRawBuffer(lIdxBeginFFTSample, lIdxEndFFTSample, :NbrSamplesPrefetch => iInputData.NbrSamples-lIdxBeginFFTSample) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
+          iInputData.each_raw_buffer(lIdxBeginFFTSample, lIdxEndFFTSample, :nbr_samples_prefetch => iInputData.NbrSamples-lIdxBeginFFTSample) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
             lFFTBuffer.concat(iInputRawBuffer)
           end
           # Compute its FFT profile

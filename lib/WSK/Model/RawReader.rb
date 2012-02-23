@@ -34,7 +34,7 @@ module WSK
       #
       # Return::
       # * _Integer_: Nnumber of samples in 1 buffer
-      def getNbrSamplesPerBuffer
+      def get_nbr_samples_per_buffer
         return BUFFER_SIZE/@SampleSize
       end
 
@@ -42,7 +42,7 @@ module WSK
       #
       # Return::
       # * _Integer_: Total number of samples
-      def getNbrSamples
+      def get_nbr_samples
         return @NbrSamples
       end
 
@@ -53,7 +53,7 @@ module WSK
       # * *iIdxEndSample* (_Integer_): Index of the last sample to end with
       # Return::
       # * _Object_: The corresponding buffer
-      def readBuffer(iIdxStartSample, iIdxEndSample)
+      def read_buffer(iIdxStartSample, iIdxEndSample)
         @File.seek(@FirstSampleFilePos + iIdxStartSample*@SampleSize)
         log_debug "Raw read samples [#{iIdxStartSample} - #{iIdxEndSample}]"
         return @File.read((iIdxEndSample-iIdxStartSample+1)*@SampleSize)
@@ -67,7 +67,7 @@ module WSK
       # * *iIdxEndSample* (_Integer_): Index of the last sample to end with
       # Return::
       # * _Object_: The sub buffer
-      def extractSubBuffer(iBuffer, iIdxStartSample, iIdxEndSample)
+      def extract_sub_buffer(iBuffer, iIdxStartSample, iIdxEndSample)
         return iBuffer[iIdxStartSample*@SampleSize..(iIdxEndSample+1)*@SampleSize-1]
       end
 

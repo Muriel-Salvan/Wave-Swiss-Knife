@@ -57,7 +57,7 @@ typedef struct {
 } tFunction;
 
 /**
- * Invoke eachRawBuffer on an input data.
+ * Invoke each_raw_buffer on an input data.
  * This is meant to be used with rb_iterate.
  *
  * Parameters::
@@ -69,7 +69,7 @@ VALUE commonutils_callEachRawBuffer(
   VALUE iValArgs);
 
 /**
- * Invoke eachReverseRawBuffer on an input data.
+ * Invoke each_reverse_raw_buffer on an input data.
  * This is meant to be used with rb_iterate.
  *
  * Parameters::

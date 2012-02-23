@@ -19,7 +19,7 @@ module WSK
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
       # Return::
       # * _Integer_: The number of samples to be written
-      def getNbrSamples(iInputData)
+      def get_nbr_samples(iInputData)
         return iInputData.NbrSamples
       end
 
@@ -35,7 +35,7 @@ module WSK
         File.open(@MapFileName, 'rb') do |iFile|
           lTransformMap = Marshal.load(iFile.read)
         end
-        iInputData.eachBuffer do |iBuffer, iNbrSamples, iNbrChannels|
+        iInputData.each_buffer do |iBuffer, iNbrSamples, iNbrChannels|
           lTransformedBuffer = iBuffer.map do |iValue|
             if (lTransformMap[iValue] == nil)
               log_warn "Unknown value from the transform map: #{iValue}. Keeping it."

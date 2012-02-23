@@ -19,7 +19,7 @@ module WSK
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
       # Return::
       # * _Integer_: The number of samples to be written
-      def getNbrSamples(iInputData)
+      def get_nbr_samples(iInputData)
         @IdxBeginSample = readDuration(@BeginSample, iInputData.Header.SampleRate)
         @IdxEndSample = readDuration(@EndSample, iInputData.Header.SampleRate)
 
@@ -36,7 +36,7 @@ module WSK
       def execute(iInputData, oOutputData)
         lChannelsSampleSize = (iInputData.Header.NbrChannels*iInputData.Header.NbrBitsPerSample)/8
         lIdxFirstSample = @IdxBeginSample
-        iInputData.eachRawBuffer(@IdxBeginSample) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
+        iInputData.each_raw_buffer(@IdxBeginSample) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
           # If the end sample is in this buffer, write only up to it
           if (@IdxEndSample < lIdxFirstSample + iNbrSamples - 1)
             oOutputData.pushRawBuffer(iInputRawBuffer[0..(@IdxEndSample-lIdxFirstSample+1)*lChannelsSampleSize-1])

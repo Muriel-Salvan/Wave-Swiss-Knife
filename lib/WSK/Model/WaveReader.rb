@@ -31,7 +31,7 @@ module WSK
       #
       # Return::
       # * _Integer_: Nnumber of samples in 1 buffer
-      def getNbrSamplesPerBuffer
+      def get_nbr_samples_per_buffer
         return NBR_CHANNEL_SAMPLES_PER_BUFFER/@Header.NbrChannels
       end
 
@@ -39,8 +39,8 @@ module WSK
       #
       # Return::
       # * _Integer_: Total number of samples
-      def getNbrSamples
-        return @RawReader.getNbrSamples
+      def get_nbr_samples
+        return @RawReader.get_nbr_samples
       end
 
       # Read a buffer
@@ -50,10 +50,10 @@ module WSK
       # * *iIdxEndSample* (_Integer_): Index of the last sample to end with
       # Return::
       # * _Object_: The corresponding buffer
-      def readBuffer(iIdxStartSample, iIdxEndSample)
+      def read_buffer(iIdxStartSample, iIdxEndSample)
         lRawBuffer = nil
         lNbrSamplesToRead = iIdxEndSample - iIdxStartSample + 1
-        @RawReader.eachBuffer(iIdxStartSample, iIdxEndSample) do |iBuffer, iNbrSamples|
+        @RawReader.each_buffer(iIdxStartSample, iIdxEndSample) do |iBuffer, iNbrSamples|
           if (lRawBuffer == nil)
             if (lNbrSamplesToRead == iNbrSamples)
               # We have the buffer directly. No copy.
@@ -80,7 +80,7 @@ module WSK
       # * *iIdxEndSample* (_Integer_): Index of the last sample to end with
       # Return::
       # * _Object_: The sub buffer
-      def extractSubBuffer(iBuffer, iIdxStartSample, iIdxEndSample)
+      def extract_sub_buffer(iBuffer, iIdxStartSample, iIdxEndSample)
         return iBuffer[iIdxStartSample*@Header.NbrChannels..(iIdxEndSample+1)*@Header.NbrChannels-1]
       end
 

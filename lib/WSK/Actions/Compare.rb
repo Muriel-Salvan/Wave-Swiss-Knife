@@ -20,7 +20,7 @@ module WSK
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
       # Return::
       # * _Integer_: The number of samples to be written
-      def getNbrSamples(iInputData)
+      def get_nbr_samples(iInputData)
         rNbrSamples = iInputData.NbrSamples
 
         # Get the second input file
@@ -77,14 +77,14 @@ module WSK
           @ArithmUtils = WSK::ArithmUtils::ArithmUtils.new
           # Initialize buffers
           lNbrSamplesProcessed = 0
-          iInputData.eachRawBuffer do |iRawBuffer, iNbrSamples, iNbrChannels|
+          iInputData.each_raw_buffer do |iRawBuffer, iNbrSamples, iNbrChannels|
             break
           end
-          lRawBuffer1, lNbrSamples1, lNbrChannels = iInputData.getCurrentRawBuffer
-          iInputData2.eachRawBuffer do |iRawBuffer, iNbrSamples, iNbrChannels|
+          lRawBuffer1, lNbrSamples1, lNbrChannels = iInputData.get_current_raw_buffer
+          iInputData2.each_raw_buffer do |iRawBuffer, iNbrSamples, iNbrChannels|
             break
           end
-          lRawBuffer2, lNbrSamples2, lNbrChannels = iInputData2.getCurrentRawBuffer
+          lRawBuffer2, lNbrSamples2, lNbrChannels = iInputData2.get_current_raw_buffer
           while ((lRawBuffer1 != nil) or
                  (lRawBuffer2 != nil))
             if (lRawBuffer1 == nil)
@@ -155,16 +155,16 @@ module WSK
             end
             # Read next buffers if they are not finished
             if (lRawBuffer1 != nil)
-              iInputData.eachRawBuffer(lNbrSamplesProcessed) do |iRawBuffer, iNbrSamples, iNbrChannels|
+              iInputData.each_raw_buffer(lNbrSamplesProcessed) do |iRawBuffer, iNbrSamples, iNbrChannels|
                 break
               end
-              lRawBuffer1, lNbrSamples1, lNbrChannels = iInputData.getCurrentRawBuffer
+              lRawBuffer1, lNbrSamples1, lNbrChannels = iInputData.get_current_raw_buffer
             end
             if (lRawBuffer2 != nil)
-              iInputData2.eachRawBuffer(lNbrSamplesProcessed) do |iRawBuffer, iNbrSamples, iNbrChannels|
+              iInputData2.each_raw_buffer(lNbrSamplesProcessed) do |iRawBuffer, iNbrSamples, iNbrChannels|
                 break
               end
-              lRawBuffer2, lNbrSamples2, lNbrChannels = iInputData2.getCurrentRawBuffer
+              lRawBuffer2, lNbrSamples2, lNbrChannels = iInputData2.get_current_raw_buffer
             end
           end
         end

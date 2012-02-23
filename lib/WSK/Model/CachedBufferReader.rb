@@ -8,16 +8,16 @@ module WSK
   module Model
 
     # Class to be inherited to define the following virtual methods:
-    # * readBuffer(iIdxStart, iIdxEnd) -> Buffer
-    # * extractSubBuffer(iBuffer, iIdxStart, iIdxEnd) -> Buffer
-    # * getNbrSamplesPerBuffer -> Integer (number of samples in 1 buffer)
-    # * getNbrSamples -> Integer (total number of samples)
+    # * read_buffer(iIdxStart, iIdxEnd) -> Buffer
+    # * extract_sub_buffer(iBuffer, iIdxStart, iIdxEnd) -> Buffer
+    # * get_nbr_samples_per_buffer -> Integer (number of samples in 1 buffer)
+    # * get_nbr_samples -> Integer (total number of samples)
     class CachedBufferReader
 
       # Constructor
       def initialize
-        @NbrSamples = getNbrSamples
-        @NbrSamplesPerBuffer = getNbrSamplesPerBuffer
+        @NbrSamples = get_nbr_samples
+        @NbrSamplesPerBuffer = get_nbr_samples_per_buffer
         # The position of the first sample of the buffer
         # Integer
         @IdxStartBufferSample = nil
@@ -34,12 +34,12 @@ module WSK
       # * *iIdxStartSample* (_Integer_): Index of the first sample to begin with [optional = 0]
       # * *iIdxEndSample* (_Integer_): Index of the last sample to end with [optional = @NbrSamples-1]
       # * *iOptions* (<em>map<Symbol,Object></em>): Additional options [optional = {}]:
-      #   * *:NbrSamplesPrefetch* (_Integer_): Specify a number of samples to effectively read if the data needs to be accessed. This number will always be minored by the number of samples to read and majored by the number of samples per buffer. [optional = 0]
+      #   * *:nbr_samples_prefetch* (_Integer_): Specify a number of samples to effectively read if the data needs to be accessed. This number will always be minored by the number of samples to read and majored by the number of samples per buffer. [optional = 0]
       # * *CodeBlock*: The code called for each iteration:
       #   * *iBuffer* (_String_): The buffer
       #   * *iNbrSamples* (_Integer_): The number of samples in this buffer
-      def eachBuffer(iIdxStartSample = 0, iIdxEndSample = @NbrSamples-1, iOptions = {})
-        lNbrSamplesPrefetch = iOptions[:NbrSamplesPrefetch]
+      def each_buffer(iIdxStartSample = 0, iIdxEndSample = @NbrSamples-1, iOptions = {})
+        lNbrSamplesPrefetch = iOptions[:nbr_samples_prefetch]
         if (lNbrSamplesPrefetch == nil)
           lNbrSamplesPrefetch = 0
         end
@@ -56,14 +56,14 @@ module WSK
           elsif (lIdxLastSamplePrefetch > lIdxFirstSample+@NbrSamplesPerBuffer)
             lIdxLastSamplePrefetch = lIdxFirstSample+@NbrSamplesPerBuffer
           end
-          prepareBuffer(lIdxFirstSample, lIdxLastSample, lIdxFirstSample, lIdxLastSamplePrefetch)
+          prepare_buffer(lIdxFirstSample, lIdxLastSample, lIdxFirstSample, lIdxLastSamplePrefetch)
           # Check if we need to return a sub-copy of the buffer
           lBuffer = []
           if ((lIdxFirstSample == @IdxStartBufferSample) and
               (lIdxLastSample == @IdxEndBufferSample))
             lBuffer = @Buffer
           else
-            lBuffer = extractSubBuffer(@Buffer, lIdxFirstSample - @IdxStartBufferSample, lIdxLastSample - @IdxStartBufferSample)
+            lBuffer = extract_sub_buffer(@Buffer, lIdxFirstSample - @IdxStartBufferSample, lIdxLastSample - @IdxStartBufferSample)
           end
           # Call client code
           yield(lBuffer, lIdxLastSample - lIdxFirstSample + 1)
@@ -77,12 +77,12 @@ module WSK
       # * *iIdxStartSample* (_Integer_): Index of the first sample to begin with [optional = 0]
       # * *iIdxEndSample* (_Integer_): Index of the last sample to end with [optional = @NbrSamples-1]
       # * *iOptions* (<em>map<Symbol,Object></em>): Additional options [optional = {}]:
-      #   * *:NbrSamplesPrefetch* (_Integer_): Specify a number of samples to effectively read if the data needs to be accessed. This number will always be minored by the number of samples to read and majored by the number of samples per buffer. [optional = 0]
+      #   * *:nbr_samples_prefetch* (_Integer_): Specify a number of samples to effectively read if the data needs to be accessed. This number will always be minored by the number of samples to read and majored by the number of samples per buffer. [optional = 0]
       # * *CodeBlock*: The code called for each iteration:
       #   * *iBuffer* (_String_): The buffer
       #   * *iNbrSamples* (_Integer_): The number of samples in this buffer
-      def eachReverseBuffer(iIdxStartSample = 0, iIdxEndSample = @NbrSamples-1, iOptions = {})
-        lNbrSamplesPrefetch = iOptions[:NbrSamplesPrefetch]
+      def each_reverse_buffer(iIdxStartSample = 0, iIdxEndSample = @NbrSamples-1, iOptions = {})
+        lNbrSamplesPrefetch = iOptions[:nbr_samples_prefetch]
         if (lNbrSamplesPrefetch == nil)
           lNbrSamplesPrefetch = 0
         end
@@ -99,14 +99,14 @@ module WSK
           elsif (lIdxFirstSamplePrefetch < lIdxLastSample-@NbrSamplesPerBuffer)
             lIdxFirstSamplePrefetch = lIdxLastSample-@NbrSamplesPerBuffer
           end
-          prepareBuffer(lIdxFirstSample, lIdxLastSample, lIdxFirstSamplePrefetch, lIdxLastSample)
+          prepare_buffer(lIdxFirstSample, lIdxLastSample, lIdxFirstSamplePrefetch, lIdxLastSample)
           # Check if we need to return a sub-copy of the buffer
           lBuffer = []
           if ((lIdxFirstSample == @IdxStartBufferSample) and
               (lIdxLastSample == @IdxEndBufferSample))
             lBuffer = @Buffer
           else
-            lBuffer = extractSubBuffer(@Buffer, lIdxFirstSample - @IdxStartBufferSample, lIdxLastSample - @IdxStartBufferSample)
+            lBuffer = extract_sub_buffer(@Buffer, lIdxFirstSample - @IdxStartBufferSample, lIdxLastSample - @IdxStartBufferSample)
           end
           # Call client code
           yield(lBuffer, lIdxLastSample - lIdxFirstSample + 1)
@@ -123,12 +123,12 @@ module WSK
       # * *iIdxEndSample* (_Integer_): Index of the last sample to end with [optional = @NbrSamples-1]
       # * *iIdxStartSamplePrefetch* (_Integer_): Specify the first sample to effectively read if the data needs to be accessed. [optional = iIdxStartSample]
       # * *iIdxEndSamplePrefetch* (_Integer_): Specify the last sample to effectively read if the data needs to be accessed. [optional = iIdxEndSample]
-      def prepareBuffer(iIdxStartSample, iIdxEndSample, iIdxStartSamplePrefetch = iIdxStartSample, iIdxEndSamplePrefetch = iIdxEndSample)
+      def prepare_buffer(iIdxStartSample, iIdxEndSample, iIdxStartSamplePrefetch = iIdxStartSample, iIdxEndSamplePrefetch = iIdxEndSample)
         if ((@Buffer == nil) or
             (iIdxStartSample < @IdxStartBufferSample) or
             (iIdxEndSample > @IdxEndBufferSample))
           # Read all from the data
-          @Buffer = readBuffer(iIdxStartSamplePrefetch, iIdxEndSamplePrefetch)
+          @Buffer = read_buffer(iIdxStartSamplePrefetch, iIdxEndSamplePrefetch)
           @IdxStartBufferSample = iIdxStartSamplePrefetch
           @IdxEndBufferSample = iIdxEndSamplePrefetch
         end
@@ -140,7 +140,7 @@ module WSK
       # * _Object_: The current buffer
       # * _Integer_: The first sample of the buffer
       # * _Integer_: The last sample of the buffer
-      def getCurrentBuffer
+      def get_current_buffer
         return @Buffer, @IdxStartBufferSample, @IdxEndBufferSample
       end
 

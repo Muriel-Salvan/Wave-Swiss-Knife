@@ -19,7 +19,7 @@ module WSK
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
       # Return::
       # * _Integer_: The number of samples to be written
-      def getNbrSamples(iInputData)
+      def get_nbr_samples(iInputData)
         @NbrSamples = iInputData.NbrSamples
         
         # Decode the files list
@@ -95,10 +95,10 @@ module WSK
           # Initialize buffers
           lLstOpenedFiles.each do |ioFileInfo|
             lFileHandle, lInputData, lCoeff, lBuffer = ioFileInfo
-            lInputData.eachRawBuffer do |iRawBuffer, iNbrSamples, iNbrChannels|
+            lInputData.each_raw_buffer do |iRawBuffer, iNbrSamples, iNbrChannels|
               break
             end
-            lRawBuffer, lNbrSamples, lNbrChannels2 = lInputData.getCurrentRawBuffer
+            lRawBuffer, lNbrSamples, lNbrChannels2 = lInputData.get_current_raw_buffer
             ioFileInfo[3] = lRawBuffer
             ioFileInfo[4] = lNbrSamples
           end
@@ -125,10 +125,10 @@ module WSK
                 rToBeDeleted = true
               else
                 # Read next Buffer
-                lInputData.eachRawBuffer(lNbrSamplesProcessed + lNbrSamplesWritten) do |iRawBuffer, iNbrSamples, iNbrChannels|
+                lInputData.each_raw_buffer(lNbrSamplesProcessed + lNbrSamplesWritten) do |iRawBuffer, iNbrSamples, iNbrChannels|
                   break
                 end
-                lRawBuffer, lNbrSamples, lNbrChannels2 = lInputData.getCurrentRawBuffer
+                lRawBuffer, lNbrSamples, lNbrChannels2 = lInputData.get_current_raw_buffer
                 ioFileInfo[3] = lRawBuffer
                 ioFileInfo[4] = lNbrSamples
               end

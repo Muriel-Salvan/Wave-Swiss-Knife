@@ -34,7 +34,7 @@ module WSK
       #
       # Return::
       # * _Exception_: Error, or nil in case of success
-      def initCursor
+      def init_cursor
         rError = nil
 
         # Size of a sample
@@ -64,7 +64,7 @@ module WSK
       # * *CodeBlock*: The code called for each iteration:
       #   * *iInputSampleData* (<em>list<Integer></em>): The list of values (1 per channel)
       def each(iIdxBeginSample = 0)
-        eachBuffer(iIdxBeginSample) do |iBuffer, iNbrSamples|
+        each_buffer(iIdxBeginSample) do |iBuffer, iNbrSamples|
           iBuffer.size.times do |iIdxSample|
             yield(iBuffer[iIdxSample*@Header.NbrChannels..(iIdxSample+1)*@Header.NbrChannels-1])
           end
@@ -79,8 +79,8 @@ module WSK
       #   * *iInputBuffer* (<em>list<Integer></em>): The list of channel values
       #   * *iNbrSamples* (_Integer_): The number of samples in this buffer
       #   * *iNbrChannels* (_Integer_): The number of channels in this buffer
-      def eachBuffer(iIdxBeginSample = 0)
-        @WaveReader.eachBuffer(iIdxBeginSample) do |iBuffer, iNbrSamples|
+      def each_buffer(iIdxBeginSample = 0)
+        @WaveReader.each_buffer(iIdxBeginSample) do |iBuffer, iNbrSamples|
           yield(iBuffer, iNbrSamples, @Header.NbrChannels)
         end
       end
@@ -92,21 +92,21 @@ module WSK
       # * <em>list<Integer></em>: The list of channel values
       # * _Integer_: The number of samples in this buffer
       # * _Integer_: The number of channels in this buffer
-      def getCurrentBuffer
-        rBuffer, lIdxStartSample, lIdxEndSample = @WaveReader.getCurrentBuffer
+      def get_current_buffer
+        rBuffer, lIdxStartSample, lIdxEndSample = @WaveReader.get_current_buffer
 
         return rBuffer, lIdxEndSample-lIdxStartSample+1, @Header.NbrChannels
       end
 
       # Get the current raw buffer.
-      # !!! This must be called only if the buffer was previously initialized (call eachRawBuffer to do so).
+      # !!! This must be called only if the buffer was previously initialized (call each_raw_buffer to do so).
       #
       # Return::
       # * _String_: The raw buffer
       # * _Integer_: The number of samples in this buffer
       # * _Integer_: The number of channels in this buffer
-      def getCurrentRawBuffer
-        rBuffer, lIdxStartSample, lIdxEndSample = @RawReader.getCurrentBuffer
+      def get_current_raw_buffer
+        rBuffer, lIdxStartSample, lIdxEndSample = @RawReader.get_current_buffer
 
         return rBuffer, lIdxEndSample-lIdxStartSample+1, @Header.NbrChannels
       end
@@ -119,8 +119,8 @@ module WSK
       #   * *iInputBuffer* (<em>list<Integer></em>): The list of channel values
       #   * *iNbrSamples* (_Integer_): The number of samples in this buffer
       #   * *iNbrChannels* (_Integer_): The number of channels in this buffer
-      def eachReverseBuffer(iIdxEndSample = @NbrSamples-1)
-        @WaveReader.eachReverseBuffer(0, iIdxEndSample) do |iBuffer, iNbrSamples|
+      def each_reverse_buffer(iIdxEndSample = @NbrSamples-1)
+        @WaveReader.each_reverse_buffer(0, iIdxEndSample) do |iBuffer, iNbrSamples|
           yield(iBuffer, iNbrSamples, @Header.NbrChannels)
         end
       end
@@ -136,8 +136,8 @@ module WSK
       #   * *iInputRawBuffer* (_String_): The raw buffer
       #   * *iNbrSamples* (_Integer_): The number of samples in this buffer
       #   * *iNbrChannels* (_Integer_): The number of channels in this buffer
-      def eachRawBuffer(iIdxBeginSample = 0, iIdxLastSample = @NbrSamples-1, iOptions = {})
-        @RawReader.eachBuffer(iIdxBeginSample, iIdxLastSample, iOptions) do |iBuffer, iNbrSamples|
+      def each_raw_buffer(iIdxBeginSample = 0, iIdxLastSample = @NbrSamples-1, iOptions = {})
+        @RawReader.each_buffer(iIdxBeginSample, iIdxLastSample, iOptions) do |iBuffer, iNbrSamples|
           yield(iBuffer, iNbrSamples, @Header.NbrChannels)
         end
       end
@@ -153,8 +153,8 @@ module WSK
       #   * *iInputRawBuffer* (_String_): The raw buffer
       #   * *iNbrSamples* (_Integer_): The number of samples in this buffer
       #   * *iNbrChannels* (_Integer_): The number of channels in this buffer
-      def eachReverseRawBuffer(iIdxBeginSample = 0, iIdxLastSample = @NbrSamples-1, iOptions = {})
-        @RawReader.eachReverseBuffer(iIdxBeginSample, iIdxLastSample, iOptions) do |iBuffer, iNbrSamples|
+      def each_reverse_raw_buffer(iIdxBeginSample = 0, iIdxLastSample = @NbrSamples-1, iOptions = {})
+        @RawReader.each_reverse_buffer(iIdxBeginSample, iIdxLastSample, iOptions) do |iBuffer, iNbrSamples|
           yield(iBuffer, iNbrSamples, @Header.NbrChannels)
         end
       end
@@ -164,20 +164,20 @@ module WSK
       # Parameters::
       # * *iIdxSample* (_Integer_): Index of the sample to retrieve
       # * *iOptions* (<em>map<Symbol,Object></em>): Additional options [optional = {}]
-      #   * *:ReverseBuffer* (_Boolean_): Do we load the previous buffer containing this sample if needed ? [optional = false]
+      #   * *:reverse_buffer* (_Boolean_): Do we load the previous buffer containing this sample if needed ? [optional = false]
       # Return::
       # * <em>list<Integer></em>: The list of values (1 per channel), or nil in case of error
-      def getSampleData(iIdxSample, iOptions = {})
+      def get_sample_data(iIdxSample, iOptions = {})
         rSampleData = nil
 
-        lReverseBuffer = (iOptions[:ReverseBuffer] != nil) ? iOptions[:ReverseBuffer] : false
+        lReverseBuffer = (iOptions[:reverse_buffer] != nil) ? iOptions[:reverse_buffer] : false
         if (lReverseBuffer)
-          @WaveReader.eachReverseBuffer(0, iIdxSample) do |iBuffer, iNbrSamples|
+          @WaveReader.each_reverse_buffer(0, iIdxSample) do |iBuffer, iNbrSamples|
             rSampleData = iBuffer[-@Header.NbrChannels..-1]
             break
           end
         else
-          @WaveReader.eachBuffer(iIdxSample) do |iBuffer, iNbrSamples|
+          @WaveReader.each_buffer(iIdxSample) do |iBuffer, iNbrSamples|
             rSampleData = iBuffer[0..@Header.NbrChannels-1]
             break
           end

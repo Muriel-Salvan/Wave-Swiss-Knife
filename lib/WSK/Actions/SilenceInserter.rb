@@ -23,7 +23,7 @@ module WSK
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
       # Return::
       # * _Integer_: The number of samples to be written
-      def getNbrSamples(iInputData)
+      def get_nbr_samples(iInputData)
         @NbrBeginSilentSamples = readDuration(@BeginSilenceLength, iInputData.Header.SampleRate)
         @NbrEndSilentSamples = readDuration(@EndSilenceLength, iInputData.Header.SampleRate)
 
@@ -75,7 +75,7 @@ module WSK
       # * *oOutputData* (_Object_): The output data to fill
       def pushFile(iInputData, oOutputData)
         # Then write the file
-        iInputData.eachRawBuffer do |iInputRawBuffer, iNbrSamples, iNbrChannels|
+        iInputData.each_raw_buffer do |iInputRawBuffer, iNbrSamples, iNbrChannels|
           oOutputData.pushRawBuffer(iInputRawBuffer)
         end
       end

@@ -20,7 +20,7 @@ module WSK
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
       # Return::
       # * _Integer_: The number of samples to be written
-      def getNbrSamples(iInputData)
+      def get_nbr_samples(iInputData)
         lSilenceThresholds = readThresholds(@SilenceThreshold, iInputData.Header.NbrChannels)
         @IdxFirstSample, lNextAboveThresholds = getNextNonSilentSample(iInputData, 0, lSilenceThresholds, nil, nil, false)
         if (@IdxFirstSample == nil)
@@ -60,7 +60,7 @@ module WSK
       # Return::
       # * _Exception_: An error, or nil if success
       def execute(iInputData, oOutputData)
-        iInputData.eachRawBuffer(@IdxFirstSample, @IdxLastSample) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
+        iInputData.each_raw_buffer(@IdxFirstSample, @IdxLastSample) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
           oOutputData.pushRawBuffer(iInputRawBuffer)
         end
 

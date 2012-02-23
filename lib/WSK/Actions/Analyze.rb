@@ -19,7 +19,7 @@ module WSK
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
       # Return::
       # * _Integer_: The number of samples to be written
-      def getNbrSamples(iInputData)
+      def get_nbr_samples(iInputData)
         return 0
       end
       
@@ -45,7 +45,7 @@ module WSK
         lCSquareSumValues = lAnalyzeUtils.init128bitsArray(iInputData.Header.NbrChannels);
         # Gather data
         lNbrSamplesProcessed = 0
-        iInputData.eachRawBuffer do |iRawBuffer, iNbrSamples, iNbrChannels|
+        iInputData.each_raw_buffer do |iRawBuffer, iNbrSamples, iNbrChannels|
           lAnalyzeUtils.completeAnalyze(iRawBuffer, iInputData.Header.NbrBitsPerSample, iNbrSamples, iNbrChannels, lCMaxValues, lCMinValues, lCSumValues, lCAbsSumValues, lCSquareSumValues)
           lNbrSamplesProcessed += iNbrSamples
           $stdout.write("#{(lNbrSamplesProcessed*100)/iInputData.NbrSamples} %\015")

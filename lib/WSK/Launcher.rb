@@ -142,7 +142,7 @@ module WSK
                     lInputSubError = nil
 
                     # Get the maximal output data samples
-                    lNbrOutputDataSamples = ioActionPlugin.getNbrSamples(iInputData)
+                    lNbrOutputDataSamples = ioActionPlugin.get_nbr_samples(iInputData)
                     log_debug "Number of samples to be written: #{lNbrOutputDataSamples}"
 
                     # Access the output file

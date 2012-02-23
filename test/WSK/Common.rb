@@ -43,7 +43,7 @@ module WSKTest
       lBaseWaveName = "TmpFctWave_#{iFunction.to_a.hash}"
       lTempFctFileName = "#{lTmpDir}/#{lBaseWaveName}.fct.rb"
       if (!File.exists?(lTempFctFileName))
-        lWaveFunction.writeToFile(lTempFctFileName)
+        lWaveFunction.write_to_file(lTempFctFileName)
       end
       lTempWaveFileName = "#{lTmpDir}/#{lBaseWaveName}.wav"
       if (!File.exists?(lTempWaveFileName))

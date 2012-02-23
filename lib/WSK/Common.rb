@@ -67,7 +67,7 @@ module WSK
       if (rError == nil)
         # Get a data handle
         rInputData = WSK::Model::InputData.new(iFile, rHeader)
-        rError = rInputData.initCursor
+        rError = rInputData.init_cursor
       end
 
       return rError, rHeader, rInputData

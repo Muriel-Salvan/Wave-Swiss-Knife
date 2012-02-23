@@ -19,7 +19,7 @@ module WSK
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
       # Return::
       # * _Integer_: The number of samples to be written
-      def getNbrSamples(iInputData)
+      def get_nbr_samples(iInputData)
         return 0
       end
 
@@ -37,7 +37,7 @@ module WSK
         lRawSample = iInputData.Header.getEncodedString([@Value]*iInputData.Header.NbrChannels)
         lCompareBuffer = nil
         lNbrSamplesProcessed = 0
-        iInputData.eachRawBuffer do |iRawBuffer, iNbrSamples, iNbrChannels|
+        iInputData.each_raw_buffer do |iRawBuffer, iNbrSamples, iNbrChannels|
           if ((lCompareBuffer == nil) or
               (lCompareBuffer.size != iRawBuffer.size))
             # Create the comparison buffer

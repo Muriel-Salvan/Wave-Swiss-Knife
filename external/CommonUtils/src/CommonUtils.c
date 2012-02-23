@@ -8,7 +8,7 @@
 #include <stdio.h>
 
 /**
- * Invoke eachRawBuffer on an input data.
+ * Invoke each_raw_buffer on an input data.
  * This is meant to be used with rb_iterate.
  *
  * Parameters::
@@ -22,11 +22,11 @@ VALUE commonutils_callEachRawBuffer(
   VALUE iValInputData = rb_ary_entry(iValArgs, 0);
   VALUE iValIdxBeginSample = rb_ary_entry(iValArgs, 1);
 
-  return rb_funcall(iValInputData, rb_intern("eachRawBuffer"), 1, iValIdxBeginSample);
+  return rb_funcall(iValInputData, rb_intern("each_raw_buffer"), 1, iValIdxBeginSample);
 }
 
 /**
- * Invoke eachReverseRawBuffer on an input data.
+ * Invoke each_reverse_raw_buffer on an input data.
  * This is meant to be used with rb_iterate.
  *
  * Parameters::
@@ -40,7 +40,7 @@ VALUE commonutils_callEachReverseRawBuffer(
   VALUE iValInputData = rb_ary_entry(iValArgs, 0);
   VALUE iValIdxBeginSample = rb_ary_entry(iValArgs, 1);
 
-  return rb_funcall(iValInputData, rb_intern("eachReverseRawBuffer"), 2, INT2FIX(0), iValIdxBeginSample);
+  return rb_funcall(iValInputData, rb_intern("each_reverse_raw_buffer"), 2, INT2FIX(0), iValIdxBeginSample);
 }
 
 /**

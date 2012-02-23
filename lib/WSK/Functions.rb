@@ -65,7 +65,7 @@ module WSK
       #
       # Parameters::
       # * *iFileName* (_String_): File name
-      def readFromFile(iFileName)
+      def read_from_file(iFileName)
         lStrFunction = nil
         if (File.exists?(iFileName))
           File.open(iFileName, 'r') do |iFile|
@@ -91,7 +91,7 @@ module WSK
       # * *iIdxEndSample* (_Integer_): Index of the last sample ending the volume reading
       # * *iInterval* (_Integer_): The number of samples used as an interval in measuring the volume
       # * *iRMSRatio* (_Float_): The ratio of RMS measure vs Peak measure (0.0 = only peak, 1.0 = only RMS)
-      def readFromInputVolume(iInputData, iIdxBeginSample, iIdxEndSample, iInterval, iRMSRatio)
+      def read_from_input_volume(iInputData, iIdxBeginSample, iIdxEndSample, iInterval, iRMSRatio)
         @Function = {
           :FunctionType => FCTTYPE_PIECEWISE_LINEAR,
           :Points => []
@@ -105,7 +105,7 @@ module WSK
             lIdxCurrentEndSample = iIdxEndSample
           end
           lRawBuffer = ''
-          iInputData.eachRawBuffer(lIdxCurrentSample, lIdxCurrentEndSample, :NbrSamplesPrefetch => iIdxEndSample-lIdxCurrentSample) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
+          iInputData.each_raw_buffer(lIdxCurrentSample, lIdxCurrentEndSample, :nbr_samples_prefetch => iIdxEndSample-lIdxCurrentSample) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
             lRawBuffer += iInputRawBuffer
           end
           # Profile this buffer
@@ -166,11 +166,11 @@ module WSK
       # * *iIdxBeginSample* (_Integer_): Index of the first sample beginning the volume transformation
       # * *iIdxEndSample* (_Integer_): Index of the last sample ending the volume transformation
       # * *iUnitDB* (_Boolean_): Are function values to be interpreted as DB units ?
-      def applyOnVolume(iInputData, oOutputData, iIdxBeginSample, iIdxEndSample, iUnitDB)
+      def apply_on_volume(iInputData, oOutputData, iIdxBeginSample, iIdxEndSample, iUnitDB)
         prepareFunctionUtils
         lCFunction = @FunctionUtils.createCFunction(@Function, iIdxBeginSample, iIdxEndSample)
         lIdxBufferSample = iIdxBeginSample
-        iInputData.eachRawBuffer(iIdxBeginSample, iIdxEndSample) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
+        iInputData.each_raw_buffer(iIdxBeginSample, iIdxEndSample) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
           prepareVolumeUtils
           oOutputData.pushRawBuffer(@VolumeUtils.applyVolumeFct(lCFunction, iInputRawBuffer, iInputData.Header.NbrBitsPerSample, iInputData.Header.NbrChannels, iNbrSamples, lIdxBufferSample, iUnitDB))
           lIdxBufferSample += iNbrSamples
@@ -189,7 +189,7 @@ module WSK
       def draw(iInputData, oOutputData, iIdxBeginSample, iIdxEndSample, iUnitDB, iMedianValue)
         prepareFunctionUtils
         lCFunction = @FunctionUtils.createCFunction(@Function, iIdxBeginSample, iIdxEndSample)
-        oOutputData.eachBuffer(iIdxBeginSample, iIdxEndSample) do |iIdxBeginBufferSample, iIdxEndBufferSample|
+        oOutputData.each_buffer(iIdxBeginSample, iIdxEndSample) do |iIdxBeginBufferSample, iIdxEndBufferSample|
           prepareVolumeUtils
           oOutputData.pushRawBuffer(@VolumeUtils.drawVolumeFct(lCFunction, iInputData.Header.NbrBitsPerSample, iInputData.Header.NbrChannels, iIdxEndBufferSample-iIdxBeginBufferSample+1, iIdxBeginBufferSample, iUnitDB, iMedianValue))
         end
@@ -199,7 +199,7 @@ module WSK
       #
       # Parameters::
       # * *iFactor* (_Rational_): Factor to divide by
-      def divideBy(iFactor)
+      def divide_by(iFactor)
         case @Function[:FunctionType]
         when FCTTYPE_PIECEWISE_LINEAR
           @Function[:Points].each do |ioPoint|
@@ -214,14 +214,14 @@ module WSK
       #
       # Parameters::
       # * *iMaxYValue* (_Rational_): Maximal Y value
-      def convertToDB(iMaxYValue)
+      def convert_to_db(iMaxYValue)
         case @Function[:FunctionType]
         when FCTTYPE_PIECEWISE_LINEAR
           # Prepare variables for log computations
           @Log2 = Math::log(2).to_r
-          @LogMax = valueLog(iMaxYValue)
+          @LogMax = value_log(iMaxYValue)
           @Function[:Points].each do |ioPoint|
-            ioPoint[1] = valueVal2db_Internal(ioPoint[1])
+            ioPoint[1] = value_val_2_db_Internal(ioPoint[1])
           end
         else
           log_err "Unknown function type: #{@Function[:FunctionType]}"
@@ -233,7 +233,7 @@ module WSK
       # Parameters::
       # * *iPrecisionX* (_Rational_): The desired precision for X values (1000 will round to E-3)
       # * *iPrecisionY* (_Rational_): The desired precision for Y values (1000 will round to E-3)
-      def roundToPrecision(iPrecisionX, iPrecisionY)
+      def round_to_precision(iPrecisionX, iPrecisionY)
         case @Function[:FunctionType]
         when FCTTYPE_PIECEWISE_LINEAR
           @Function[:Points] = @Function[:Points].map do |iPoint|
@@ -250,7 +250,7 @@ module WSK
       # Parameters::
       # * *iSlopeUp* (_Rational_): The maximal value of slope when increasing (should be > 0), or nil if none
       # * *iSlopeDown* (_Rational_): The minimal value of slope when decreasing (should be < 0), or nil if none
-      def applyDamping(iSlopeUp, iSlopeDown)
+      def apply_damping(iSlopeUp, iSlopeDown)
         if ((iSlopeUp != nil) and
             (iSlopeUp <= 0))
           log_err "Upward slope (#{iSlopeUp}) has to be > 0"
@@ -333,7 +333,7 @@ module WSK
       end
 
       # Invert the abscisses of a function
-      def invertAbscisses
+      def invert_abscisses
         case @Function[:FunctionType]
         when FCTTYPE_PIECEWISE_LINEAR
           lNewPoints = []
@@ -354,7 +354,7 @@ module WSK
       # * _Rational_: Minimal Y
       # * _Rational_: Maximal X
       # * _Rational_: Maximal Y
-      def getBounds
+      def get_bounds
         rMinX = nil
         rMinY = nil
         rMaxX = nil
@@ -389,17 +389,17 @@ module WSK
       # Parameters::
       # * *iFileName* (_String_): File name to write
       # * *iParams* (<em>map<Symbol,Object></em>): Additional parameters [optional = {}]:
-      #   * *:Floats* (_Boolean_): Do we write Float values ? [optional = false]
-      def writeToFile(iFileName, iParams = {})
+      #   * *:floats* (_Boolean_): Do we write Float values ? [optional = false]
+      def write_to_file(iFileName, iParams = {})
         lParams = {
           # Default value
-          :Floats => false
+          :floats => false
         }.merge(iParams)
         case @Function[:FunctionType]
         when FCTTYPE_PIECEWISE_LINEAR
           require 'pp'
           lData = @Function
-          if (lParams[:Floats])
+          if (lParams[:floats])
             # Convert to Floats
             lData[:Points].map! do |iPoint|
               next [ iPoint[0].to_f, iPoint[1].to_f ]
@@ -417,10 +417,10 @@ module WSK
       #
       # Parameters::
       # * *iMapFunction* (_Function_): The mapping function
-      def applyMapFunction(iMapFunction)
+      def apply_map_function(iMapFunction)
         case @Function[:FunctionType]
         when FCTTYPE_PIECEWISE_LINEAR
-          case iMapFunction.functionData[:FunctionType]
+          case iMapFunction.function_data[:FunctionType]
           when FCTTYPE_PIECEWISE_LINEAR
             # Both functions are piecewise linear
             # Algorithm:
@@ -430,7 +430,7 @@ module WSK
             # *** We find at which abscisses this segment will change values
             # *** We change the sub-segment between those abscisses
             lPoints = @Function[:Points]
-            lMapPoints = iMapFunction.functionData[:Points]
+            lMapPoints = iMapFunction.function_data[:Points]
             lNewPoints = []
             lIdxSegment = 0
             while (lIdxSegment < lPoints.size-1)
@@ -500,7 +500,7 @@ module WSK
       #
       # Parameters::
       # * *iMinDistance* (_Rational_): Minimal distance for abscisses triplets to have
-      def removeNoiseAbscisses(iMinDistance)
+      def remove_noise_abscisses(iMinDistance)
         case @Function[:FunctionType]
         when FCTTYPE_PIECEWISE_LINEAR
           lNewPoints = [ @Function[:Points][0] ]
@@ -536,10 +536,10 @@ module WSK
       #
       # Parameters::
       # * *iSubFunction* (_Function_): The function to substract
-      def substractFunction(iSubFunction)
+      def substract_function(iSubFunction)
         case @Function[:FunctionType]
         when FCTTYPE_PIECEWISE_LINEAR
-          case iSubFunction.functionData[:FunctionType]
+          case iSubFunction.function_data[:FunctionType]
           when FCTTYPE_PIECEWISE_LINEAR
             lNewPoints = []
             unionXWithFunction_PiecewiseLinear(iSubFunction) do |iX, iY, iOtherY|
@@ -566,10 +566,10 @@ module WSK
       #
       # Parameters::
       # * *iDivFunction* (_Function_): The function that divides
-      def divideByFunction(iDivFunction)
+      def divide_by_function(iDivFunction)
         case @Function[:FunctionType]
         when FCTTYPE_PIECEWISE_LINEAR
-          case iDivFunction.functionData[:FunctionType]
+          case iDivFunction.function_data[:FunctionType]
           when FCTTYPE_PIECEWISE_LINEAR
             lNewPoints = []
             unionXWithFunction_PiecewiseLinear(iDivFunction) do |iX, iY, iOtherY|
@@ -596,7 +596,7 @@ module WSK
       #
       # Return::
       # * <em>map<Symbol,Object></em>: The internal function data
-      def functionData
+      def function_data
         return @Function
       end
 
@@ -604,7 +604,7 @@ module WSK
       #
       # Parameters::
       # * *iValue* (_Rational_): The value
-      def valueLog(iValue)
+      def value_log(iValue)
         return Math::log(iValue).to_r
       end
       
@@ -615,11 +615,11 @@ module WSK
       # * *iMaxValue* (_Rational_): The maximal value
       # Return::
       # * _Rational_: Its corresponding db
-      def valueVal2db(iValue, iMaxValue)
+      def value_val_2_db(iValue, iMaxValue)
         @Log2 = Math::log(2).to_r
-        @LogMax = valueLog(iMaxValue)
+        @LogMax = value_log(iMaxValue)
         
-        return valueVal2db_Internal(iValue)
+        return value_val_2_db_Internal(iValue)
       end
 
       private
@@ -707,7 +707,7 @@ module WSK
       #   * *iOtherY* (_Rational_): The corresponding Y value for the other function
       def unionXWithFunction_PiecewiseLinear(iOtherFunction)
         lPoints = @Function[:Points]
-        lOtherPoints = iOtherFunction.functionData[:Points]
+        lOtherPoints = iOtherFunction.function_data[:Points]
         # Get all the abscisses sorted
         lXList = (lPoints.map { |iPoint| next iPoint[0] } + lOtherPoints.map { |iPoint| next iPoint[0] }).sort.uniq
         # Read segments abscisse by abscisse
@@ -754,12 +754,12 @@ module WSK
       # * *iValue* (_Rational_): The value
       # Return::
       # * _Rational_: Its corresponding db
-      def valueVal2db_Internal(iValue)
+      def value_val_2_db_Internal(iValue)
         if (iValue == 0)
           # -Infinity
           return -1.0/0.0
         else
-          return -6*(@LogMax-valueLog(iValue.abs))/@Log2
+          return -6*(@LogMax-value_log(iValue.abs))/@Log2
         end
       end
 

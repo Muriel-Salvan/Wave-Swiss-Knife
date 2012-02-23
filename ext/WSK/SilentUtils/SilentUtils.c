@@ -122,7 +122,7 @@ int silentutils_Reverse_processValue(
 }
 
 /**
- * Code block called by getNextSilentSample in the eachRawBuffer loop.
+ * Code block called by getNextSilentSample in the each_raw_buffer loop.
  * This is meant to be used with rb_iterate.
  *
  * Parameters::

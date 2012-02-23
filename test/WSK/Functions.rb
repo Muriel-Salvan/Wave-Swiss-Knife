@@ -13,14 +13,14 @@ module WSKTest
     # Test that functions can be read from files
     def testReadFromFile
       lFunction = WSK::Functions::Function.new
-      lFunction.readFromFile("#{getFilesDir}/Functions/Simple.fct.rb")
+      lFunction.read_from_file("#{getFilesDir}/Functions/Simple.fct.rb")
       assert_equal( {
         :FunctionType => WSK::Functions::FCTTYPE_PIECEWISE_LINEAR,
         :Points => [
           [0, 0],
           [1, 2],
           [2, 1]
-        ] }, lFunction.functionData)
+        ] }, lFunction.function_data)
     end
 
     # Test that functions can be set directly
@@ -39,7 +39,7 @@ module WSKTest
           [0, 0],
           [1, 2],
           [2, 1]
-        ] }, lFunction.functionData)
+        ] }, lFunction.function_data)
     end
 
     # Test that functions are optimized correctly
@@ -57,7 +57,7 @@ module WSKTest
         :Points => [
           [0, 0],
           [2, 2]
-        ] }, lFunction.functionData)
+        ] }, lFunction.function_data)
     end
 
     # Test that we correctly read peak input volume
@@ -72,14 +72,14 @@ module WSKTest
       } ) do |iWaveFileName|
         accessInputWaveFile(iWaveFileName) do |iHeader, iInputData|
           lFunction = WSK::Functions::Function.new
-          lFunction.readFromInputVolume(iInputData, 0, 20, 1, 0)
+          lFunction.read_from_input_volume(iInputData, 0, 20, 1, 0)
           assert_equal( {
             :FunctionType => WSK::Functions::FCTTYPE_PIECEWISE_LINEAR,
             :Points => [
               [0, 0],
               [10, 32760],
               [20, 16380]
-            ] }, lFunction.functionData)
+            ] }, lFunction.function_data)
         end
       end
     end
@@ -96,7 +96,7 @@ module WSKTest
       } ) do |iWaveFileName|
         accessInputWaveFile(iWaveFileName) do |iHeader, iInputData|
           lFunction = WSK::Functions::Function.new
-          lFunction.readFromInputVolume(iInputData, 0, 20, 5, 0)
+          lFunction.read_from_input_volume(iInputData, 0, 20, 5, 0)
           assert_equal( {
             :FunctionType => WSK::Functions::FCTTYPE_PIECEWISE_LINEAR,
             :Points => [
@@ -106,7 +106,7 @@ module WSKTest
               [12.5, 32760],
               [17.5, 24570],
               [20, 16380]
-            ] }, lFunction.functionData)
+            ] }, lFunction.function_data)
         end
       end
     end

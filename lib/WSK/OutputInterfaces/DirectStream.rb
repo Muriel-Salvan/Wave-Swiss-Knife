@@ -106,7 +106,7 @@ module WSK
       # * _CodeBlock_: The code called for each buffer:
       #   * *iIdxBeginBufferSample* (_Integer_): The beginning of this buffer's sample
       #   * *iIdxEndBufferSample* (_Integer_): The ending of this buffer's sample
-      def eachBuffer(iIdxBeginSample, iIdxEndSample)
+      def each_buffer(iIdxBeginSample, iIdxEndSample)
         lIdxBeginBufferSample = iIdxBeginSample
         while (lIdxBeginBufferSample <= iIdxEndSample)
           lIdxEndBufferSample = lIdxBeginBufferSample + @NbrSamplesPerBuffer - 1

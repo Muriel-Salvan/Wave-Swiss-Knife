@@ -19,7 +19,7 @@ module WSK
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
       # Return::
       # * _Integer_: The number of samples to be written
-      def getNbrSamples(iInputData)
+      def get_nbr_samples(iInputData)
         return 0
       end
 
@@ -43,14 +43,14 @@ module WSK
           rError = RuntimeError.new("Profile ends at #{lIdxEnd}, superceeding last sample (#{iInputData.NbrSamples-1})")
         else
           lFunction = WSK::Functions::Function.new
-          lFunction.readFromInputVolume(iInputData, lIdxBegin, lIdxEnd, lInterval, @RMSRatio)
+          lFunction.read_from_input_volume(iInputData, lIdxBegin, lIdxEnd, lInterval, @RMSRatio)
           # Normalize the volume function on a [-1..1] scale
-          lFunction.divideBy(Rational(2)**(iInputData.Header.NbrBitsPerSample-1))
-          lMinX, lMinY, lMaxX, lMaxY = lFunction.getBounds
-          lDBMinY = lFunction.valueVal2db(lMinY, Rational(1))
-          lDBMaxY = lFunction.valueVal2db(lMaxY, Rational(1))
+          lFunction.divide_by(Rational(2)**(iInputData.Header.NbrBitsPerSample-1))
+          lMinX, lMinY, lMaxX, lMaxY = lFunction.get_bounds
+          lDBMinY = lFunction.value_val_2_db(lMinY, Rational(1))
+          lDBMaxY = lFunction.value_val_2_db(lMaxY, Rational(1))
           log_info "Dynamic range: [#{sprintf('%.2f',lMinY)} - #{sprintf('%.2f',lMaxY)}] ([#{sprintf('%.2f',lDBMinY)}db - #{sprintf('%.2f',lDBMaxY)}db] = #{sprintf('%.2f',lDBMaxY-lDBMinY)}db)"
-          lFunction.writeToFile(@FctFileName)
+          lFunction.write_to_file(@FctFileName)
         end
 
         return rError

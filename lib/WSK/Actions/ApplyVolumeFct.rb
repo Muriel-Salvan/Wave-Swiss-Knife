@@ -20,7 +20,7 @@ module WSK
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
       # Return::
       # * _Integer_: The number of samples to be written
-      def getNbrSamples(iInputData)
+      def get_nbr_samples(iInputData)
         return iInputData.NbrSamples
       end
 
@@ -44,19 +44,19 @@ module WSK
         else
           lFunction = WSK::Functions::Function.new
           begin
-            lFunction.readFromFile(@FctFileName)
+            lFunction.read_from_file(@FctFileName)
           rescue Exception
             rError = $!
           end
           if (rError == nil)
             # First, write samples before
-            iInputData.eachRawBuffer(0, lIdxBegin-1) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
+            iInputData.each_raw_buffer(0, lIdxBegin-1) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
               oOutputData.pushRawBuffer(iInputRawBuffer)
             end
             # Then apply volume transformation
-            lFunction.applyOnVolume(iInputData, oOutputData, lIdxBegin, lIdxEnd, (@UnitDB == 1))
+            lFunction.apply_on_volume(iInputData, oOutputData, lIdxBegin, lIdxEnd, (@UnitDB == 1))
             # Last, write samples after
-            iInputData.eachRawBuffer(lIdxEnd+1) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
+            iInputData.each_raw_buffer(lIdxEnd+1) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
               oOutputData.pushRawBuffer(iInputRawBuffer)
             end
           end

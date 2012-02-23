@@ -20,7 +20,7 @@ module WSK
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
       # Return::
       # * _Integer_: The number of samples to be written
-      def getNbrSamples(iInputData)
+      def get_nbr_samples(iInputData)
         return iInputData.NbrSamples
       end
 
@@ -87,7 +87,7 @@ module WSK
           end
           # Write the file
           log_debug "Write #{iIdxEnd-iIdxBegin+1} samples of audio."
-          iInputData.eachRawBuffer(iIdxBegin, iIdxEnd) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
+          iInputData.each_raw_buffer(iIdxBegin, iIdxEnd) do |iInputRawBuffer, iNbrSamples, iNbrChannels|
             oOutputData.pushRawBuffer(iInputRawBuffer)
           end
           # Write the fadeout buffer

@@ -19,7 +19,7 @@ module WSK
       # * *iInputData* (<em>WSK::Model::InputData</em>): The input data
       # Return::
       # * _Integer_: The number of samples to be written
-      def getNbrSamples(iInputData)
+      def get_nbr_samples(iInputData)
         return iInputData.NbrSamples
       end
 
@@ -55,7 +55,7 @@ module WSK
             }
           }
         end
-        applyMapFunctions(iInputData, oOutputData, lFunctions)
+        apply_map_functions(iInputData, oOutputData, lFunctions)
 
         return nil
       end
