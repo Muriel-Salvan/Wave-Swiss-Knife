@@ -1,5 +1,21 @@
 = WaveSwissKnife Release History
 
+== 0.2.0.20120302 (Beta)
+
+* Shipping gems in platform-independent architecture.
+* Adapted to standard C extensions handling to make the Gem architecture independent.
+* Adapted to standard RubyGems extensions format to deliver a Ruby gem instead of an architecture specific one.
+* Sorted the output of available actions in the help screen.
+* Corrected C code to make it compile correctly with Ruby 1.9.
+* Ignored mkmf.log files in GIT.
+* Adapted release information to last version of RubyPackager.
+* Adapted release information to last version of rUtilAnts.
+* Removed rdoc warning in documentation.
+* Updated Copyright information.
+* Updated email address of Muriel Salvan.
+* Adapted comments to match a better RDoc syntax.
+* Adapted to new version of rUtilAnts.
+
 == 0.1.0.20110830 (Beta)
 
 * Migrated repository to git.
