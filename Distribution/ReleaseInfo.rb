@@ -35,7 +35,7 @@ RubyPackager::ReleaseInfo.new.
   ] ).
   gem(
     :gem_name => 'WaveSwissKnife',
-    :gem_platform_class_name => 'Gem::Platform::CURRENT',
+    :gem_platform_class_name => 'Gem::Platform::RUBY',
     :require_paths => [ 'lib', 'ext' ],
     :has_rdoc => true,
     :test_file => 'test/run.rb',
