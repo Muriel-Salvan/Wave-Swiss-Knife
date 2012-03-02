@@ -156,7 +156,7 @@ static VALUE analyzeutils_completeAnalyze(
   tSampleIndex iNbrSamples = FIX2LONG(iValNbrSamples);
   int iNbrChannels = FIX2INT(iValNbrChannels);
   int iNbrBitsPerSample = FIX2LONG(iValNbrBitsPerSample);
-  char* lPtrRawBuffer = RSTRING(iValInputRawBuffer)->ptr;
+  char* lPtrRawBuffer = RSTRING_PTR(iValInputRawBuffer);
   // Get the arrays
   tAnalyzeStruct lProcessParams;
   Data_Get_Struct(ioValMaxValues, long long int, lProcessParams.maxValues);

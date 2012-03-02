@@ -284,7 +284,7 @@ static VALUE arithmutils_applyMap(
   Data_Get_Struct(iValMap, tMap, lPtrMap);
 
   // Get the input buffer
-  char* lPtrRawBuffer = RSTRING(iValInputBuffer)->ptr;
+  char* lPtrRawBuffer = RSTRING_PTR(iValInputBuffer);
   int lBufferCharSize = RSTRING(iValInputBuffer)->len;
   // Allocate the output buffer
   char* lPtrOutputBuffer = ALLOC_N(char, lBufferCharSize);
@@ -496,7 +496,7 @@ static VALUE arithmutils_mixBuffers(
   char* lPtrBuffer;
   for (lIdxBuffer = 0; lIdxBuffer < lNbrBuffers-1 ; ++lIdxBuffer) {
     lValBufferInfo = rb_ary_entry(iValBuffers, lIdxBuffer+1);
-    lPtrBuffer = RSTRING(rb_ary_entry(lValBufferInfo, 3))->ptr;
+    lPtrBuffer = RSTRING_PTR(rb_ary_entry(lValBufferInfo, 3));
     lPtrAdditionalBuffers[lIdxBuffer].coeff = NUM2DBL(rb_ary_entry(lValBufferInfo, 2));
     lPtrAdditionalBuffers[lIdxBuffer].buffer_8bits = (unsigned char*)lPtrBuffer;
     lPtrAdditionalBuffers[lIdxBuffer].buffer_16bits = (signed short int*)lPtrBuffer;
@@ -507,7 +507,7 @@ static VALUE arithmutils_mixBuffers(
   // Get the first buffer: the one that has the most samples
   VALUE lValFirstBufferInfo = rb_ary_entry(iValBuffers, 0);
   VALUE lValFirstBuffer = rb_ary_entry(lValFirstBufferInfo, 3);
-  char* lPtrFirstBuffer = RSTRING(lValFirstBuffer)->ptr;
+  char* lPtrFirstBuffer = RSTRING_PTR(lValFirstBuffer);
   int lBufferCharSize = RSTRING(lValFirstBuffer)->len;
   tSampleIndex lNbrSamples = FIX2INT(rb_ary_entry(lValFirstBufferInfo, 4));
 
@@ -747,8 +747,8 @@ static VALUE arithmutils_compareBuffers(
   int iNbrChannels = FIX2INT(iValNbrChannels);
   int iNbrSamples = FIX2INT(iValNbrSamples);
   long double iCoeffDiff = NUM2DBL(iValCoeffDiff);
-  char* lPtrBuffer1 = RSTRING(iValBuffer1)->ptr;
-  char* lPtrBuffer2 = RSTRING(iValBuffer2)->ptr;
+  char* lPtrBuffer1 = RSTRING_PTR(iValBuffer1);
+  char* lPtrBuffer2 = RSTRING_PTR(iValBuffer2);
   int lBufferCharSize = RSTRING(iValBuffer1)->len;
   int lNbrSampleValues = 0;
   // Allocate the output buffer

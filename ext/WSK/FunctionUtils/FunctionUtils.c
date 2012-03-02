@@ -55,9 +55,9 @@ inline long double value2ld(
   long double rResult;
 
   mpf_t lDenominator;
-  mpf_init_set_str(lDenominator, RSTRING(rb_funcall(rb_funcall(iValBD, gID_denominator, 0), gID_to_s, 0))->ptr, 10);
+  mpf_init_set_str(lDenominator, RSTRING_PTR(rb_funcall(rb_funcall(iValBD, gID_denominator, 0), gID_to_s, 0)), 10);
   mpf_t lDivResult;
-  mpf_init_set_str(lDivResult, RSTRING(rb_funcall(rb_funcall(iValBD, gID_numerator, 0), gID_to_s, 0))->ptr, 10);
+  mpf_init_set_str(lDivResult, RSTRING_PTR(rb_funcall(rb_funcall(iValBD, gID_numerator, 0), gID_to_s, 0)), 10);
   mpf_div(lDivResult, lDivResult, lDenominator);
   // TODO: Find a way to round correctly lDivResult. It is currently truncated.
   rResult = mpf_get_d(lDivResult);

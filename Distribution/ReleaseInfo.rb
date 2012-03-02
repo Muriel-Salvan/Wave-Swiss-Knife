@@ -20,9 +20,8 @@ RubyPackager::ReleaseInfo.new.
     :dev_status => 'Beta'
   ).
   add_core_files( [
-    '{lib,bin,ext}/**/*'
-    # Add external directory for releases that have to compile.
-    # TODO (RubyPackager): Make RubyPackager handle compilable packages.
+    '{lib,bin}/**/*',
+    '{ext,external}/**/*.{rb,c,h}'
   ] ).
   add_test_files( [
     'test/**/*'
@@ -42,6 +41,14 @@ RubyPackager::ReleaseInfo.new.
     :test_file => 'test/run.rb',
     :gem_dependencies => [
       [ 'rUtilAnts', '>= 1.0' ]
+    ],
+    :extensions => [
+      'ext/WSK/AnalyzeUtils/extconf.rb',
+      'ext/WSK/ArithmUtils/extconf.rb',
+      'ext/WSK/FFTUtils/extconf.rb',
+      'ext/WSK/FunctionUtils/extconf.rb',
+      'ext/WSK/SilentUtils/extconf.rb',
+      'ext/WSK/VolumeUtils/extconf.rb'
     ]
   ).
   source_forge(

@@ -36,7 +36,7 @@ module WSK
         @OutputFileName = iArg
       end
       @Options.on( '--action <ActionName>', String,
-        "<ActionName>: Name of the action to process. Available Actions: #{get_plugins_names('Actions').join(', ')}",
+        "<ActionName>: Name of the action to process. Available Actions: #{get_plugins_names('Actions').sort.join(', ')}",
         'Specify the Action to execute') do |iArg|
         @Action = iArg
       end

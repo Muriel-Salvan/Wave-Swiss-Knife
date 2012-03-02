@@ -208,7 +208,7 @@ static VALUE fftutils_completeSumCosSin(
   int iNbrChannels = FIX2INT(iValNbrChannels);
   int iNbrFreq = FIX2INT(iValNbrFreq);
   int iNbrBitsPerSample = FIX2INT(iValNbrBitsPerSample);
-  char* lPtrRawBuffer = RSTRING(iValInputRawBuffer)->ptr;
+  char* lPtrRawBuffer = RSTRING_PTR(iValInputRawBuffer);
   tSampleIndex iIdxSample = FIX2LONG(iValIdxSample);
   // Get the lW array
   double * lW = NULL;
@@ -466,7 +466,7 @@ static VALUE fftutils_initTrigoCache(
 inline int initMPF(
   mpf_t ioMPF,
   VALUE iValInt) {
-  return mpf_init_set_str(ioMPF, RSTRING(rb_big2str(iValInt, 16))->ptr, 16);
+  return mpf_init_set_str(ioMPF, RSTRING_PTR(rb_big2str(iValInt, 16)), 16);
 }
 
 /**

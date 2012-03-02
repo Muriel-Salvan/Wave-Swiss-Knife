@@ -164,7 +164,7 @@ static VALUE silentutils_blockEachRawBuffer(
   tSampleIndex* lPtrIdxSilenceSample_Result = (tSampleIndex*)FIX2INT(iValPtrIdxSilenceSample_Result);
 
   // Get the real underlying raw buffer
-  char* lPtrRawBuffer = RSTRING(iValInputRawBuffer)->ptr;
+  char* lPtrRawBuffer = RSTRING_PTR(iValInputRawBuffer);
 
   // Set variables to give to the process
   tFindSilentStruct lProcessVariables;
@@ -374,7 +374,7 @@ static VALUE silentutils_getSampleBeyondThresholds(
   int iNbrChannels = FIX2INT(iValNbrChannels);
   int iNbrBitsPerSample = FIX2INT(iValNbrBitsPerSample);
   // Get the underlying char*
-  char* lPtrRawBuffer = RSTRING(iValRawBuffer)->ptr;
+  char* lPtrRawBuffer = RSTRING_PTR(iValRawBuffer);
   // Decode the thresholds
   tThresholdInfo lThresholds[iNbrChannels];
   VALUE lTmpThresholds;

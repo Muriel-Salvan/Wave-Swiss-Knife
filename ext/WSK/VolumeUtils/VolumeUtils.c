@@ -147,7 +147,7 @@ static VALUE volumeutils_applyVolumeFct(
   tFunction* lPtrFct;
   Data_Get_Struct(iValCFunction, tFunction, lPtrFct);
   // Get the input buffer
-  char* lPtrRawBuffer = RSTRING(iValInputBuffer)->ptr;
+  char* lPtrRawBuffer = RSTRING_PTR(iValInputBuffer);
   int lBufferCharSize = RSTRING(iValInputBuffer)->len;
   // Allocate the output buffer
   char* lPtrOutputBuffer = ALLOC_N(char, lBufferCharSize);
@@ -414,7 +414,7 @@ static VALUE volumeutils_measureLevel(
   tSampleIndex iNbrSamples = FIX2LONG(iValNbrSamples);
   double iRMSRatio = NUM2DBL(iValRMSRatio);
   // Get the input buffer
-  char* lPtrRawBuffer = RSTRING(iValInputRawBuffer)->ptr;
+  char* lPtrRawBuffer = RSTRING_PTR(iValInputRawBuffer);
 
   // Allocate the array that will store the square sums
   mpz_t lSquareSums[iNbrChannels];
