@@ -91,7 +91,7 @@ static int functionutils_fillCFunction_PiecewiseLinear(
   // Fill it
   // Read points in a sorted list of couples [x,y]
   VALUE lValSortedPoints = rb_funcall(rb_funcall(rb_hash_aref(iValFunction, ID2SYM(rb_intern("Points"))), rb_intern("to_a"), 0), rb_intern("sort"), 0);
-  lPtrFctData->nbrPoints = RARRAY(lValSortedPoints)->len;
+  lPtrFctData->nbrPoints = RARRAY_LEN(lValSortedPoints);
   lPtrFctData->pointsX = ALLOC_N(tSampleIndex, lPtrFctData->nbrPoints);
   lPtrFctData->pointsY = ALLOC_N(long double, lPtrFctData->nbrPoints);
 

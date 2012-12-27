@@ -96,7 +96,7 @@ static int arithmutils_fillMap_PiecewiseLinear(
 
   // Read points in a sorted list of couples [x,y]
   VALUE lValSortedPoints = rb_funcall(rb_funcall(rb_hash_aref(iValFunction, ID2SYM(rb_intern("Points"))), rb_intern("to_a"), 0), rb_intern("sort"), 0);
-  int lNbrPoints = RARRAY(lValSortedPoints)->len;
+  int lNbrPoints = RARRAY_LEN(lValSortedPoints);
   // Read the scale min and max values
   long long int lMinScale = FIX2INT(rb_hash_aref(iValFunction, ID2SYM(rb_intern("MinValue"))));
   long long int lMaxScale = FIX2INT(rb_hash_aref(iValFunction, ID2SYM(rb_intern("MaxValue"))));
@@ -212,7 +212,7 @@ static VALUE arithmutils_createMapFromFunctions(
   VALUE iValFunctions) {
   // Translate Ruby objects
   int iNbrBitsPerSample = FIX2INT(iValNbrBitsPerSample);
-  int lNbrChannels = RARRAY(iValFunctions)->len;
+  int lNbrChannels = RARRAY_LEN(iValFunctions);
 
   int lIdxChannel;
   int* lPtrChannelMap;
@@ -285,7 +285,7 @@ static VALUE arithmutils_applyMap(
 
   // Get the input buffer
   char* lPtrRawBuffer = RSTRING_PTR(iValInputBuffer);
-  int lBufferCharSize = RSTRING(iValInputBuffer)->len;
+  int lBufferCharSize = RSTRING_LEN(iValInputBuffer);
   // Allocate the output buffer
   char* lPtrOutputBuffer = ALLOC_N(char, lBufferCharSize);
 
@@ -489,7 +489,7 @@ static VALUE arithmutils_mixBuffers(
 
   // Create the list of additional buffers to consider
   // This list is sorted from the one having the most samples to the one having the least samples
-  int lNbrBuffers = RARRAY(iValBuffers)->len;
+  int lNbrBuffers = RARRAY_LEN(iValBuffers);
   tBufferInfo lPtrAdditionalBuffers[lNbrBuffers-1];
   int lIdxBuffer;
   VALUE lValBufferInfo;
@@ -508,7 +508,7 @@ static VALUE arithmutils_mixBuffers(
   VALUE lValFirstBufferInfo = rb_ary_entry(iValBuffers, 0);
   VALUE lValFirstBuffer = rb_ary_entry(lValFirstBufferInfo, 3);
   char* lPtrFirstBuffer = RSTRING_PTR(lValFirstBuffer);
-  int lBufferCharSize = RSTRING(lValFirstBuffer)->len;
+  int lBufferCharSize = RSTRING_LEN(lValFirstBuffer);
   tSampleIndex lNbrSamples = FIX2INT(rb_ary_entry(lValFirstBufferInfo, 4));
 
   // Allocate the output buffer
@@ -749,7 +749,7 @@ static VALUE arithmutils_compareBuffers(
   long double iCoeffDiff = NUM2DBL(iValCoeffDiff);
   char* lPtrBuffer1 = RSTRING_PTR(iValBuffer1);
   char* lPtrBuffer2 = RSTRING_PTR(iValBuffer2);
-  int lBufferCharSize = RSTRING(iValBuffer1)->len;
+  int lBufferCharSize = RSTRING_LEN(iValBuffer1);
   int lNbrSampleValues = 0;
   // Allocate the output buffer
   char* lPtrOutputBuffer = ALLOC_N(char, lBufferCharSize);
@@ -764,7 +764,7 @@ static VALUE arithmutils_compareBuffers(
     // Create the internal map
     // Define the impossible value
     gImpossibleValue = pow(2, iNbrBitsPerSample-1) + 1;
-    lNbrSampleValues = RARRAY(ioValMap)->len;
+    lNbrSampleValues = RARRAY_LEN(ioValMap);
     tSampleValue lMap[lNbrSampleValues];
     VALUE lValMapValue;
     int lIdxSampleValue;

@@ -148,7 +148,7 @@ static VALUE volumeutils_applyVolumeFct(
   Data_Get_Struct(iValCFunction, tFunction, lPtrFct);
   // Get the input buffer
   char* lPtrRawBuffer = RSTRING_PTR(iValInputBuffer);
-  int lBufferCharSize = RSTRING(iValInputBuffer)->len;
+  int lBufferCharSize = RSTRING_LEN(iValInputBuffer);
   // Allocate the output buffer
   char* lPtrOutputBuffer = ALLOC_N(char, lBufferCharSize);
 

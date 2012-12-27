@@ -540,8 +540,8 @@ static VALUE fftutils_createCFFTProfile(
   int lNbrBitsPerSample = FIX2INT(rb_ary_entry(iValFFTProfile, 0));
   tSampleIndex lNbrSamples = FIX2LONG(rb_ary_entry(iValFFTProfile, 1));
   VALUE lValFFTCoeffs = rb_ary_entry(iValFFTProfile, 2);
-  lPtrFFTProfile->nbrFreq = RARRAY(lValFFTCoeffs)->len;
-  lPtrFFTProfile->nbrChannels = RARRAY(rb_ary_entry(lValFFTCoeffs, 0))->len;
+  lPtrFFTProfile->nbrFreq = RARRAY_LEN(lValFFTCoeffs);
+  lPtrFFTProfile->nbrChannels = RARRAY_LEN(rb_ary_entry(lValFFTCoeffs, 0));
 
   // Compute the maximal values
   mpf_init_set_ui(lPtrFFTProfile->maxFFTValue, 1 << (lNbrBitsPerSample-1));
