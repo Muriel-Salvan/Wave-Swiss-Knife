@@ -1,5 +1,9 @@
 = WaveSwissKnife Release History
 
+== 0.3.0.20121227 (Beta)
+
+* Migrated C code to Ruby 1.9.3 API
+
 == 0.2.0.20120302 (Beta)
 
 * Shipping gems in platform-independent architecture.
