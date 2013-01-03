@@ -1,5 +1,9 @@
 = WaveSwissKnife Release History
 
+== 0.3.1.20130103 (Beta)
+
+* Bug correction: Core dumps using Ruby 1.9 and/or 64 bits environments
+
 == 0.3.0.20121227 (Beta)
 
 * Migrated C code to Ruby 1.9.3 API
