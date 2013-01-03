@@ -57,30 +57,6 @@ typedef struct {
 } tFunction;
 
 /**
- * Invoke each_raw_buffer on an input data.
- * This is meant to be used with rb_iterate.
- *
- * Parameters::
- * * *iValArgs* (<em>list<Object></em>): List of arguments:
- * ** *iValInputData* (<em>WSK::Model::InputData</em>): The input data
- * ** *iValIdxBeginSample* (_Integer_): Index of the first sample to search from
- */
-VALUE commonutils_callEachRawBuffer(
-  VALUE iValArgs);
-
-/**
- * Invoke each_reverse_raw_buffer on an input data.
- * This is meant to be used with rb_iterate.
- *
- * Parameters::
- * * *iValArgs* (<em>list<Object></em>): List of arguments:
- * ** *iValInputData* (<em>WSK::Model::InputData</em>): The input data
- * ** *iValIdxBeginSample* (_Integer_): Index of the first sample to search from
- */
-VALUE commonutils_callEachReverseRawBuffer(
-  VALUE iValArgs);
-
-/**
  * Iterate through a raw buffer.
  *
  * Parameters::

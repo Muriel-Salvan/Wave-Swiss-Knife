@@ -22,6 +22,14 @@ typedef struct {
   int nbrChannels;
 } tFirstSampleBeyondThresholdStruct;
 
+// Struct used to convey data among iterators in the getNextSilentInThresholds method
+typedef struct {
+  tSampleIndex* ptrIdxSample;
+  tSampleIndex* ptrIdxFirstSilentSample;
+  tThresholdInfo* ptrSilenceThresholds;
+  tSampleIndex* ptrIdxSilenceSample_Result;
+} tNextSilentInThresholdsStruct;
+
 /**
  * Process a value read from an input buffer for the NextSilentSample function.
  *
@@ -123,45 +131,46 @@ int silentutils_Reverse_processValue(
 
 /**
  * Code block called by getNextSilentSample in the each_raw_buffer loop.
- * This is meant to be used with rb_iterate.
+ * This is meant to be used with rb_block_call.
  *
  * Parameters::
- * * *iValYieldArgs* (<em>list<Object></em>): The yield arguments:
+ * * *iYieldedObject* (_Object_): First parameter of iArgs
+ * * *iValContextArgs* (<em>list<Object></em>): The context arguments:
+ * ** *iValNbrBitsPerSample* (_Integer_): Number of bits per sample
+ * ** *iValData* (_DATA_): Data encapsulating the tNextSilentInThresholdsStruct that contains C variables to be modified
+ * ** *iValMinSilenceSamples* (_Integer_): Minimal silence samples
+ * ** *iValBackwardsSearch* (_Boolean_): Do we search backwards ?
+ * * *iArgc* (_int_): Number of arguments in iArgs
+ * * *iArgs* (_VALUE[]_): Array of arguments given by the yield call:
  * ** *iValInputRawBuffer* (_String_): The raw buffer
  * ** *iValNbrSamples* (_Integer_): The number of samples in this buffer
  * ** *iValNbrChannels* (_Integer_): The number of channels in this buffer
- * * *iValIterateArgs* (<em>list<Object></em>): The iterate arguments:
- * ** *iValNbrBitsPerSample* (_Integer_): Number of bits per sample
- * ** *iValPtrIdxSample* (_Integer_): Address of the IdxSample variable
- * ** *iValPtrIdxFirstSilentSample* (_Integer_): Address of the IdxFirstSilentSample variable
- * ** *iValPtrSilenceThresholds* (_Integer_): Address of the SilenceThresholds variable
- * ** *iValMinSilenceSamples* (_Integer_): Minimal silence samples
- * ** *iValPtrIdxSilenceSample_Result* (_Integer_): Address of the IdxSilenceSample_Result variable
- * ** *iValBackwardsSearch* (_Boolean_): Do we search backwards ?
  */
 static VALUE silentutils_blockEachRawBuffer(
-  VALUE iValYieldArgs,
-  VALUE iValIterateArgs) {
+  VALUE iYieldedObject,
+  VALUE iValContextArgs,
+  int iArgc,
+  VALUE iArgs[]) {
   // Read arguments
-  VALUE iValInputRawBuffer = rb_ary_entry(iValYieldArgs, 0);
-  VALUE iValNbrSamples = rb_ary_entry(iValYieldArgs, 1);
-  VALUE iValNbrChannels = rb_ary_entry(iValYieldArgs, 2);
-  VALUE iValNbrBitsPerSample = rb_ary_entry(iValIterateArgs, 0);
-  VALUE iValPtrIdxSample = rb_ary_entry(iValIterateArgs, 1);
-  VALUE iValPtrIdxFirstSilentSample = rb_ary_entry(iValIterateArgs, 2);
-  VALUE iValPtrSilenceThresholds = rb_ary_entry(iValIterateArgs, 3);
-  VALUE iValMinSilenceSamples = rb_ary_entry(iValIterateArgs, 4);
-  VALUE iValPtrIdxSilenceSample_Result = rb_ary_entry(iValIterateArgs, 5);
-  VALUE iValBackwardsSearch = rb_ary_entry(iValIterateArgs, 6);
+  VALUE iValInputRawBuffer = iArgs[0];
+  VALUE iValNbrSamples = iArgs[1];
+  VALUE iValNbrChannels = iArgs[2];
+  VALUE iValNbrBitsPerSample = rb_ary_entry(iValContextArgs, 0);
+  VALUE iValData = rb_ary_entry(iValContextArgs, 1);
+  VALUE iValMinSilenceSamples = rb_ary_entry(iValContextArgs, 2);
+  VALUE iValBackwardsSearch = rb_ary_entry(iValContextArgs, 3);
   // Translate parameters in C types
   int iNbrBitsPerSample = FIX2INT(iValNbrBitsPerSample);
   tSampleIndex iNbrSamples = FIX2LONG(iValNbrSamples);
   int iNbrChannels = FIX2INT(iValNbrChannels);
-  tSampleIndex* lPtrIdxSample = (tSampleIndex*)FIX2INT(iValPtrIdxSample);
-  tSampleIndex* lPtrIdxFirstSilentSample = (tSampleIndex*)FIX2INT(iValPtrIdxFirstSilentSample);
-  tThresholdInfo* lPtrSilenceThresholds = (tThresholdInfo*)FIX2INT(iValPtrSilenceThresholds);
   tSampleIndex iMinSilenceSamples = FIX2LONG(iValMinSilenceSamples);
-  tSampleIndex* lPtrIdxSilenceSample_Result = (tSampleIndex*)FIX2INT(iValPtrIdxSilenceSample_Result);
+  // Get C pointers back from the data
+  tNextSilentInThresholdsStruct* lPtrData;
+  Data_Get_Struct(iValData, tNextSilentInThresholdsStruct, lPtrData);
+  tSampleIndex* lPtrIdxSample = lPtrData->ptrIdxSample;
+  tSampleIndex* lPtrIdxFirstSilentSample = lPtrData->ptrIdxFirstSilentSample;
+  tThresholdInfo* lPtrSilenceThresholds = lPtrData->ptrSilenceThresholds;
+  tSampleIndex* lPtrIdxSilenceSample_Result = lPtrData->ptrIdxSilenceSample_Result;
 
   // Get the real underlying raw buffer
   char* lPtrRawBuffer = RSTRING_PTR(iValInputRawBuffer);
@@ -260,46 +269,44 @@ static VALUE silentutils_getNextSilentInThresholds(
   // The result
   tSampleIndex lIdxSilenceSample_Result;
 
-  // Encapsulate pointers to the data that will be used and modified by the iteration block
-  VALUE lValPtrIdxSample = INT2FIX(&lIdxSample);
-  VALUE lValPtrIdxFirstSilentSample = INT2FIX(&lIdxFirstSilentSample);
-  VALUE lValPtrSilenceThresholds = INT2FIX(&lSilenceThresholds);
-  VALUE lValPtrIdxSilenceSample_Result = INT2FIX(&lIdxSilenceSample_Result);
+  // Encapsulate the data that will be used and modified by the iteration block
+  tNextSilentInThresholdsStruct lData;
+  lData.ptrIdxSample = &lIdxSample;
+  lData.ptrIdxFirstSilentSample = &lIdxFirstSilentSample;
+  lData.ptrSilenceThresholds = &lSilenceThresholds;
+  lData.ptrIdxSilenceSample_Result = &lIdxSilenceSample_Result;
+  VALUE lValData = Data_Wrap_Struct(rb_cObject, NULL, NULL, &lData);
 
   lIdxFirstSilentSample = -1;
   lIdxSilenceSample_Result = -1;
 
   // Parse the data, using thresholds matching only
+  VALUE lEachArgs[1];
+  lEachArgs[0] = LONG2FIX(lIdxSample);
   if (iValBackwardsSearch == Qtrue) {
-    rb_iterate(
-      commonutils_callEachReverseRawBuffer,
-      rb_ary_new3(2,
-        iValInputData,
-        LONG2FIX(lIdxSample)),
-      silentutils_blockEachRawBuffer,
-      rb_ary_new3(7,
+    rb_block_call(
+      iValInputData,
+      rb_intern("each_reverse_raw_buffer"),
+      1,
+      lEachArgs,
+      RUBY_METHOD_FUNC(silentutils_blockEachRawBuffer),
+      rb_ary_new3(4,
         lValNbrBitsPerSample,
-        lValPtrIdxSample,
-        lValPtrIdxFirstSilentSample,
-        lValPtrSilenceThresholds,
+        lValData,
         iValMinSilenceSamples,
-        lValPtrIdxSilenceSample_Result,
         iValBackwardsSearch)
     );
   } else {
-    rb_iterate(
-      commonutils_callEachRawBuffer,
-      rb_ary_new3(2,
-        iValInputData,
-        LONG2FIX(lIdxSample)),
-      silentutils_blockEachRawBuffer,
-      rb_ary_new3(7,
+    rb_block_call(
+      iValInputData,
+      rb_intern("each_raw_buffer"),
+      1,
+      lEachArgs,
+      RUBY_METHOD_FUNC(silentutils_blockEachRawBuffer),
+      rb_ary_new3(4,
         lValNbrBitsPerSample,
-        lValPtrIdxSample,
-        lValPtrIdxFirstSilentSample,
-        lValPtrSilenceThresholds,
+        lValData,
         iValMinSilenceSamples,
-        lValPtrIdxSilenceSample_Result,
         iValBackwardsSearch)
     );
   }
