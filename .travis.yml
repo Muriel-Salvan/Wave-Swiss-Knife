@@ -13,4 +13,5 @@ rvm:
   - jruby-head
 
 before_script:
+  - gem install rUtilAnts
   - ruby InstallExtensions.rb
