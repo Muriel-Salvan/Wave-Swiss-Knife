@@ -12,10 +12,15 @@ lGMPDir = "#{lRootDir}/gmp"
 lGMPInstallDir = "#{lRootDir}/gmp/#{lGMPBaseName}-install"
 
 FileUtils::mkdir_p(lGMPDir)
+lOldDir = Dir.getwd
 Dir.chdir(lGMPDir)
-raise RuntimeError if !system("wget ftp://ftp.gmplib.org/pub/gmp/#{lGMPBaseName}.tar.bz2")
-raise RuntimeError if !system("tar xvjf #{lGMPBaseName}.tar.bz2")
-Dir.chdir(lGMPBaseName)
-raise RuntimeError if !system("./configure --prefix=#{lGMPInstallDir}")
-raise RuntimeError if !system('make')
-raise RuntimeError if !system('make install')
+begin
+  raise RuntimeError if !system("wget ftp://ftp.gmplib.org/pub/gmp/#{lGMPBaseName}.tar.bz2")
+  raise RuntimeError if !system("tar xvjf #{lGMPBaseName}.tar.bz2")
+  Dir.chdir(lGMPBaseName)
+  raise RuntimeError if !system("./configure --prefix=#{lGMPInstallDir}")
+  raise RuntimeError if !system('make')
+  raise RuntimeError if !system('make install')
+ensure
+  Dir.chdir(lOldDir)
+end
