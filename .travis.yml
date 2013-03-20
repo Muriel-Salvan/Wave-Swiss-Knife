@@ -13,4 +13,4 @@ rvm:
   - jruby-head
 
 before_script:
-  - ruby BuildExt.rb
+  - ruby InstallExtensions.rb

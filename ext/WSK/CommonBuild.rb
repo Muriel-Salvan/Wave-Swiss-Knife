@@ -26,4 +26,15 @@ end
 
 require 'mkmf'
 $CFLAGS += ' -Wall '
+if (!have_library('gmp','mpz_get_str','gmp.h'))
+  # Find locally installed GMP
+  lGMPDir = File.expand_path("#{File.dirname(__FILE__)}/../../gmp")
+  if (File.exist?(lGMPDir))
+    lLastInstalledGMP = Dir.glob("#{lGMPDir}/*-install").sort[-1]
+    puts "Take GMP installed in #{lLastInstalledGMP}"
+    find_header('gmp.h',"#{lLastInstalledGMP}/include")
+    find_library('gmp',nil,"#{lLastInstalledGMP}/lib")
+  end
+end
+
 build_external_libs('CommonUtils')
