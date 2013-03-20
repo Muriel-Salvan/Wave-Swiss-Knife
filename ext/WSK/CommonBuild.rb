@@ -3,6 +3,9 @@
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
+require 'rubygems'
+require 'mkmf'
+
 # Build external libraries.
 # Set CFLAGS and LDFLAGS accordingly.
 #
@@ -24,7 +27,6 @@ def build_external_libs(*iLstExternalLibs)
   end
 end
 
-require 'mkmf'
 $CFLAGS += ' -Wall '
 if (!have_library('gmp','mpz_get_str','gmp.h'))
   # Find locally installed GMP
