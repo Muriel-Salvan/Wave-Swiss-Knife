@@ -12,3 +12,6 @@ rvm:
   # - jruby-18mode
   # - jruby-19mode
   # - jruby-head
+
+before_script:
+  - ruby BuildExt.rb
