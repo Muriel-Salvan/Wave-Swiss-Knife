@@ -1,5 +1,11 @@
 = WaveSwissKnife Release History
 
+== 0.4.0.20130322 (Beta)
+
+* GMP library automatically installs if absent
+* Added support for Travis
+* Bug correction: Rational did not inspect the same as before.
+
 == 0.3.1.20130103 (Beta)
 
 * Bug correction: Core dumps using Ruby 1.9 and/or 64 bits environments
