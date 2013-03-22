@@ -23,7 +23,7 @@ module WSK
       def get_nbr_samples(iInputData)
         @Function = WSK::Functions::Function.new
         @Function.read_from_file(@FctFileName)
-        lMinX, lMinY, lMaxX, lMaxY = @Function.get_bounds
+        lMinX, _, lMaxX, _ = @Function.get_bounds
         @NbrSamplesOut = lMaxX.to_i-lMinX.to_i+1
 
         return @NbrSamplesOut

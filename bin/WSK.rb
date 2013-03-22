@@ -5,7 +5,7 @@
 #++
 
 # Main file
-
+require 'rubygems'
 require 'rUtilAnts/Logging'
 RUtilAnts::Logging::install_logger_on_object
 require 'WSK/Common'

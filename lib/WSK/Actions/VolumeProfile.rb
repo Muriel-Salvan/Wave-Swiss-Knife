@@ -46,7 +46,7 @@ module WSK
           lFunction.read_from_input_volume(iInputData, lIdxBegin, lIdxEnd, lInterval, @RMSRatio)
           # Normalize the volume function on a [-1..1] scale
           lFunction.divide_by(Rational(2)**(iInputData.Header.NbrBitsPerSample-1))
-          lMinX, lMinY, lMaxX, lMaxY = lFunction.get_bounds
+          _, lMinY, _, lMaxY = lFunction.get_bounds
           lDBMinY = lFunction.value_val_2_db(lMinY, Rational(1))
           lDBMaxY = lFunction.value_val_2_db(lMaxY, Rational(1))
           log_info "Dynamic range: [#{sprintf('%.2f',lMinY)} - #{sprintf('%.2f',lMaxY)}] ([#{sprintf('%.2f',lDBMinY)}db - #{sprintf('%.2f',lDBMaxY)}db] = #{sprintf('%.2f',lDBMaxY-lDBMinY)}db)"

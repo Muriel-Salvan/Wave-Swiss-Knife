@@ -5,6 +5,15 @@
 
 require 'rational'
 
+# Make sure pretty_inspect uses Rational constructor
+class Rational
+
+  def inspect
+    "Rational(#{self.numerator}, #{self.denominator})"
+  end
+
+end
+
 # Convert a float to a Rational
 class Float
 
@@ -227,7 +236,7 @@ module WSK
           log_err "Unknown function type: #{@Function[:FunctionType]}"
         end
       end
-      
+
       # Round values to a given precision
       #
       # Parameters::
@@ -244,7 +253,7 @@ module WSK
         end
         optimize
       end
-      
+
       # Apply damping.
       #
       # Parameters::
@@ -607,7 +616,7 @@ module WSK
       def value_log(iValue)
         return Math::log(iValue).to_r
       end
-      
+
       # Compute a DB value out of a ratio using function values
       #
       # Parameters::
@@ -618,7 +627,7 @@ module WSK
       def value_val_2_db(iValue, iMaxValue)
         @Log2 = Math::log(2).to_r
         @LogMax = value_log(iMaxValue)
-        
+
         return value_val_2_db_Internal(iValue)
       end
 
