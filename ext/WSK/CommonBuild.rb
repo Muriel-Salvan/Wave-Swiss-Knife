@@ -41,7 +41,7 @@ end
 
 # Build a local copy of GMP, downloaded directly from the Internet
 def build_local_gmp
-  lGMPBaseName = 'gmp-5.1.1'
+  lGMPBaseName = 'gmp-5.1.3'
   lGMPDir = "#{ROOT_DIR}/gmp"
   lGMPInstallDir = "#{ROOT_DIR}/gmp/#{lGMPBaseName}-install"
 
@@ -62,7 +62,7 @@ def build_local_gmp
     exec_cmd "tar xjf #{lGMPBaseName}.tar.bz2"
     Dir.chdir(lGMPBaseName)
     puts '** Configure GMP for compilation ...'
-    exec_cmd "./configure --prefix=#{lGMPInstallDir}"
+    exec_cmd "sh ./configure --prefix=#{lGMPInstallDir}"
     puts '** Compile GMP ...'
     exec_cmd 'make'
     puts "** Install locally GMP in #{lGMPInstallDir} ..."
